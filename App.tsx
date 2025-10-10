@@ -101,7 +101,7 @@ const App: React.FC = () => {
   const renderScreen = () => {
     if (!currentUser) return null; // Should not happen if logic is correct
     switch (activeScreen) {
-      case 'dashboard': return <DashboardScreen />;
+      case 'dashboard': return <DashboardScreen onNavigate={setActiveScreen} />;
       case 'properties': return <PropertiesScreen />;
       case 'contracts': return <ContractsScreen />;
       case 'deadlines': return <DeadlinesScreen />;
@@ -111,7 +111,7 @@ const App: React.FC = () => {
       case 'expenses': return <ExpensesScreen />;
       case 'payments': return <PaymentsScreen />;
       case 'settings': return <SettingsScreen user={currentUser} onUpdateProfile={handleProfileUpdate} />;
-      default: return <DashboardScreen />;
+      default: return <DashboardScreen onNavigate={setActiveScreen} />;
     }
   };
 

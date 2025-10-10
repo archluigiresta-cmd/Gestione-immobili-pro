@@ -1,0 +1,97 @@
+import React, { useState, useEffect } from 'react';
+import { Contract, Property, Tenant } from '../../types';
+import { X } from 'lucide-react';
+import * as dataService from '../../services/dataService';
+
+interface AddContractModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (contract: Omit<Contract, 'id' | 'documentUrl'>) => void;
+}
+
+const AddContractModal: React.FC<AddContractModalProps> = ({ isOpen, onClose, onSave }) => {
+  const [propertyId, setPropertyId] = useState('');
+  const [tenantId, setTenantId] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [rentAmount, setRentAmount] = useState(0);
+  const [error, setError] = useState('');
+
+  const [availableProperties, setAvailableProperties] = useState<Property[]>([]);
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setAvailableProperties(dataService.getProperties().filter(p => !p.isRented));
+      setTenants(dataService.getTenants());
+    }
+  }, [isOpen]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!propertyId || !tenantId || !startDate || !endDate || rentAmount <= 0) {
+      setError('Tutti i campi sono obbligatori e il canone deve essere maggiore di zero.');
+      return;
+    }
+    onSave({ propertyId, tenantId, startDate, endDate, rentAmount });
+    // Reset form
+    setPropertyId('');
+    setTenantId('');
+    setStartDate('');
+    setEndDate('');
+    setRentAmount(0);
+    setError('');
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
+      <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg m-4">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-dark">Aggiungi Nuovo Contratto</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-800">
+            <X size={24} />
+          </button>
+        </div>
+        {error && <p className="bg-red-100 text-red-700 p-2 rounded mb-4 text-sm">{error}</p>}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Immobile</label>
+            <select value={propertyId} onChange={e => setPropertyId(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
+              <option value="">Seleziona un immobile libero</option>
+              {availableProperties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Inquilino</label>
+            <select value={tenantId} onChange={e => setTenantId(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
+              <option value="">Seleziona un inquilino</option>
+              {tenants.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Data Inizio</label>
+              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Data Fine</label>
+              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Canone Mensile (€)</label>
+            <input type="number" value={rentAmount} onChange={e => setRentAmount(Number(e.target.value))} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" />
+          </div>
+          <div className="flex justify-end pt-4">
+            <button type="button" onClick={onClose} className="mr-2 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Annulla</button>
+            <button type="submit" className="px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm">Aggiungi Contratto</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default AddContractModal;

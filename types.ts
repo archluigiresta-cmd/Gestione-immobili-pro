@@ -1,4 +1,3 @@
-
 export interface Property {
   id: string;
   name: string;
@@ -84,6 +83,8 @@ export interface Expense {
   amount: number;
   category: ExpenseCategory;
   date: string;
+  providerUrl?: string;
+  invoiceUrl?: string;
 }
 
 export enum PaymentStatus {
