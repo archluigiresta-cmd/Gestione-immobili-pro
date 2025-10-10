@@ -3,9 +3,11 @@ import React, { useState } from 'react';
 import Card from '../components/ui/Card';
 import { User } from '../types';
 import { UserCircle, Palette, Bell, CheckCircle } from 'lucide-react';
+import EditProfileModal from '../components/modals/EditProfileModal';
 
 interface SettingsScreenProps {
   user: User;
+  onUpdateProfile: (user: User) => void;
 }
 
 const ToggleSwitch: React.FC<{ label: string; enabled: boolean; onChange: (enabled: boolean) => void; }> = ({ label, enabled, onChange }) => (
@@ -21,18 +23,19 @@ const ToggleSwitch: React.FC<{ label: string; enabled: boolean; onChange: (enabl
 );
 
 
-const SettingsScreen: React.FC<SettingsScreenProps> = ({ user }) => {
+const SettingsScreen: React.FC<SettingsScreenProps> = ({ user, onUpdateProfile }) => {
     const [settings, setSettings] = useState({
         darkMode: false,
         emailNotifications: true,
     });
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
 
     const handleSettingChange = (key: keyof typeof settings, value: boolean) => {
         setSettings(prev => ({...prev, [key]: value}));
     };
 
-    const handleSave = () => {
+    const handleSaveSettings = () => {
         console.log("Impostazioni salvate:", settings);
         setShowSuccess(true);
         setTimeout(() => {
@@ -40,7 +43,17 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ user }) => {
         }, 3000);
     }
 
+    const handleSaveProfile = (updatedUser: User) => {
+        onUpdateProfile(updatedUser);
+        setIsModalOpen(false);
+        setShowSuccess(true);
+        setTimeout(() => {
+            setShowSuccess(false);
+        }, 3000);
+    }
+
   return (
+    <>
     <div className="max-w-4xl mx-auto space-y-8">
         <div>
             <h1 className="text-3xl font-bold text-dark">Impostazioni</h1>
@@ -53,7 +66,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ user }) => {
             <div>
                 <h2 className="text-2xl font-bold text-dark">{user.name}</h2>
                 <p className="text-gray-600">{user.email}</p>
-                <button className="mt-2 text-sm text-primary hover:underline">Modifica profilo</button>
+                <button onClick={() => setIsModalOpen(true)} className="mt-2 text-sm text-primary hover:underline">Modifica profilo</button>
             </div>
         </div>
       </Card>
@@ -84,18 +97,25 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ user }) => {
         {showSuccess && (
             <div className="flex items-center text-green-600 mr-4 transition-opacity duration-300">
                 <CheckCircle size={18} className="mr-1" />
-                <span className="font-semibold">Impostazioni salvate!</span>
+                <span className="font-semibold">Modifiche salvate!</span>
             </div>
         )}
         <button
-            onClick={handleSave}
+            onClick={handleSaveSettings}
             className="px-6 py-3 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-hover transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
         >
-            Salva Impostazioni
+            Salva Preferenze
         </button>
       </div>
 
     </div>
+    <EditProfileModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        user={user}
+        onSave={handleSaveProfile}
+    />
+    </>
   );
 };
 

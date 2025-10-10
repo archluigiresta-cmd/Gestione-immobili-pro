@@ -1,10 +1,10 @@
 
 import { Property, Tenant, Contract, Deadline, Document, Maintenance, Expense, DeadlineType, MaintenanceStatus, ExpenseCategory, Payment, PaymentStatus, User } from './types';
 
-export const MOCK_USER: User = {
-  name: 'Giovanni Riva',
-  email: 'giovanni.riva@email.com',
-};
+export const MOCK_USERS: User[] = [
+  { id: 'u1', name: 'Giovanni Riva', email: 'giovanni.riva@email.com' },
+  { id: 'u2', name: 'Laura Verdi', email: 'laura.verdi@email.com' },
+];
 
 export const MOCK_PROPERTIES: Property[] = [
   { id: 'p1', name: 'Appartamento Centrale', address: 'Via Roma 1, Milano', type: 'Appartamento', imageUrl: 'https://picsum.photos/seed/p1/600/400', surface: 80, rooms: 3, isRented: true, rentAmount: 1200 },

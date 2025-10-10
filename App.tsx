@@ -11,9 +11,12 @@ import MaintenanceScreen from './screens/MaintenanceScreen';
 import ExpensesScreen from './screens/ExpensesScreen';
 import PaymentsScreen from './screens/PaymentsScreen';
 import SettingsScreen from './screens/SettingsScreen';
+import LoginScreen from './screens/LoginScreen';
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
-import { MOCK_USER } from './constants';
+import { User } from './types';
+import * as dataService from './services/dataService';
+
 
 export type Screen = 'dashboard' | 'properties' | 'contracts' | 'deadlines' | 'documents' | 'tenants' | 'maintenance' | 'expenses' | 'payments' | 'settings' | 'install';
 
@@ -36,10 +39,19 @@ export const secondaryNavigationItems = [
 
 const App: React.FC = () => {
   const [activeScreen, setActiveScreen] = useState<Screen>('dashboard');
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [installPromptEvent, setInstallPromptEvent] = useState<Event | null>(null);
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
+    // Check for an active user session in localStorage on initial load
+    const currentUserId = localStorage.getItem('currentUserId');
+    if (currentUserId) {
+      const users = dataService.getUsers();
+      const user = users.find(u => u.id === currentUserId);
+      setCurrentUser(user || null);
+    }
+
     const handleBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
       setInstallPromptEvent(event);
@@ -66,12 +78,28 @@ const App: React.FC = () => {
     });
   };
   
+  const handleLogin = (userId: string) => {
+    const users = dataService.getUsers();
+    const user = users.find(u => u.id === userId);
+    if(user) {
+        setCurrentUser(user);
+        localStorage.setItem('currentUserId', userId);
+        setActiveScreen('dashboard');
+    }
+  };
+
   const handleLogout = () => {
-    // For this mock app, logging out just navigates back to the dashboard.
-    setActiveScreen('dashboard');
+    localStorage.removeItem('currentUserId');
+    setCurrentUser(null);
+  };
+
+  const handleProfileUpdate = (updatedUserData: User) => {
+    const updatedUser = dataService.updateUser(updatedUserData);
+    setCurrentUser(updatedUser);
   };
 
   const renderScreen = () => {
+    if (!currentUser) return null; // Should not happen if logic is correct
     switch (activeScreen) {
       case 'dashboard': return <DashboardScreen />;
       case 'properties': return <PropertiesScreen />;
@@ -82,10 +110,14 @@ const App: React.FC = () => {
       case 'maintenance': return <MaintenanceScreen />;
       case 'expenses': return <ExpensesScreen />;
       case 'payments': return <PaymentsScreen />;
-      case 'settings': return <SettingsScreen user={MOCK_USER}/>;
+      case 'settings': return <SettingsScreen user={currentUser} onUpdateProfile={handleProfileUpdate} />;
       default: return <DashboardScreen />;
     }
   };
+
+  if (!currentUser) {
+    return <LoginScreen onLogin={handleLogin} />;
+  }
 
   return (
     <div className="flex h-screen bg-light">
@@ -101,7 +133,7 @@ const App: React.FC = () => {
         <Header 
           currentScreen={[...navigationItems, ...secondaryNavigationItems].find(item => item.screen === activeScreen)?.name || 'Dashboard'} 
           toggleSidebar={() => setSidebarOpen(!isSidebarOpen)}
-          user={MOCK_USER}
+          user={currentUser}
           onLogout={handleLogout}
           onNavigate={setActiveScreen}
         />
