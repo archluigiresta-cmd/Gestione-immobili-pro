@@ -107,6 +107,11 @@ const App: React.FC = () => {
       localStorage.setItem('loggedInUserId', userId);
     }
   };
+  
+  const handleRegister = (userData: Omit<User, 'id'>) => {
+    const newUser = dataService.addUser(userData);
+    handleLogin(newUser.id);
+  };
 
   const handleLogout = () => {
     setUser(null);
@@ -127,6 +132,14 @@ const App: React.FC = () => {
     dataService.updateUser(updatedUser);
     setUser(updatedUser);
   };
+  
+  const handleAddUser = (userData: Omit<User, 'id'>) => {
+    dataService.addUser(userData);
+  };
+
+  const handleDeleteUser = (userId: string) => {
+    dataService.deleteUser(userId);
+  };
 
   const handleInstall = () => {
     if (deferredPrompt) {
@@ -145,7 +158,7 @@ const App: React.FC = () => {
 
 
   if (loading) return <SplashScreen />;
-  if (!user) return <LoginScreen onLogin={handleLogin} />;
+  if (!user) return <LoginScreen onLogin={handleLogin} onRegister={handleRegister} />;
 
   const CurrentScreenComponent = screenComponents[activeScreen];
 
@@ -174,6 +187,8 @@ const App: React.FC = () => {
             onBack={() => handleNavigate('properties')}
             user={user}
             onUpdateProfile={handleUpdateProfile}
+            onAddUser={handleAddUser}
+            onDeleteUser={handleDeleteUser}
           />
         </main>
       </div>

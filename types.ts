@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name: string;
@@ -15,6 +14,7 @@ export enum PropertyType {
 
 export interface Property {
   id: string;
+  code: string;
   name: string;
   address: string;
   type: PropertyType;
@@ -48,6 +48,7 @@ export enum DeadlineType {
   TAX = 'Tasse',
   MAINTENANCE = 'Manutenzione',
   CONTRACT = 'Contratto',
+  DOCUMENT = 'Documento',
   OTHER = 'Altro',
 }
 
@@ -58,6 +59,7 @@ export interface Deadline {
   dueDate: string; // ISO date string
   isCompleted: boolean;
   type: DeadlineType;
+  documentId?: string;
 }
 
 export enum MaintenanceStatus {
@@ -102,6 +104,7 @@ export interface Document {
     type: string;
     uploadDate: string; // ISO date string
     fileUrl: string;
+    expiryDate?: string;
 }
 
 export enum PaymentStatus {

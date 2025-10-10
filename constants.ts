@@ -1,14 +1,14 @@
-
 import { Property, PropertyType, Tenant, Contract, Payment, PaymentStatus, User, Deadline, DeadlineType, Maintenance, MaintenanceStatus, Expense, ExpenseCategory, Document } from './types';
 
 export const MOCK_USERS: User[] = [
-  { id: 'user-1', name: 'Mario Rossi', email: 'mario.rossi@email.com' },
+  { id: 'user-1', name: 'Luigi Resta', email: 'arch.luigiresta@gmail.com' },
+  { id: 'user-2', name: 'Collaboratore Demo', email: 'collaboratore@email.com' },
 ];
 
 export const MOCK_PROPERTIES: Property[] = [
-  { id: 'prop-1', name: 'Villa Paradiso', address: 'Via Roma 1, Milano', type: PropertyType.VILLA, surface: 250, rooms: 7, isRented: true, rentAmount: 3000, imageUrl: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80' },
-  { id: 'prop-2', name: 'Appartamento Centrale', address: 'Corso Buenos Aires 10, Milano', type: PropertyType.APARTMENT, surface: 80, rooms: 3, isRented: true, rentAmount: 1200, imageUrl: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80' },
-  { id: 'prop-3', name: 'Ufficio Moderno', address: 'Piazza Duomo 5, Milano', type: PropertyType.OFFICE, surface: 120, rooms: 4, isRented: false, imageUrl: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1632&q=80' },
+  { id: 'prop-1', code: 'IMM-001', name: 'Villa Paradiso', address: 'Via Roma 1, Milano', type: PropertyType.VILLA, surface: 250, rooms: 7, isRented: true, rentAmount: 3000, imageUrl: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80' },
+  { id: 'prop-2', code: 'IMM-002', name: 'Appartamento Centrale', address: 'Corso Buenos Aires 10, Milano', type: PropertyType.APARTMENT, surface: 80, rooms: 3, isRented: true, rentAmount: 1200, imageUrl: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80' },
+  { id: 'prop-3', code: 'IMM-003', name: 'Ufficio Moderno', address: 'Piazza Duomo 5, Milano', type: PropertyType.OFFICE, surface: 120, rooms: 4, isRented: false, imageUrl: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1632&q=80' },
 ];
 
 export const MOCK_CONTRACTS: Contract[] = [
@@ -26,6 +26,7 @@ export const MOCK_DEADLINES: Deadline[] = [
   { id: 'deadline-2', propertyId: 'prop-2', title: 'Controllo caldaia', dueDate: '2024-09-30', isCompleted: false, type: DeadlineType.MAINTENANCE },
   { id: 'deadline-3', propertyId: 'prop-1', title: 'Rinnovo contratto', dueDate: '2024-11-01', isCompleted: false, type: DeadlineType.CONTRACT },
   { id: 'deadline-4', propertyId: 'prop-2', title: 'Pagamento TARI', dueDate: '2024-07-20', isCompleted: true, type: DeadlineType.TAX },
+  { id: 'deadline-5', propertyId: 'prop-3', documentId: 'doc-4', title: 'Scadenza documento: Polizza Assicurativa Ufficio', dueDate: '2025-01-31', isCompleted: false, type: DeadlineType.DOCUMENT },
 ];
 
 export const MOCK_MAINTENANCES: Maintenance[] = [
@@ -45,6 +46,7 @@ export const MOCK_DOCUMENTS: Document[] = [
     { id: 'doc-1', name: 'Contratto affitto Verdi', propertyId: 'prop-1', type: 'Contratto', uploadDate: '2023-01-05', fileUrl: '#' },
     { id: 'doc-2', name: 'Planimetria Villa Paradiso', propertyId: 'prop-1', type: 'Planimetria', uploadDate: '2022-11-20', fileUrl: '#' },
     { id: 'doc-3', name: 'Certificazione energetica Apt. Centrale', propertyId: 'prop-2', type: 'Certificazione', uploadDate: '2022-05-10', fileUrl: '#' },
+    { id: 'doc-4', name: 'Polizza Assicurativa Ufficio', propertyId: 'prop-3', type: 'Assicurazione', uploadDate: '2024-01-20', fileUrl: '#', expiryDate: '2025-01-31' },
 ];
 
 const currentYear = new Date().getFullYear();

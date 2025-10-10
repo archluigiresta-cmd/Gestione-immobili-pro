@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
 import { Property } from '../types';
-import { PlusCircle, Edit, Trash2, Eye } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Eye, MapPin } from 'lucide-react';
 import AddPropertyModal from '../components/modals/AddPropertyModal';
 import EditPropertyModal from '../components/modals/EditPropertyModal';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
@@ -16,11 +15,21 @@ interface PropertiesScreenProps {
 
 const PropertyCard: React.FC<{ property: Property, onEdit: () => void, onDelete: () => void, onView: () => void }> = ({ property, onEdit, onDelete, onView }) => {
     return (
-        <Card className="flex flex-col">
-            <img className="h-48 w-full object-cover" src={property.imageUrl} alt={property.name} />
+        <Card className="flex flex-col group">
+            <div className="relative">
+                <img className="h-48 w-full object-cover" src={property.imageUrl} alt={property.name} />
+                <div 
+                    onClick={onView} 
+                    className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-center justify-center cursor-pointer"
+                >
+                    <Eye size={32} className="text-white opacity-0 group-hover:opacity-100 transform group-hover:scale-110 transition-all duration-300" />
+                </div>
+            </div>
             <div className="p-4 flex flex-col flex-grow">
+                <span className="text-xs font-semibold text-primary">{property.code}</span>
                 <h3 className="text-lg font-bold text-dark">{property.name}</h3>
-                <p className="text-sm text-gray-500">{property.address}</p>
+                <p className="text-sm text-gray-500 flex items-center mt-1"><MapPin size={14} className="mr-1.5"/>{property.address}</p>
+                
                 <div className="mt-2 text-sm text-gray-700">
                     <p>{property.type} - {property.surface} mq - {property.rooms} locali</p>
                 </div>
@@ -29,9 +38,8 @@ const PropertyCard: React.FC<{ property: Property, onEdit: () => void, onDelete:
                         {property.isRented ? 'Affittato' : 'Libero'}
                     </span>
                     <div className="flex gap-2">
-                        <button onClick={onView} className="text-gray-500 hover:text-primary"><Eye size={18} /></button>
-                        <button onClick={onEdit} className="text-blue-600 hover:text-blue-800"><Edit size={18} /></button>
-                        <button onClick={onDelete} className="text-red-600 hover:text-red-800"><Trash2 size={18} /></button>
+                        <button onClick={onEdit} className="text-blue-600 hover:text-blue-800 p-1.5 rounded-full hover:bg-blue-50"><Edit size={18} /></button>
+                        <button onClick={onDelete} className="text-red-600 hover:text-red-800 p-1.5 rounded-full hover:bg-red-50"><Trash2 size={18} /></button>
                     </div>
                 </div>
             </div>
@@ -55,9 +63,10 @@ const PropertiesScreen: React.FC<PropertiesScreenProps> = ({ onNavigate }) => {
   };
 
   const handleAddProperty = (propertyData: Omit<Property, 'id'>) => {
-    dataService.addProperty(propertyData);
+    const newProperty = dataService.addProperty(propertyData);
     loadProperties();
     setAddModalOpen(false);
+    onNavigate('propertyDetail', newProperty.id);
   };
 
   const handleUpdateProperty = (updatedProperty: Property) => {

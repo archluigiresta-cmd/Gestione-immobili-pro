@@ -1,6 +1,5 @@
-
 import { MOCK_USERS, MOCK_PROPERTIES, MOCK_TENANTS, MOCK_CONTRACTS, MOCK_DEADLINES, MOCK_MAINTENANCES, MOCK_EXPENSES, MOCK_DOCUMENTS } from '../constants';
-import { User, Property, Tenant, Contract, Deadline, Maintenance, Expense, Document } from '../types';
+import { User, Property, Tenant, Contract, Deadline, Maintenance, Expense, Document, DeadlineType } from '../types';
 
 const initData = <T,>(key: string, mockData: T[]): T[] => {
     try {
@@ -28,19 +27,36 @@ const generateId = (): string => `id-${new Date().getTime()}-${Math.random().toS
 // Users
 export const getUsers = (): User[] => initData('users', MOCK_USERS);
 export const getUser = (id: string): User | undefined => getUsers().find(u => u.id === id);
+export const addUser = (userData: Omit<User, 'id'>): User => {
+    const users = getUsers();
+    const newUser: User = { ...userData, id: generateId() };
+    saveData('users', [...users, newUser]);
+    return newUser;
+};
 export const updateUser = (updatedUser: User): void => {
     let users = getUsers();
     users = users.map(user => user.id === updatedUser.id ? updatedUser : user);
     saveData('users', users);
 };
+export const deleteUser = (id: string): void => {
+    let users = getUsers();
+    if (users.length <= 1) {
+        console.warn("Cannot delete the last user.");
+        return;
+    }
+    users = users.filter(u => u.id !== id);
+    saveData('users', users);
+};
+
 
 // Properties
 export const getProperties = (): Property[] => initData('properties', MOCK_PROPERTIES);
 export const getProperty = (id: string): Property | undefined => getProperties().find(p => p.id === id);
-export const addProperty = (propertyData: Omit<Property, 'id'>): void => {
+export const addProperty = (propertyData: Omit<Property, 'id'>): Property => {
     const properties = getProperties();
     const newProperty: Property = { ...propertyData, id: generateId() };
     saveData('properties', [...properties, newProperty]);
+    return newProperty;
 };
 export const updateProperty = (updatedProperty: Property): void => {
     let properties = getProperties();
@@ -166,20 +182,55 @@ export const deleteExpense = (id: string): void => {
     saveData('expenses', expenses);
 };
 
-// Documents
+// Documents with Deadline Sync
+const syncDeadlineForDocument = (doc: Document, existingDeadline?: Deadline | null) => {
+    let deadlines = getDeadlines();
+    const deadlineForDoc = existingDeadline !== undefined ? existingDeadline : deadlines.find(d => d.documentId === doc.id);
+
+    // Case 1: Document has an expiry date
+    if (doc.expiryDate) {
+        const deadlineData = {
+            propertyId: doc.propertyId,
+            title: `Scadenza documento: ${doc.name}`,
+            dueDate: doc.expiryDate,
+            type: DeadlineType.DOCUMENT,
+            documentId: doc.id,
+        };
+
+        if (deadlineForDoc) { // Update existing deadline
+            updateDeadline({ ...deadlineForDoc, ...deadlineData });
+        } else { // Create new deadline
+            addDeadline(deadlineData);
+        }
+    } 
+    // Case 2: Document had an expiry date which was removed
+    else if (deadlineForDoc) {
+        deleteDeadline(deadlineForDoc.id);
+    }
+};
+
 export const getDocuments = (): Document[] => initData('documents', MOCK_DOCUMENTS);
+
 export const addDocument = (docData: Omit<Document, 'id'>): void => {
     const documents = getDocuments();
     const newDoc: Document = { ...docData, id: generateId() };
     saveData('documents', [...documents, newDoc]);
+    syncDeadlineForDocument(newDoc, null);
 };
+
 export const updateDocument = (updatedDoc: Document): void => {
     let documents = getDocuments();
-    documents = documents.map(d => d.id === updatedDoc.id ? updatedDoc : d);
+    documents = documents.map(d => (d.id === updatedDoc.id ? updatedDoc : d));
     saveData('documents', documents);
+    syncDeadlineForDocument(updatedDoc);
 };
+
 export const deleteDocument = (id: string): void => {
     let documents = getDocuments();
+    const docToDelete = documents.find(d => d.id === id);
+    if (docToDelete) {
+        syncDeadlineForDocument({ ...docToDelete, expiryDate: undefined }); // This will trigger deletion of the linked deadline
+    }
     documents = documents.filter(d => d.id !== id);
     saveData('documents', documents);
 };
