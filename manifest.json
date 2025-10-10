@@ -1,0 +1,24 @@
+{
+  "short_name": "Gest-Immo",
+  "name": "Gestore Immobili PRO",
+  "description": "Un'applicazione completa per la gestione di immobili di proprietà. Traccia contratti, scadenze, documenti, spese e manutenzioni con un'interfaccia moderna e intuitiva.",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "scope": "/",
+  "theme_color": "#1E40AF",
+  "background_color": "#F9FAFB"
+}
