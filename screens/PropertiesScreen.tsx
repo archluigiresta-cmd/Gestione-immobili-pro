@@ -1,9 +1,9 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
-import { MOCK_PROPERTIES } from '../constants';
 import { Property } from '../types';
 import { MapPin, Home, Bed, Maximize, PlusCircle } from 'lucide-react';
+import * as dataService from '../services/dataService';
+import AddPropertyModal from '../components/modals/AddPropertyModal';
 
 const PropertyCard: React.FC<{ property: Property }> = ({ property }) => (
   <Card>
@@ -34,12 +34,25 @@ const PropertyCard: React.FC<{ property: Property }> = ({ property }) => (
 );
 
 const PropertiesScreen: React.FC = () => {
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    setProperties(dataService.getProperties());
+  }, []);
+
+  const handleAddProperty = (newProperty: Omit<Property, 'id' | 'imageUrl' | 'isRented' | 'rentAmount'>) => {
+    const addedProperty = dataService.addProperty(newProperty);
+    setProperties(prev => [...prev, addedProperty]);
+    setIsModalOpen(false);
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-dark">Elenco Immobili</h1>
         <button
-          onClick={() => alert("Funzionalità 'Aggiungi Immobile' da implementare.")}
+          onClick={() => setIsModalOpen(true)}
           className="flex items-center px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm"
         >
           <PlusCircle size={18} className="mr-2" />
@@ -47,10 +60,16 @@ const PropertiesScreen: React.FC = () => {
         </button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {MOCK_PROPERTIES.map(property => (
+        {properties.map(property => (
           <PropertyCard key={property.id} property={property} />
         ))}
       </div>
+
+      <AddPropertyModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onAddProperty={handleAddProperty}
+      />
     </div>
   );
 };
