@@ -1,19 +1,56 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
-import { MOCK_DOCUMENTS, MOCK_PROPERTIES } from '../constants';
+import * as dataService from '../services/dataService';
 import { Document } from '../types';
-import { FileText, Download, Clock, PlusCircle } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Download, FileText } from 'lucide-react';
+import AddDocumentModal from '../components/modals/AddDocumentModal';
+import EditDocumentModal from '../components/modals/EditDocumentModal';
+import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
 
 const DocumentsScreen: React.FC = () => {
-    const getPropertyName = (id: string) => MOCK_PROPERTIES.find(p => p.id === id)?.name || 'N/A';
-  
-    return (
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [isAddModalOpen, setAddModalOpen] = useState(false);
+  const [editingDocument, setEditingDocument] = useState<Document | null>(null);
+  const [deletingDocument, setDeletingDocument] = useState<Document | null>(null);
+
+  useEffect(() => {
+    loadDocuments();
+  }, []);
+
+  const loadDocuments = () => {
+    setDocuments(dataService.getDocuments());
+  };
+
+  const getPropertyName = (id: string) => dataService.getProperties().find(p => p.id === id)?.name || 'N/A';
+
+  const handleAddDocument = (docData: Omit<Document, 'id'>) => {
+    dataService.addDocument(docData);
+    loadDocuments();
+    setAddModalOpen(false);
+  };
+
+  const handleUpdateDocument = (updatedDoc: Document) => {
+    dataService.updateDocument(updatedDoc);
+    loadDocuments();
+    setEditingDocument(null);
+  };
+
+  const handleDeleteDocument = () => {
+    if (deletingDocument) {
+      dataService.deleteDocument(deletingDocument.id);
+      loadDocuments();
+      setDeletingDocument(null);
+    }
+  };
+
+  return (
+    <>
       <Card className="p-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-dark">Archivio Documenti</h1>
           <button
-            onClick={() => alert("Funzionalità 'Carica Documento' da implementare.")}
+            onClick={() => setAddModalOpen(true)}
             className="flex items-center px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm"
           >
             <PlusCircle size={18} className="mr-2" />
@@ -22,34 +59,31 @@ const DocumentsScreen: React.FC = () => {
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
-            <thead className="bg-gray-50">
-              <tr>
+            <thead>
+              <tr className="bg-gray-50">
                 <th className="p-3 text-sm font-semibold text-gray-600">Nome Documento</th>
-                <th className="p-3 text-sm font-semibold text-gray-600">Immobile</th>
+                <th className="p-3 text-sm font-semibold text-gray-600">Immobile Associato</th>
                 <th className="p-3 text-sm font-semibold text-gray-600">Tipo</th>
                 <th className="p-3 text-sm font-semibold text-gray-600">Data Caricamento</th>
-                <th className="p-3 text-sm font-semibold text-gray-600 text-center">Azione</th>
+                <th className="p-3 text-sm font-semibold text-gray-600 text-center">Azioni</th>
               </tr>
             </thead>
             <tbody>
-              {MOCK_DOCUMENTS.map((doc: Document) => (
+              {documents.map(doc => (
                 <tr key={doc.id} className="border-b hover:bg-gray-50">
                   <td className="p-3 text-dark font-medium flex items-center">
-                    <FileText size={18} className="text-primary mr-2"/>
+                    <FileText size={18} className="mr-2 text-primary" />
                     {doc.name}
                   </td>
                   <td className="p-3 text-gray-700">{getPropertyName(doc.propertyId)}</td>
-                  <td className="p-3 text-gray-700">
-                    <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-md">{doc.type}</span>
-                  </td>
-                  <td className="p-3 text-gray-700 flex items-center">
-                    <Clock size={14} className="mr-1 text-gray-400"/>
-                    {new Date(doc.uploadDate).toLocaleDateString('it-IT')}
-                  </td>
+                  <td className="p-3 text-gray-700">{doc.type}</td>
+                  <td className="p-3 text-gray-700">{new Date(doc.uploadDate).toLocaleDateString('it-IT')}</td>
                   <td className="p-3 text-center">
-                    <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" className="inline-block text-primary hover:text-primary-hover" title="Scarica">
-                      <Download size={20} />
-                    </a>
+                    <div className="flex justify-center items-center gap-4">
+                      <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary"><Download size={18} /></a>
+                      <button onClick={() => setEditingDocument(doc)} className="text-blue-600 hover:text-blue-800"><Edit size={18} /></button>
+                      <button onClick={() => setDeletingDocument(doc)} className="text-red-600 hover:text-red-800"><Trash2 size={18} /></button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -57,7 +91,30 @@ const DocumentsScreen: React.FC = () => {
           </table>
         </div>
       </Card>
-    );
+
+      <AddDocumentModal
+        isOpen={isAddModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onSave={handleAddDocument}
+      />
+      {editingDocument && (
+        <EditDocumentModal
+          isOpen={!!editingDocument}
+          onClose={() => setEditingDocument(null)}
+          onSave={handleUpdateDocument}
+          document={editingDocument}
+        />
+      )}
+      {deletingDocument && (
+        <ConfirmDeleteModal
+          isOpen={!!deletingDocument}
+          onClose={() => setDeletingDocument(null)}
+          onConfirm={handleDeleteDocument}
+          message={`Sei sicuro di voler eliminare il documento "${deletingDocument.name}"?`}
+        />
+      )}
+    </>
+  );
 };
 
 export default DocumentsScreen;

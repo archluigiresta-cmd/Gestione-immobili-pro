@@ -1,13 +1,28 @@
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export enum PropertyType {
+  APARTMENT = 'Appartamento',
+  VILLA = 'Villa',
+  OFFICE = 'Ufficio',
+  SHOP = 'Negozio',
+  GARAGE = 'Garage',
+}
+
 export interface Property {
   id: string;
   name: string;
   address: string;
-  type: 'Appartamento' | 'Villa' | 'Ufficio' | 'Negozio';
-  imageUrl: string;
-  surface: number;
+  type: PropertyType;
+  surface: number; // in square meters
   rooms: number;
   isRented: boolean;
-  rentAmount: number | null;
+  rentAmount?: number;
+  imageUrl: string;
 }
 
 export interface Tenant {
@@ -22,41 +37,33 @@ export interface Contract {
   id: string;
   propertyId: string;
   tenantId: string;
-  startDate: string;
-  endDate:string;
+  startDate: string; // ISO date string
+  endDate: string; // ISO date string
   rentAmount: number;
   documentUrl: string;
 }
 
 export enum DeadlineType {
   RENT = 'Affitto',
-  TAX = 'Tassa',
+  TAX = 'Tasse',
   MAINTENANCE = 'Manutenzione',
-  CONTRACT = 'Contratto'
+  CONTRACT = 'Contratto',
+  OTHER = 'Altro',
 }
 
 export interface Deadline {
   id: string;
   propertyId: string;
   title: string;
-  dueDate: string;
-  type: DeadlineType;
+  dueDate: string; // ISO date string
   isCompleted: boolean;
-}
-
-export interface Document {
-  id: string;
-  propertyId: string;
-  name: string;
-  type: 'Contratto' | 'Planimetria' | 'APE' | 'Fattura' | 'Altro';
-  uploadDate: string;
-  fileUrl: string;
+  type: DeadlineType;
 }
 
 export enum MaintenanceStatus {
   REQUESTED = 'Richiesta',
   IN_PROGRESS = 'In Corso',
-  COMPLETED = 'Completata'
+  COMPLETED = 'Completata',
 }
 
 export interface Maintenance {
@@ -64,7 +71,8 @@ export interface Maintenance {
   propertyId: string;
   description: string;
   status: MaintenanceStatus;
-  requestDate: string;
+  requestDate: string; // ISO date string
+  completionDate?: string; // ISO date string
   cost: number | null;
 }
 
@@ -73,7 +81,7 @@ export enum ExpenseCategory {
   UTILITIES = 'Utenze',
   TAXES = 'Tasse',
   MAINTENANCE = 'Manutenzione',
-  OTHER = 'Altro'
+  OTHER = 'Altro',
 }
 
 export interface Expense {
@@ -82,9 +90,18 @@ export interface Expense {
   description: string;
   amount: number;
   category: ExpenseCategory;
-  date: string;
+  date: string; // ISO date string
   providerUrl?: string;
   invoiceUrl?: string;
+}
+
+export interface Document {
+    id: string;
+    name: string;
+    propertyId: string;
+    type: string;
+    uploadDate: string; // ISO date string
+    fileUrl: string;
 }
 
 export enum PaymentStatus {
@@ -98,14 +115,9 @@ export interface Payment {
   contractId: string;
   propertyId: string;
   amount: number;
-  paymentDate: string | null;
+  paymentDate: string | null; // ISO date string
+  dueDate: string; // ISO date string
   referenceMonth: number;
   referenceYear: number;
   status: PaymentStatus;
-}
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
 }

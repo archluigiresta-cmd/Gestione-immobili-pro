@@ -6,8 +6,6 @@ import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
 import { Deadline, Property, Expense } from '../types';
 import { Screen } from '../App';
-// Fix: Import MOCK_DEADLINES from constants file
-import { MOCK_DEADLINES } from '../constants';
 
 interface StatCardProps {
   title: string;
@@ -45,8 +43,8 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate }) => {
   useEffect(() => {
     // In a real app, you'd fetch this data. Here we use the service.
     setProperties(dataService.getProperties());
-    // MOCK_DEADLINES is still used as we haven't implemented its CRUD yet
-    setDeadlines(MOCK_DEADLINES); 
+    // Fix: Use dataService to fetch deadlines.
+    setDeadlines(dataService.getDeadlines()); 
     setExpenses(dataService.getExpenses());
   }, []);
 
@@ -74,7 +72,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate }) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard title="Entrate Mensili Stimate" value={`€ ${totalRent.toLocaleString('it-IT')}`} icon={<DollarSign className="text-white"/>} color="bg-green-500" />
         <StatCard title="Immobili Occupati" value={`${occupancyRate.toFixed(0)}%`} icon={<Building className="text-white"/>} color="bg-blue-500" onClick={() => onNavigate('properties')} />
-        <StatCard title="Scadenze Prossime" value={upcomingDeadlines} icon={<AlertTriangle className="text-white"/>} color="bg-yellow-500" />
+        <StatCard title="Scadenze Prossime" value={upcomingDeadlines} icon={<AlertTriangle className="text-white"/>} color="bg-yellow-500" onClick={() => onNavigate('deadlines')} />
         <StatCard title="Task Completati" value={deadlines.filter(d => d.isCompleted).length} icon={<CheckCircle className="text-white"/>} color="bg-indigo-500" />
       </div>
 

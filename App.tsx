@@ -1,144 +1,180 @@
 
 import React, { useState, useEffect } from 'react';
-import { Home, FileText, Calendar, File, Users, Wrench, DollarSign, Building2, CreditCard, Settings, Download } from 'lucide-react';
+import { Home, Building2, FileText, Calendar, Users, Wrench, CircleDollarSign, Download, BarChart2, Settings, LifeBuoy } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import * as dataService from './services/dataService';
+import { User } from './types';
+
+import Sidebar from './components/layout/Sidebar';
+import Header from './components/layout/Header';
+import LoginScreen from './screens/LoginScreen';
+import SplashScreen from './screens/SplashScreen';
 import DashboardScreen from './screens/DashboardScreen';
 import PropertiesScreen from './screens/PropertiesScreen';
+import PropertyDetailScreen from './screens/PropertyDetailScreen';
 import ContractsScreen from './screens/ContractsScreen';
 import DeadlinesScreen from './screens/DeadlinesScreen';
-import DocumentsScreen from './screens/DocumentsScreen';
 import TenantsScreen from './screens/TenantsScreen';
 import MaintenanceScreen from './screens/MaintenanceScreen';
 import ExpensesScreen from './screens/ExpensesScreen';
 import PaymentsScreen from './screens/PaymentsScreen';
 import SettingsScreen from './screens/SettingsScreen';
-import LoginScreen from './screens/LoginScreen';
-import Sidebar from './components/layout/Sidebar';
-import Header from './components/layout/Header';
-import { User } from './types';
-import * as dataService from './services/dataService';
+import DocumentsScreen from './screens/DocumentsScreen';
+import ReportsScreen from './screens/ReportsScreen';
 
 
-export type Screen = 'dashboard' | 'properties' | 'contracts' | 'deadlines' | 'documents' | 'tenants' | 'maintenance' | 'expenses' | 'payments' | 'settings' | 'install';
+export type Screen = 'dashboard' | 'properties' | 'propertyDetail' | 'contracts' | 'documents' | 'deadlines' | 'tenants' | 'maintenance' | 'expenses' | 'payments' | 'reports' | 'settings' | 'help' | 'install';
 
-export const navigationItems = [
-  { name: 'Dashboard', icon: Home, screen: 'dashboard' as Screen },
-  { name: 'Immobili', icon: Building2, screen: 'properties' as Screen },
-  { name: 'Contratti', icon: FileText, screen: 'contracts' as Screen },
-  { name: 'Scadenze', icon: Calendar, screen: 'deadlines' as Screen },
-  { name: 'Documenti', icon: File, screen: 'documents' as Screen },
-  { name: 'Inquilini', icon: Users, screen: 'tenants' as Screen },
-  { name: 'Manutenzioni', icon: Wrench, screen: 'maintenance' as Screen },
-  { name: 'Spese', icon: DollarSign, screen: 'expenses' as Screen },
-  { name: 'Pagamenti', icon: CreditCard, screen: 'payments' as Screen },
+const screenComponents: Record<Screen, React.FC<any>> = {
+  dashboard: DashboardScreen,
+  properties: PropertiesScreen,
+  propertyDetail: PropertyDetailScreen,
+  contracts: ContractsScreen,
+  documents: DocumentsScreen,
+  deadlines: DeadlinesScreen,
+  tenants: TenantsScreen,
+  maintenance: MaintenanceScreen,
+  expenses: ExpensesScreen,
+  payments: PaymentsScreen,
+  reports: ReportsScreen,
+  settings: SettingsScreen,
+  help: () => <div className="p-6">Help & Support coming soon.</div>,
+  install: () => null, // Placeholder, handled by button
+};
+
+const getScreenName = (screen: Screen): string => {
+  const item = [...navigationItems, ...secondaryNavigationItems].find(i => i.screen === screen);
+  if (screen === 'propertyDetail') return 'Dettaglio Immobile';
+  return item ? item.name : 'Dashboard';
+};
+
+interface NavItem {
+  screen: Screen;
+  name: string;
+  icon: LucideIcon;
+}
+
+export const navigationItems: NavItem[] = [
+  { screen: 'dashboard', name: 'Dashboard', icon: Home },
+  { screen: 'properties', name: 'Immobili', icon: Building2 },
+  { screen: 'contracts', name: 'Contratti', icon: FileText },
+  { screen: 'payments', name: 'Pagamenti', icon: CircleDollarSign },
+  { screen: 'deadlines', name: 'Scadenze', icon: Calendar },
+  { screen: 'tenants', name: 'Inquilini', icon: Users },
+  { screen: 'maintenance', name: 'Manutenzioni', icon: Wrench },
+  { screen: 'expenses', name: 'Spese', icon: CircleDollarSign },
+  { screen: 'documents', name: 'Documenti', icon: FileText },
+  { screen: 'reports', name: 'Report', icon: BarChart2 },
 ];
 
-export const secondaryNavigationItems = [
-    { name: 'Impostazioni', icon: Settings, screen: 'settings' as Screen },
-    { name: 'Installa App', icon: Download, screen: 'install' as Screen },
+export const secondaryNavigationItems: NavItem[] = [
+  { screen: 'settings', name: 'Impostazioni', icon: Settings },
+  { screen: 'help', name: 'Aiuto e Supporto', icon: LifeBuoy },
+  { screen: 'install', name: 'Installa App', icon: Download },
 ];
 
 const App: React.FC = () => {
-  const [activeScreen, setActiveScreen] = useState<Screen>('dashboard');
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [installPromptEvent, setInstallPromptEvent] = useState<Event | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setSidebarOpen] = useState(false);
+  const [activeScreen, setActiveScreen] = useState<Screen>('dashboard');
+  const [propertyId, setPropertyId] = useState<string | null>(null);
+  
+  const [isInstallable, setIsInstallable] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   useEffect(() => {
-    // Check for an active user session in localStorage on initial load
-    const currentUserId = localStorage.getItem('currentUserId');
-    if (currentUserId) {
-      const users = dataService.getUsers();
-      const user = users.find(u => u.id === currentUserId);
-      setCurrentUser(user || null);
+    // Check for PWA install prompt
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      setIsInstallable(true);
+      setDeferredPrompt(e);
+    });
+
+    // Check for logged-in user
+    const loggedInUserId = localStorage.getItem('loggedInUserId');
+    if (loggedInUserId) {
+      const currentUser = dataService.getUser(loggedInUserId);
+      setUser(currentUser || null);
     }
-
-    const handleBeforeInstallPrompt = (event: Event) => {
-      event.preventDefault();
-      setInstallPromptEvent(event);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
+    setLoading(false);
   }, []);
 
-  const handleInstall = () => {
-    if (!installPromptEvent) return;
-
-    (installPromptEvent as any).prompt();
-    (installPromptEvent as any).userChoice.then((choiceResult: { outcome: 'accepted' | 'dismissed' }) => {
-      if (choiceResult.outcome === 'accepted') {
-        console.log('User accepted the install prompt');
-      } else {
-        console.log('User dismissed the install prompt');
-      }
-      setInstallPromptEvent(null);
-    });
-  };
-  
   const handleLogin = (userId: string) => {
-    const users = dataService.getUsers();
-    const user = users.find(u => u.id === userId);
-    if(user) {
-        setCurrentUser(user);
-        localStorage.setItem('currentUserId', userId);
-        setActiveScreen('dashboard');
+    const currentUser = dataService.getUser(userId);
+    if (currentUser) {
+      setUser(currentUser);
+      localStorage.setItem('loggedInUserId', userId);
     }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('currentUserId');
-    setCurrentUser(null);
+    setUser(null);
+    localStorage.removeItem('loggedInUserId');
+    setActiveScreen('dashboard');
+  };
+  
+  const handleNavigate = (screen: Screen, id?: string) => {
+    setActiveScreen(screen);
+    if (id) {
+      setPropertyId(id);
+    } else {
+      setPropertyId(null);
+    }
+  };
+  
+  const handleUpdateProfile = (updatedUser: User) => {
+    dataService.updateUser(updatedUser);
+    setUser(updatedUser);
   };
 
-  const handleProfileUpdate = (updatedUserData: User) => {
-    const updatedUser = dataService.updateUser(updatedUserData);
-    setCurrentUser(updatedUser);
-  };
-
-  const renderScreen = () => {
-    if (!currentUser) return null; // Should not happen if logic is correct
-    switch (activeScreen) {
-      case 'dashboard': return <DashboardScreen onNavigate={setActiveScreen} />;
-      case 'properties': return <PropertiesScreen />;
-      case 'contracts': return <ContractsScreen />;
-      case 'deadlines': return <DeadlinesScreen />;
-      case 'documents': return <DocumentsScreen />;
-      case 'tenants': return <TenantsScreen />;
-      case 'maintenance': return <MaintenanceScreen />;
-      case 'expenses': return <ExpensesScreen />;
-      case 'payments': return <PaymentsScreen />;
-      case 'settings': return <SettingsScreen user={currentUser} onUpdateProfile={handleProfileUpdate} />;
-      default: return <DashboardScreen onNavigate={setActiveScreen} />;
+  const handleInstall = () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult: { outcome: string }) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User accepted the install prompt');
+        } else {
+          console.log('User dismissed the install prompt');
+        }
+        setIsInstallable(false);
+        setDeferredPrompt(null);
+      });
     }
   };
 
-  if (!currentUser) {
-    return <LoginScreen onLogin={handleLogin} />;
-  }
+
+  if (loading) return <SplashScreen />;
+  if (!user) return <LoginScreen onLogin={handleLogin} />;
+
+  const CurrentScreenComponent = screenComponents[activeScreen];
 
   return (
     <div className="flex h-screen bg-light">
       <Sidebar 
-        activeScreen={activeScreen} 
-        setActiveScreen={setActiveScreen} 
-        isSidebarOpen={isSidebarOpen} 
+        activeScreen={activeScreen}
+        setActiveScreen={handleNavigate}
+        isSidebarOpen={isSidebarOpen}
         setSidebarOpen={setSidebarOpen}
         onInstall={handleInstall}
-        isInstallable={!!installPromptEvent}
+        isInstallable={isInstallable}
       />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header 
-          currentScreen={[...navigationItems, ...secondaryNavigationItems].find(item => item.screen === activeScreen)?.name || 'Dashboard'} 
+          currentScreen={getScreenName(activeScreen)} 
           toggleSidebar={() => setSidebarOpen(!isSidebarOpen)}
-          user={currentUser}
+          user={user}
           onLogout={handleLogout}
-          onNavigate={setActiveScreen}
+          onNavigate={handleNavigate}
         />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-light p-4 md:p-6 lg:p-8">
-          {renderScreen()}
+        <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6">
+          <CurrentScreenComponent 
+            onNavigate={handleNavigate} 
+            propertyId={propertyId}
+            onBack={() => handleNavigate('properties')}
+            user={user}
+            onUpdateProfile={handleUpdateProfile}
+          />
         </main>
       </div>
     </div>
