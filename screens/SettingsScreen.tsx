@@ -1,9 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { User, Project, ProjectMemberRole } from '../types';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
-import { UserCircle, Edit, Trash2, Shield, PlusCircle, Share2, Users } from 'lucide-react';
+import { UserCircle, Edit, Trash2, Shield, PlusCircle, Share2, Users, HardDrive, Upload } from 'lucide-react';
 
 import EditProfileModal from '../components/modals/EditProfileModal';
 import AddUserModal from '../components/modals/AddUserModal';
@@ -35,6 +35,8 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
     const [deletingUser, setDeletingUser] = useState<User | null>(null);
     const [editingProjectName, setEditingProjectName] = useState(false);
     const [newProjectName, setNewProjectName] = useState(project.name);
+    
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const isOwner = userRole === ProjectMemberRole.OWNER;
     const allUsers = dataService.getUsers();
@@ -81,16 +83,69 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
     
     const handleAddUserAndRefresh = (userData: Omit<User, 'id'>) => {
       onAddUser(userData);
-      // We don't need to manually refresh here as App.tsx will handle state updates,
-      // but in a real app with async calls, you might want to refetch.
     }
+
+    const handleExportData = () => {
+        const dataToBackup: { [key: string]: any } = {};
+        const keysToBackup = ['users', 'projects', 'properties', 'tenants', 'contracts', 'deadlines', 'maintenances', 'expenses', 'documents', 'payments'];
+        
+        keysToBackup.forEach(key => {
+            const data = localStorage.getItem(key);
+            if (data) {
+                dataToBackup[key] = JSON.parse(data);
+            }
+        });
+
+        const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
+            JSON.stringify(dataToBackup, null, 2)
+        )}`;
+        
+        const link = document.createElement("a");
+        const date = new Date().toISOString().split('T')[0];
+        link.href = jsonString;
+        link.download = `gest-immo-backup-${date}.json`;
+        link.click();
+    };
+
+    const handleImportClick = () => {
+        fileInputRef.current?.click();
+    };
+    
+    const handleImportData = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const fileReader = new FileReader();
+        if (!event.target.files || event.target.files.length === 0) return;
+
+        fileReader.readAsText(event.target.files[0], "UTF-8");
+        fileReader.onload = e => {
+            if (!e.target?.result || typeof e.target.result !== 'string') return;
+            
+            const confirmation = window.confirm(
+                "ATTENZIONE: L'importazione di un backup sovrascriverà tutti i dati attuali. Questa azione è irreversibile. Continuare?"
+            );
+
+            if (confirmation) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    Object.keys(importedData).forEach(key => {
+                        localStorage.setItem(key, JSON.stringify(importedData[key]));
+                    });
+                    alert("Importazione completata con successo! L'applicazione verrà ricaricata.");
+                    window.location.reload();
+                } catch (error) {
+                    alert("Errore: Il file selezionato non è un backup valido.");
+                    console.error("Import failed:", error);
+                }
+            }
+        };
+        // Reset the file input
+        event.target.value = '';
+    };
 
     return (
         <div className="space-y-6">
             <h1 className="text-2xl font-bold text-dark">Impostazioni</h1>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* User Profile Section */}
                 <Card className="p-6">
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-xl font-bold text-dark">Il Mio Profilo</h2>
@@ -107,7 +162,6 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
                     </div>
                 </Card>
 
-                {/* Project Settings Section */}
                 <Card className="p-6">
                     <h2 className="text-xl font-bold text-dark mb-4">Progetto Corrente</h2>
                     {editingProjectName ? (
@@ -128,7 +182,25 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 </Card>
             </div>
 
-            {/* Project Members Section */}
+            <Card className="p-6">
+                <div className="flex justify-between items-center mb-4">
+                     <h2 className="text-xl font-bold text-dark flex items-center"><HardDrive size={20} className="mr-2 text-primary"/> Gestione Dati Applicazione</h2>
+                </div>
+                <div className="p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800">
+                    <p className="font-bold">Backup e Ripristino</p>
+                    <p className="text-sm">Esporta tutti i dati della tua applicazione in un unico file per sicurezza. Puoi importare questo file in seguito per ripristinare i dati.</p>
+                </div>
+                <div className="flex items-center gap-4 mt-4">
+                     <button onClick={handleExportData} className="flex items-center px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+                        <Upload size={16} className="mr-2"/> Esporta Dati (Backup)
+                    </button>
+                    <button onClick={handleImportClick} className="flex items-center px-4 py-2 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700 transition-colors shadow-sm">
+                        <HardDrive size={16} className="mr-2"/> Importa Dati (Ripristino)
+                    </button>
+                    <input type="file" ref={fileInputRef} onChange={handleImportData} className="hidden" accept=".json"/>
+                </div>
+            </Card>
+
             <Card className="p-6">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-bold text-dark flex items-center"><Users size={20} className="mr-2 text-primary" /> Membri del Progetto</h2>
@@ -182,7 +254,6 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 </div>
             </Card>
             
-            {/* Global User Management - visible only to demo admin for simplicity */}
             {user.id === 'user-1' && (
                 <Card className="p-6">
                     <div className="flex justify-between items-center mb-4">
@@ -222,7 +293,6 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 </Card>
             )}
 
-            {/* Modals */}
             <EditProfileModal isOpen={isEditProfileModalOpen} onClose={() => setEditProfileModalOpen(false)} user={user} onSave={handleSaveProfile} />
             <AddUserModal isOpen={isAddUserModalOpen} onClose={() => setAddUserModalOpen(false)} onSave={handleAddUserAndRefresh} />
             <ShareProjectModal isOpen={isShareModalOpen} onClose={() => setShareModalOpen(false)} onShare={handleShareProject} project={project} />
