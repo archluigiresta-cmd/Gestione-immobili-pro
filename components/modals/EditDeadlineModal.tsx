@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect } from 'react';
 import { Deadline, DeadlineType, Property } from '../../types';
 import { X } from 'lucide-react';
@@ -24,14 +25,21 @@ const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({ isOpen, onClose, 
   
   useEffect(() => {
     if (isOpen) {
-      // FIX: Pass projectId to getProperties
       setProperties(dataService.getProperties(projectId));
     }
   }, [isOpen, projectId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === 'type') {
+        setFormData(prev => ({
+            ...prev,
+            type: value as DeadlineType,
+            ...(value !== DeadlineType.OTHER && { typeOther: '' }),
+        }));
+    } else {
+        setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
   
   const handleToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -44,7 +52,18 @@ const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({ isOpen, onClose, 
       setError('Tutti i campi sono obbligatori.');
       return;
     }
-    onSave(formData);
+     if (formData.type === DeadlineType.OTHER && !formData.typeOther?.trim()) {
+        setError('Specificare il tipo è obbligatorio quando si seleziona "Altro".');
+        return;
+    }
+
+    const { typeOther, ...restOfData } = formData;
+    const dataToSave = {
+        ...restOfData,
+        ...(formData.type === DeadlineType.OTHER && { typeOther }),
+    };
+
+    onSave(dataToSave);
   };
 
   if (!isOpen) return null;
@@ -81,6 +100,19 @@ const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({ isOpen, onClose, 
               </select>
             </div>
           </div>
+           {formData.type === DeadlineType.OTHER && (
+               <div>
+                <label className="block text-sm font-medium text-gray-700">Specifica Tipo</label>
+                <input
+                  type="text"
+                  name="typeOther"
+                  value={formData.typeOther || ''}
+                  onChange={handleChange}
+                  className="mt-1 block w-full input"
+                  placeholder="Es. Fattura fornitore"
+                />
+              </div>
+          )}
            <div className="flex items-center">
                 <input
                     id="isCompleted"

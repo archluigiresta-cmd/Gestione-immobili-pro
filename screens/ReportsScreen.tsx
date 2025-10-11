@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import InteractiveTable, { Column } from '../components/ui/InteractiveTable';
@@ -61,6 +62,42 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
     setExpenses(dataService.getExpenses(projectId));
     setMaintenances(dataService.getMaintenances(projectId));
   }, [projectId]);
+
+  useEffect(() => {
+    if (!reportType) return;
+    const isRegistry = reportTypesConfig.registry.some(r => r.id === reportType);
+    if (isRegistry) {
+        let baseColumns: { key: string, label: string }[] = [];
+        switch(reportType) {
+            case 'properties': 
+                baseColumns = [
+                    { key: 'code', label: 'Codice' }, { key: 'name', label: 'Nome' }, { key: 'address', label: 'Indirizzo' },
+                    { key: 'type', label: 'Tipo' }, { key: 'isRented', label: 'Affittato' },
+                ];
+                break;
+            case 'contracts':
+                baseColumns = [
+                    { key: 'propertyName', label: 'Immobile' }, { key: 'tenantName', label: 'Inquilino' },
+                    { key: 'startDate', label: 'Data Inizio' }, { key: 'endDate', label: 'Data Fine' },
+                    { key: 'rentAmount', label: 'Canone Mensile' },
+                ];
+                break;
+            case 'tenants':
+                baseColumns = [
+                    { key: 'name', label: 'Nome' }, { key: 'email', label: 'Email' }, { key: 'phone', label: 'Telefono' },
+                    { key: 'propertyName', label: 'Immobile Affittato' },
+                ];
+                break;
+            case 'documents':
+                baseColumns = [
+                    { key: 'name', label: 'Nome Documento' }, { key: 'type', label: 'Tipo' },
+                    { key: 'uploadDate', label: 'Data Caricamento' }, { key: 'propertyName', label: 'Immobile' },
+                ];
+                break;
+        }
+        setSelectedColumns(new Set(baseColumns.map(c => c.key)));
+    }
+  }, [reportType]);
   
   const resetFilters = () => {
     setStartDate('');
@@ -98,7 +135,6 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
             ];
             customFields = contracts.flatMap(c => c.customFields);
             break;
-        // Add other cases for tenants, documents etc.
         case 'tenants':
              baseColumns = [
                 { key: 'name', label: 'Nome' }, { key: 'email', label: 'Email' }, { key: 'phone', label: 'Telefono' },
@@ -392,7 +428,7 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
             )}
           </div>
           <div className="mt-6 flex justify-end gap-3">
-              <button onClick={resetFilters} className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Resetta Filtri</button>
+              <button onClick={() => { handleSetReportType(reportType); }} className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Resetta Filtri</button>
               <button 
                 onClick={handleGenerateReport} 
                 className="px-6 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm disabled:bg-gray-400 disabled:cursor-not-allowed"

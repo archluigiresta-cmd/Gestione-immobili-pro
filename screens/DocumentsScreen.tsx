@@ -1,9 +1,10 @@
 
 
+
 import React, { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
-import { Document, User } from '../types';
+import { Document, User, DocumentType } from '../types';
 import { PlusCircle, Edit, Trash2, Download, FileText } from 'lucide-react';
 import AddDocumentModal from '../components/modals/AddDocumentModal';
 import EditDocumentModal from '../components/modals/EditDocumentModal';
@@ -75,24 +76,27 @@ const DocumentsScreen: React.FC<DocumentsScreenProps> = ({ projectId, user }) =>
               </tr>
             </thead>
             <tbody>
-              {documents.map(doc => (
-                <tr key={doc.id} className="border-b hover:bg-gray-50">
-                  <td className="p-3 text-dark font-medium flex items-center">
-                    <FileText size={18} className="mr-2 text-primary" />
-                    {doc.name}
-                  </td>
-                  <td className="p-3 text-gray-700">{getPropertyName(doc.propertyId)}</td>
-                  <td className="p-3 text-gray-700">{doc.type}</td>
-                  <td className="p-3 text-gray-700">{new Date(doc.uploadDate).toLocaleDateString('it-IT')}</td>
-                  <td className="p-3 text-center">
-                    <div className="flex justify-center items-center gap-4">
-                      <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary"><Download size={18} /></a>
-                      <button onClick={() => setEditingDocument(doc)} className="text-blue-600 hover:text-blue-800"><Edit size={18} /></button>
-                      <button onClick={() => setDeletingDocument(doc)} className="text-red-600 hover:text-red-800"><Trash2 size={18} /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {documents.map(doc => {
+                const displayType = (doc.type === DocumentType.OTHER && doc.typeOther) ? doc.typeOther : doc.type;
+                return (
+                    <tr key={doc.id} className="border-b hover:bg-gray-50">
+                    <td className="p-3 text-dark font-medium flex items-center">
+                        <FileText size={18} className="mr-2 text-primary" />
+                        {doc.name}
+                    </td>
+                    <td className="p-3 text-gray-700">{getPropertyName(doc.propertyId)}</td>
+                    <td className="p-3 text-gray-700">{displayType}</td>
+                    <td className="p-3 text-gray-700">{new Date(doc.uploadDate).toLocaleDateString('it-IT')}</td>
+                    <td className="p-3 text-center">
+                        <div className="flex justify-center items-center gap-4">
+                        <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary"><Download size={18} /></a>
+                        <button onClick={() => setEditingDocument(doc)} className="text-blue-600 hover:text-blue-800"><Edit size={18} /></button>
+                        <button onClick={() => setDeletingDocument(doc)} className="text-red-600 hover:text-red-800"><Trash2 size={18} /></button>
+                        </div>
+                    </td>
+                    </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

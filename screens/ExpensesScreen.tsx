@@ -99,37 +99,40 @@ const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ projectId, user }) => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {expenses.map((expense: Expense) => (
-                                    <tr key={expense.id} className="border-b hover:bg-gray-50">
-                                        <td className="p-3 text-dark font-medium">
-                                          {expense.description}
-                                          <span className="block text-xs text-gray-500">{getPropertyName(expense.propertyId)}</span>
-                                        </td>
-                                        <td className="p-3 text-gray-700">{expense.category}</td>
-                                        <td className="p-3 text-gray-700">{new Date(expense.date).toLocaleDateString('it-IT')}</td>
-                                        <td className="p-3 text-gray-900 font-bold text-right">€{expense.amount.toLocaleString('it-IT')}</td>
-                                        <td className="p-3 text-center">
+                                {expenses.map((expense: Expense) => {
+                                    const displayCategory = (expense.category === ExpenseCategory.OTHER && expense.categoryOther) ? expense.categoryOther : expense.category;
+                                    return (
+                                        <tr key={expense.id} className="border-b hover:bg-gray-50">
+                                            <td className="p-3 text-dark font-medium">
+                                            {expense.description}
+                                            <span className="block text-xs text-gray-500">{getPropertyName(expense.propertyId)}</span>
+                                            </td>
+                                            <td className="p-3 text-gray-700">{displayCategory}</td>
+                                            <td className="p-3 text-gray-700">{new Date(expense.date).toLocaleDateString('it-IT')}</td>
+                                            <td className="p-3 text-gray-900 font-bold text-right">€{expense.amount.toLocaleString('it-IT')}</td>
+                                            <td className="p-3 text-center">
+                                                <div className="flex justify-center items-center gap-4">
+                                                    {expense.providerUrl && (
+                                                        <a href={expense.providerUrl} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary" title="Link al gestore">
+                                                            <ExternalLink size={18} />
+                                                        </a>
+                                                    )}
+                                                    {expense.invoiceUrl && (
+                                                        <a href={expense.invoiceUrl} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary" title="Visualizza fattura">
+                                                            <FileText size={18} />
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="p-3 text-center">
                                             <div className="flex justify-center items-center gap-4">
-                                                {expense.providerUrl && (
-                                                    <a href={expense.providerUrl} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary" title="Link al gestore">
-                                                        <ExternalLink size={18} />
-                                                    </a>
-                                                )}
-                                                {expense.invoiceUrl && (
-                                                    <a href={expense.invoiceUrl} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary" title="Visualizza fattura">
-                                                        <FileText size={18} />
-                                                    </a>
-                                                )}
+                                                <button onClick={() => setEditingExpense(expense)} className="text-blue-600 hover:text-blue-800"><Edit size={18} /></button>
+                                                <button onClick={() => setDeletingExpense(expense)} className="text-red-600 hover:text-red-800"><Trash2 size={18} /></button>
                                             </div>
-                                        </td>
-                                        <td className="p-3 text-center">
-                                          <div className="flex justify-center items-center gap-4">
-                                              <button onClick={() => setEditingExpense(expense)} className="text-blue-600 hover:text-blue-800"><Edit size={18} /></button>
-                                              <button onClick={() => setDeletingExpense(expense)} className="text-red-600 hover:text-red-800"><Trash2 size={18} /></button>
-                                          </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                 </div>

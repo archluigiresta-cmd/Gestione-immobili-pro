@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useMemo } from 'react';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
@@ -216,6 +217,7 @@ const DeadlinesScreen: React.FC<DeadlinesScreenProps> = ({ projectId, user }) =>
                   const daysLeft = getDaysDiff(d.dueDate);
                   const isOverdue = !d.isCompleted && daysLeft < 0;
                   const urgencyColor = isOverdue ? 'text-red-500' : daysLeft < 7 ? 'text-yellow-600' : 'text-gray-600';
+                  const displayType = (d.type === DeadlineType.OTHER && d.typeOther) ? d.typeOther : d.type;
 
                   return (
                     <tr key={d.id} className={`border-b hover:bg-gray-50 ${d.isCompleted ? 'bg-green-50' : ''}`}>
@@ -232,7 +234,7 @@ const DeadlinesScreen: React.FC<DeadlinesScreenProps> = ({ projectId, user }) =>
                       <td className="p-3 text-gray-700">{getPropertyName(d.propertyId)}</td>
                       <td className="p-3">
                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getDeadlineTypeStyle(d.type)}`}>
-                          {d.type}
+                          {displayType}
                         </span>
                       </td>
                       <td className="p-3 text-center">

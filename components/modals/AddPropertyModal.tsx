@@ -18,6 +18,7 @@ const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ isOpen, onClose, on
     name: '',
     address: '',
     type: PropertyType.APARTMENT,
+    typeOther: '',
     surface: 0,
     rooms: 1,
     isRented: false,
@@ -47,6 +48,12 @@ const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ isOpen, onClose, on
     if (type === 'checkbox') {
         const checked = (e.target as HTMLInputElement).checked;
         setFormData(prev => ({ ...prev, [name]: checked }));
+    } else if (name === 'type') {
+        setFormData(prev => ({
+            ...prev,
+            type: value as PropertyType,
+            ...(value !== PropertyType.OTHER && { typeOther: '' }),
+        }));
     } else {
         setFormData(prev => ({ ...prev, [name]: (name === 'surface' || name === 'rooms' || name === 'rentAmount') ? Number(value) : value }));
     }
@@ -58,7 +65,16 @@ const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ isOpen, onClose, on
       setError('Codice, nome, indirizzo e superficie sono obbligatori.');
       return;
     }
-    onSave(formData);
+     if (formData.type === PropertyType.OTHER && !formData.typeOther?.trim()) {
+        setError('Specificare il tipo di immobile è obbligatorio quando si seleziona "Altro".');
+        return;
+    }
+    const { typeOther, ...restOfData } = formData;
+    const dataToSave = {
+        ...restOfData,
+        ...(formData.type === PropertyType.OTHER && { typeOther }),
+    };
+    onSave(dataToSave);
     onClose();
   };
 
@@ -118,6 +134,19 @@ const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ isOpen, onClose, on
                 {Object.values(PropertyType).map(type => <option key={type} value={type}>{type}</option>)}
               </select>
             </div>
+             {formData.type === PropertyType.OTHER && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Specifica Tipo</label>
+                <input
+                  type="text"
+                  name="typeOther"
+                  value={formData.typeOther || ''}
+                  onChange={handleChange}
+                  className="mt-1 block w-full input"
+                  placeholder="Es. Casa indipendente"
+                />
+              </div>
+            )}
             <div>
                 <label className="block text-sm font-medium text-gray-700">Superficie (mq)</label>
                 <input type="number" name="surface" value={formData.surface} onChange={handleChange} className="mt-1 block w-full input" />

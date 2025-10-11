@@ -36,6 +36,7 @@ export enum PropertyType {
   OFFICE = 'Ufficio',
   SHOP = 'Negozio',
   GARAGE = 'Garage',
+  OTHER = 'Altro',
 }
 
 export enum CustomFieldType {
@@ -57,6 +58,7 @@ export interface Property {
   name: string;
   address: string;
   type: PropertyType;
+  typeOther?: string;
   surface: number; // in square meters
   rooms: number;
   isRented: boolean;
@@ -107,6 +109,7 @@ export interface Deadline {
   dueDate: string; // ISO date string
   isCompleted: boolean;
   type: DeadlineType;
+  typeOther?: string;
   documentId?: string;
   history: HistoryLog[];
 }
@@ -144,10 +147,19 @@ export interface Expense {
   description: string;
   amount: number;
   category: ExpenseCategory;
+  categoryOther?: string;
   date: string; // ISO date string
   providerUrl?: string;
   invoiceUrl?: string;
   history: HistoryLog[];
+}
+
+export enum DocumentType {
+    CONTRACT = 'Contratto',
+    FLOOR_PLAN = 'Planimetria',
+    CERTIFICATION = 'Certificazione',
+    INSURANCE = 'Assicurazione',
+    OTHER = 'Altro',
 }
 
 export interface Document {
@@ -155,7 +167,8 @@ export interface Document {
     projectId: string;
     name: string;
     propertyId: string;
-    type: string;
+    type: DocumentType;
+    typeOther?: string;
     uploadDate: string; // ISO date string
     fileUrl: string;
     expiryDate?: string;

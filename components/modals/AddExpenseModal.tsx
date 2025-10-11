@@ -11,15 +11,18 @@ interface AddExpenseModalProps {
 }
 
 const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onSave, projectId }) => {
-  const [formData, setFormData] = useState({
+  const getInitialState = () => ({
     propertyId: '',
     description: '',
     amount: 0,
     category: ExpenseCategory.OTHER,
+    categoryOther: '',
     date: new Date().toISOString().split('T')[0],
     providerUrl: '',
     invoiceUrl: '',
   });
+
+  const [formData, setFormData] = useState(getInitialState());
   const [properties, setProperties] = useState<Property[]>([]);
   const [error, setError] = useState('');
 
@@ -31,10 +34,18 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onSa
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: name === 'amount' ? Number(value) : value,
-    }));
+    if (name === 'category') {
+        setFormData(prev => ({
+            ...prev,
+            category: value as ExpenseCategory,
+            ...(value !== ExpenseCategory.OTHER && { categoryOther: '' }),
+        }));
+    } else {
+        setFormData(prev => ({
+            ...prev,
+            [name]: name === 'amount' ? Number(value) : value,
+        }));
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -43,9 +54,26 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onSa
       setError('Immobile, descrizione, importo (> 0) e data sono obbligatori.');
       return;
     }
-    onSave({ ...formData, projectId });
+    if (formData.category === ExpenseCategory.OTHER && !formData.categoryOther?.trim()) {
+        setError('Specificare la categoria è obbligatorio quando si seleziona "Altro".');
+        return;
+    }
+    
+    const { categoryOther, ...restOfData } = formData;
+    const dataToSave = {
+        ...restOfData,
+        ...(formData.category === ExpenseCategory.OTHER && { categoryOther }),
+    };
+
+    onSave({ ...dataToSave, projectId });
     onClose();
   };
+  
+  const handleClose = () => {
+      setFormData(getInitialState());
+      setError('');
+      onClose();
+  }
 
   if (!isOpen) return null;
 
@@ -54,7 +82,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onSa
       <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg m-4 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-dark">Aggiungi Nuova Spesa</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-800">
+          <button onClick={handleClose} className="text-gray-500 hover:text-gray-800">
             <X size={24} />
           </button>
         </div>
@@ -79,6 +107,19 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onSa
               </select>
             </div>
           </div>
+          {formData.category === ExpenseCategory.OTHER && (
+               <div>
+                <label className="block text-sm font-medium text-gray-700">Specifica Categoria</label>
+                <input
+                  type="text"
+                  name="categoryOther"
+                  value={formData.categoryOther || ''}
+                  onChange={handleChange}
+                  className="mt-1 block w-full input"
+                  placeholder="Es. Spese legali"
+                />
+              </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">Importo (€)</label>
@@ -98,7 +139,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onSa
             <input type="url" name="invoiceUrl" value={formData.invoiceUrl} onChange={handleChange} className="mt-1 block w-full input" placeholder="https://..." />
           </div>
           <div className="flex justify-end pt-4">
-            <button type="button" onClick={onClose} className="mr-2 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Annulla</button>
+            <button type="button" onClick={handleClose} className="mr-2 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Annulla</button>
             <button type="submit" className="px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm">Aggiungi Spesa</button>
           </div>
         </form>

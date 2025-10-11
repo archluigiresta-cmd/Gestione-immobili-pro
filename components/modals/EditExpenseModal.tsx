@@ -22,17 +22,24 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ isOpen, onClose, on
 
   useEffect(() => {
     if (isOpen) {
-      // FIX: Pass projectId to getProperties
       setProperties(dataService.getProperties(projectId));
     }
   }, [isOpen, projectId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: name === 'amount' ? Number(value) : value,
-    }));
+    if (name === 'category') {
+        setFormData(prev => ({
+            ...prev,
+            category: value as ExpenseCategory,
+            ...(value !== ExpenseCategory.OTHER && { categoryOther: '' }),
+        }));
+    } else {
+        setFormData(prev => ({
+        ...prev,
+        [name]: name === 'amount' ? Number(value) : value,
+        }));
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -41,7 +48,18 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ isOpen, onClose, on
       setError('Immobile, descrizione, importo (> 0) e data sono obbligatori.');
       return;
     }
-    onSave(formData);
+     if (formData.category === ExpenseCategory.OTHER && !formData.categoryOther?.trim()) {
+        setError('Specificare la categoria è obbligatorio quando si seleziona "Altro".');
+        return;
+    }
+
+    const { categoryOther, ...restOfData } = formData;
+    const dataToSave = {
+        ...restOfData,
+        ...(formData.category === ExpenseCategory.OTHER && { categoryOther }),
+    };
+
+    onSave(dataToSave);
   };
 
   if (!isOpen) return null;
@@ -76,6 +94,19 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ isOpen, onClose, on
               </select>
             </div>
           </div>
+          {formData.category === ExpenseCategory.OTHER && (
+               <div>
+                <label className="block text-sm font-medium text-gray-700">Specifica Categoria</label>
+                <input
+                  type="text"
+                  name="categoryOther"
+                  value={formData.categoryOther || ''}
+                  onChange={handleChange}
+                  className="mt-1 block w-full input"
+                  placeholder="Es. Spese legali"
+                />
+              </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">Importo (€)</label>

@@ -22,6 +22,7 @@ import PaymentsScreen from './screens/PaymentsScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import DocumentsScreen from './screens/DocumentsScreen';
 import ReportsScreen from './screens/ReportsScreen';
+import HelpScreen from './screens/HelpScreen';
 
 
 export type Screen = 'dashboard' | 'properties' | 'propertyDetail' | 'contracts' | 'documents' | 'deadlines' | 'tenants' | 'maintenance' | 'expenses' | 'payments' | 'reports' | 'settings' | 'help' | 'install';
@@ -39,7 +40,7 @@ const screenComponents: Record<Screen, React.FC<any>> = {
   payments: PaymentsScreen,
   reports: ReportsScreen,
   settings: SettingsScreen,
-  help: () => <div className="p-6">Help & Support coming soon.</div>,
+  help: HelpScreen,
   install: () => null, // Placeholder, handled by button
 };
 

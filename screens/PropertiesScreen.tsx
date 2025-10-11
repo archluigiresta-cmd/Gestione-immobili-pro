@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
-import { Property, ProjectMemberRole, User } from '../types';
+import { Property, ProjectMemberRole, User, PropertyType } from '../types';
 import { PlusCircle, Edit, Trash2, Eye, MapPin } from 'lucide-react';
 import AddPropertyModal from '../components/modals/AddPropertyModal';
 import EditPropertyModal from '../components/modals/EditPropertyModal';
@@ -17,6 +17,7 @@ interface PropertiesScreenProps {
 
 
 const PropertyCard: React.FC<{ property: Property, onEdit: () => void, onDelete: () => void, onView: () => void, disabled: boolean }> = ({ property, onEdit, onDelete, onView, disabled }) => {
+    const displayType = (property.type === PropertyType.OTHER && property.typeOther) ? property.typeOther : property.type;
     return (
         <Card className="flex flex-col group">
             <div className="relative">
@@ -34,7 +35,7 @@ const PropertyCard: React.FC<{ property: Property, onEdit: () => void, onDelete:
                 <p className="text-sm text-gray-500 flex items-center mt-1"><MapPin size={14} className="mr-1.5"/>{property.address}</p>
                 
                 <div className="mt-2 text-sm text-gray-700">
-                    <p>{property.type} - {property.surface} mq - {property.rooms} locali</p>
+                    <p>{displayType} - {property.surface} mq - {property.rooms} locali</p>
                 </div>
                 <div className="mt-auto pt-4 flex justify-between items-center">
                     <span className={`px-3 py-1 text-xs font-semibold rounded-full ${property.isRented ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>

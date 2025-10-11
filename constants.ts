@@ -1,4 +1,4 @@
-import { Property, PropertyType, Tenant, Contract, Payment, PaymentStatus, User, Deadline, DeadlineType, Maintenance, MaintenanceStatus, Expense, ExpenseCategory, Document, Project, ProjectMemberRole, CustomFieldType } from './types';
+import { Property, PropertyType, Tenant, Contract, Payment, PaymentStatus, User, Deadline, DeadlineType, Maintenance, MaintenanceStatus, Expense, ExpenseCategory, Document, DocumentType, Project, ProjectMemberRole, CustomFieldType } from './types';
 
 export const MOCK_USERS: User[] = [
   { id: 'user-1', name: 'Luigi Resta', email: 'arch.luigiresta@gmail.com' },
@@ -111,10 +111,10 @@ export const MOCK_EXPENSES: Expense[] = [
 ];
 
 export const MOCK_DOCUMENTS: Document[] = [
-    { id: 'doc-1', projectId: 'proj-1', name: 'Contratto affitto Verdi', propertyId: 'prop-1', type: 'Contratto', uploadDate: '2023-01-05', fileUrl: '#', customFields: [], history: [] },
-    { id: 'doc-2', projectId: 'proj-1', name: 'Planimetria Villa Paradiso', propertyId: 'prop-1', type: 'Planimetria', uploadDate: '2022-11-20', fileUrl: '#', customFields: [], history: [] },
-    { id: 'doc-3', projectId: 'proj-1', name: 'Certificazione energetica Apt. Centrale', propertyId: 'prop-2', type: 'Certificazione', uploadDate: '2022-05-10', fileUrl: '#', customFields: [], history: [] },
-    { id: 'doc-4', projectId: 'proj-1', name: 'Polizza Assicurativa Ufficio', propertyId: 'prop-3', type: 'Assicurazione', uploadDate: '2024-01-20', fileUrl: '#', expiryDate: '2025-01-31', customFields: [], history: [] },
+    { id: 'doc-1', projectId: 'proj-1', name: 'Contratto affitto Verdi', propertyId: 'prop-1', type: DocumentType.CONTRACT, uploadDate: '2023-01-05', fileUrl: '#', customFields: [], history: [] },
+    { id: 'doc-2', projectId: 'proj-1', name: 'Planimetria Villa Paradiso', propertyId: 'prop-1', type: DocumentType.FLOOR_PLAN, uploadDate: '2022-11-20', fileUrl: '#', customFields: [], history: [] },
+    { id: 'doc-3', projectId: 'proj-1', name: 'Certificazione energetica Apt. Centrale', propertyId: 'prop-2', type: DocumentType.CERTIFICATION, uploadDate: '2022-05-10', fileUrl: '#', customFields: [], history: [] },
+    { id: 'doc-4', projectId: 'proj-1', name: 'Polizza Assicurativa Ufficio', propertyId: 'prop-3', type: DocumentType.INSURANCE, uploadDate: '2024-01-20', fileUrl: '#', expiryDate: '2025-01-31', customFields: [], history: [] },
 ];
 
 const currentYear = new Date().getFullYear();
