@@ -96,12 +96,7 @@ const App: React.FC = () => {
       setIsInstallable(true);
       setDeferredPrompt(e);
     });
-
-    const loggedInUserId = localStorage.getItem('loggedInUserId');
-    if (loggedInUserId) {
-      const currentUser = dataService.getUser(loggedInUserId);
-      setUser(currentUser || null);
-    }
+    
     setLoading(false);
   }, []);
 
@@ -109,7 +104,6 @@ const App: React.FC = () => {
     const currentUser = dataService.getUser(userId);
     if (currentUser) {
       setUser(currentUser);
-      localStorage.setItem('loggedInUserId', userId);
     }
   };
   
@@ -121,7 +115,6 @@ const App: React.FC = () => {
   const handleLogout = () => {
     setUser(null);
     setSelectedProject(null);
-    localStorage.removeItem('loggedInUserId');
     setActiveScreen('dashboard');
   };
 
