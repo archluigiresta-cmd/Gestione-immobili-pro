@@ -1,262 +1,244 @@
 
-import React, { useState, useEffect } from 'react';
-import Card from '../components/ui/Card';
+import React, { useState } from 'react';
 import { User, Project, ProjectMemberRole } from '../types';
-import { UserCircle, Palette, Bell, CheckCircle, Users as UsersIcon, PlusCircle, Trash2, Briefcase } from 'lucide-react';
+import Card from '../components/ui/Card';
+import * as dataService from '../services/dataService';
+import { UserCircle, Edit, Trash2, Shield, PlusCircle, Share2, Users } from 'lucide-react';
+
 import EditProfileModal from '../components/modals/EditProfileModal';
 import AddUserModal from '../components/modals/AddUserModal';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
 import ShareProjectModal from '../components/modals/ShareProjectModal';
-import * as dataService from '../services/dataService';
 
 interface SettingsScreenProps {
   user: User;
   project: Project;
-  userRole: ProjectMemberRole;
-  onUpdateProfile: (user: User) => void;
+  onUpdateProfile: (updatedUser: User) => void;
+  onUpdateProject: (updatedProject: Project) => void;
   onAddUser: (userData: Omit<User, 'id'>) => void;
   onDeleteUser: (userId: string) => void;
-  onUpdateProject: (project: Project) => void;
+  userRole: ProjectMemberRole;
 }
 
-const ToggleSwitch: React.FC<{ label: string; enabled: boolean; onChange: (enabled: boolean) => void; }> = ({ label, enabled, onChange }) => (
-    <div className="flex items-center justify-between py-2">
-        <span className="text-gray-700">{label}</span>
-        <button
-            onClick={() => onChange(!enabled)}
-            className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${enabled ? 'bg-primary' : 'bg-gray-200'}`}
-        >
-            <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${enabled ? 'translate-x-6' : 'translate-x-1'}`}/>
-        </button>
-    </div>
-);
-
-
-const SettingsScreen: React.FC<SettingsScreenProps> = ({ user, project, userRole, onUpdateProfile, onAddUser, onDeleteUser, onUpdateProject }) => {
-    const [settings, setSettings] = useState({
-        darkMode: false,
-        emailNotifications: true,
-    });
-    const [isProfileModalOpen, setProfileModalOpen] = useState(false);
+const SettingsScreen: React.FC<SettingsScreenProps> = ({
+  user,
+  project,
+  onUpdateProfile,
+  onUpdateProject,
+  onAddUser,
+  onDeleteUser,
+  userRole
+}) => {
+    const [isEditProfileModalOpen, setEditProfileModalOpen] = useState(false);
     const [isAddUserModalOpen, setAddUserModalOpen] = useState(false);
-    const [isShareProjectModalOpen, setShareProjectModalOpen] = useState(false);
+    const [isShareModalOpen, setShareModalOpen] = useState(false);
     const [deletingUser, setDeletingUser] = useState<User | null>(null);
-    const [allUsers, setAllUsers] = useState<User[]>([]);
-    const [showSuccess, setShowSuccess] = useState(false);
-    const [successMessage, setSuccessMessage] = useState("Modifiche salvate!");
+    const [editingProjectName, setEditingProjectName] = useState(false);
+    const [newProjectName, setNewProjectName] = useState(project.name);
 
-    useEffect(() => {
-        loadUsers();
-    }, []);
-
-    const loadUsers = () => {
-        setAllUsers(dataService.getUsers());
-    };
-
-    const handleSettingChange = (key: keyof typeof settings, value: boolean) => {
-        setSettings(prev => ({...prev, [key]: value}));
-    };
+    const isOwner = userRole === ProjectMemberRole.OWNER;
+    const allUsers = dataService.getUsers();
     
-    const showSuccessWithMessage = (message = "Modifiche salvate!") => {
-        setSuccessMessage(message);
-        setShowSuccess(true);
-        setTimeout(() => setShowSuccess(false), 3000);
-    }
-
-    const handleSaveSettings = () => {
-        console.log("Impostazioni salvate:", settings);
-        showSuccessWithMessage();
-    }
+    const projectMembers = project.members.map(member => {
+        const memberUser = allUsers.find(u => u.id === member.userId);
+        return {
+            ...member,
+            name: memberUser?.name || 'Utente Sconosciuto',
+            email: memberUser?.email || 'N/A',
+        };
+    });
 
     const handleSaveProfile = (updatedUser: User) => {
         onUpdateProfile(updatedUser);
-        setProfileModalOpen(false);
-        showSuccessWithMessage();
-        loadUsers();
-    }
-
-    const handleSaveNewUser = (userData: Omit<User, 'id'>) => {
-        onAddUser(userData);
-        setAddUserModalOpen(false);
-        loadUsers();
-        showSuccessWithMessage("Utente aggiunto con successo!");
-    }
-
-    const handleDeleteUser = () => {
-        if (deletingUser) {
-            onDeleteUser(deletingUser.id);
-            setDeletingUser(null);
-            loadUsers();
-            showSuccessWithMessage("Utente eliminato.");
+        setEditProfileModalOpen(false);
+    };
+    
+    const handleSaveProjectName = () => {
+        if(newProjectName.trim() && newProjectName !== project.name) {
+            onUpdateProject({ ...project, name: newProjectName.trim() });
         }
+        setEditingProjectName(false);
+    }
+    
+    const handleRoleChange = (userId: string, newRole: ProjectMemberRole) => {
+        if (!isOwner) return;
+        const updatedMembers = project.members.map(m => m.userId === userId ? { ...m, role: newRole } : m);
+        onUpdateProject({ ...project, members: updatedMembers });
+    }
+    
+    const handleRemoveMember = (userId: string) => {
+        if (!isOwner || userId === project.ownerId) return; // Can't remove owner
+        const updatedMembers = project.members.filter(m => m.userId !== userId);
+        onUpdateProject({ ...project, members: updatedMembers });
     }
     
     const handleShareProject = (userId: string, role: ProjectMemberRole) => {
-        const updatedProject = {
-            ...project,
-            members: [...project.members, { userId, role }]
-        };
-        onUpdateProject(updatedProject);
-        setShareProjectModalOpen(false);
-        showSuccessWithMessage("Progetto condiviso!");
+        const newMember = { userId, role };
+        const updatedMembers = [...project.members, newMember];
+        onUpdateProject({ ...project, members: updatedMembers });
+        setShareModalOpen(false);
+    }
+    
+    const handleAddUserAndRefresh = (userData: Omit<User, 'id'>) => {
+      onAddUser(userData);
+      // We don't need to manually refresh here as App.tsx will handle state updates,
+      // but in a real app with async calls, you might want to refetch.
     }
 
-    const handleRemoveMember = (userId: string) => {
-        const updatedProject = {
-            ...project,
-            members: project.members.filter(m => m.userId !== userId)
-        };
-        onUpdateProject(updatedProject);
-        showSuccessWithMessage("Membro rimosso.");
-    }
-
-  return (
-    <>
-    <div className="max-w-4xl mx-auto space-y-8">
-        <div>
-            <h1 className="text-3xl font-bold text-dark">Impostazioni</h1>
-            <p className="text-gray-500 mt-1">Gestisci il tuo profilo, gli utenti e le preferenze dell'applicazione.</p>
-        </div>
-
-      <Card className="p-6">
-        <div className="flex items-center">
-            <UserCircle size={64} className="text-primary mr-6"/>
-            <div>
-                <h2 className="text-2xl font-bold text-dark">{user.name}</h2>
-                <p className="text-gray-600">{user.email}</p>
-                <button onClick={() => setProfileModalOpen(true)} className="mt-2 text-sm text-primary hover:underline">Modifica profilo</button>
-            </div>
-        </div>
-      </Card>
-      
-      {userRole === ProjectMemberRole.OWNER && (
-        <Card className="p-6">
-            <h3 className="text-xl font-bold text-dark mb-4 border-b pb-2 flex justify-between items-center">
-                <span className="flex items-center"><Briefcase size={20} className="mr-3 text-primary" />Gestione Progetto "{project.name}"</span>
-                <button onClick={() => setShareProjectModalOpen(true)} className="flex items-center text-sm px-3 py-1.5 bg-secondary text-primary font-semibold rounded-lg hover:bg-blue-200 transition-colors">
-                    <PlusCircle size={16} className="mr-2"/> Condividi
-                </button>
-            </h3>
-            <div className="space-y-3">
-                {project.members.map(member => {
-                    const memberUser = dataService.getUser(member.userId);
-                    if (!memberUser) return null;
-                    return (
-                        <div key={member.userId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <div className="flex items-center">
-                                <UserCircle size={28} className="text-primary mr-3"/>
-                                <div>
-                                    <p className="font-semibold text-dark">{memberUser.name} {memberUser.id === user.id && <span className="text-xs font-normal text-gray-500">(Tu)</span>}</p>
-                                    <p className="text-sm text-gray-500">{memberUser.email}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-4">
-                               <span className="text-sm font-medium text-gray-600 bg-gray-200 px-2 py-0.5 rounded-md">{member.role}</span>
-                               {member.role !== ProjectMemberRole.OWNER && (
-                                   <button onClick={() => handleRemoveMember(member.userId)} className="p-2 text-red-500 hover:bg-red-100 rounded-full transition-colors">
-                                       <Trash2 size={18}/>
-                                   </button>
-                               )}
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-        </Card>
-      )}
-
-      <Card className="p-6">
-        <h3 className="text-xl font-bold text-dark mb-4 border-b pb-2 flex justify-between items-center">
-            <span className="flex items-center"><UsersIcon size={20} className="mr-3 text-primary" />Gestione Account Utenti</span>
-            <button onClick={() => setAddUserModalOpen(true)} className="flex items-center text-sm px-3 py-1.5 bg-secondary text-primary font-semibold rounded-lg hover:bg-blue-200 transition-colors">
-                <PlusCircle size={16} className="mr-2"/> Aggiungi Utente
-            </button>
-        </h3>
-        <div className="space-y-3">
-            {allUsers.map(u => (
-                <div key={u.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center">
-                        <UserCircle size={28} className="text-primary mr-3"/>
+    return (
+        <div className="space-y-6">
+            <h1 className="text-2xl font-bold text-dark">Impostazioni</h1>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* User Profile Section */}
+                <Card className="p-6">
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-bold text-dark">Il Mio Profilo</h2>
+                        <button onClick={() => setEditProfileModalOpen(true)} className="flex items-center text-sm px-3 py-1.5 bg-secondary text-primary font-semibold rounded-lg hover:bg-blue-200 transition-colors">
+                            <Edit size={16} className="mr-2"/> Modifica
+                        </button>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <UserCircle size={48} className="text-primary"/>
                         <div>
-                            <p className="font-semibold text-dark">{u.name} {u.id === user.id && <span className="text-xs font-normal text-gray-500">(Tu)</span>}</p>
-                            <p className="text-sm text-gray-500">{u.email}</p>
+                            <p className="font-bold text-lg">{user.name}</p>
+                            <p className="text-gray-600">{user.email}</p>
                         </div>
                     </div>
-                    {u.id !== user.id && (
-                        <button onClick={() => setDeletingUser(u)} className="p-2 text-red-500 hover:bg-red-100 rounded-full transition-colors">
-                            <Trash2 size={18}/>
+                </Card>
+
+                {/* Project Settings Section */}
+                <Card className="p-6">
+                    <h2 className="text-xl font-bold text-dark mb-4">Progetto Corrente</h2>
+                    {editingProjectName ? (
+                         <div className="flex items-center gap-2">
+                             <input type="text" value={newProjectName} onChange={e => setNewProjectName(e.target.value)} className="input flex-grow"/>
+                             <button onClick={handleSaveProjectName} className="px-3 py-2 bg-primary text-white rounded-lg">Salva</button>
+                         </div>
+                    ) : (
+                        <div className="flex justify-between items-center">
+                            <p className="font-bold text-lg">{project.name}</p>
+                            {isOwner && (
+                                <button onClick={() => setEditingProjectName(true)} className="flex items-center text-sm px-3 py-1.5 bg-secondary text-primary font-semibold rounded-lg hover:bg-blue-200 transition-colors">
+                                    <Edit size={16} className="mr-2"/> Rinomina
+                                </button>
+                            )}
+                        </div>
+                    )}
+                </Card>
+            </div>
+
+            {/* Project Members Section */}
+            <Card className="p-6">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold text-dark flex items-center"><Users size={20} className="mr-2 text-primary" /> Membri del Progetto</h2>
+                    {isOwner && (
+                        <button onClick={() => setShareModalOpen(true)} className="flex items-center px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm">
+                            <Share2 size={16} className="mr-2"/> Condividi / Invita
                         </button>
                     )}
                 </div>
-            ))}
-        </div>
-      </Card>
-
-      <Card className="p-6">
-        <h3 className="text-xl font-bold text-dark mb-4 border-b pb-2">Preferenze Applicazione</h3>
-        <div className="space-y-4">
-            <div className="flex items-start">
-                <Palette className="w-5 h-5 mr-3 text-primary mt-3"/>
-                <div className="flex-1">
-                    <h4 className="font-semibold text-dark">Tema</h4>
-                    <p className="text-sm text-gray-500 mb-2">Scegli tra il tema chiaro e scuro.</p>
-                    <ToggleSwitch label="Tema Scuro" enabled={settings.darkMode} onChange={(val) => handleSettingChange('darkMode', val)} />
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th className="p-3 text-sm font-semibold text-gray-600">Nome</th>
+                                <th className="p-3 text-sm font-semibold text-gray-600">Email</th>
+                                <th className="p-3 text-sm font-semibold text-gray-600">Ruolo</th>
+                                {isOwner && <th className="p-3 text-sm font-semibold text-gray-600 text-center">Azioni</th>}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {projectMembers.map(member => (
+                                <tr key={member.userId} className="border-b hover:bg-gray-50">
+                                    <td className="p-3 font-medium text-dark">{member.name}</td>
+                                    <td className="p-3 text-gray-700">{member.email}</td>
+                                    <td className="p-3">
+                                        {isOwner && member.userId !== project.ownerId ? (
+                                            <select value={member.role} onChange={e => handleRoleChange(member.userId, e.target.value as ProjectMemberRole)} className="input">
+                                                <option value={ProjectMemberRole.EDITOR}>Editor</option>
+                                                <option value={ProjectMemberRole.VIEWER}>Visualizzatore</option>
+                                            </select>
+                                        ) : (
+                                            <span className="flex items-center gap-2 font-semibold">
+                                                {member.role}
+                                                {member.role === ProjectMemberRole.OWNER && <Shield size={16} className="text-yellow-600" />}
+                                            </span>
+                                        )}
+                                    </td>
+                                    {isOwner && (
+                                        <td className="p-3 text-center">
+                                            {member.userId !== project.ownerId && (
+                                                <button onClick={() => handleRemoveMember(member.userId)} className="text-red-600 hover:text-red-800 p-1.5 rounded-full hover:bg-red-50">
+                                                    <Trash2 size={18}/>
+                                                </button>
+                                            )}
+                                        </td>
+                                    )}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
-            </div>
-             <div className="flex items-start">
-                <Bell className="w-5 h-5 mr-3 text-primary mt-3"/>
-                <div className="flex-1">
-                    <h4 className="font-semibold text-dark">Notifiche</h4>
-                    <p className="text-sm text-gray-500 mb-2">Gestisci come ricevi le notifiche.</p>
-                    <ToggleSwitch label="Notifiche Email" enabled={settings.emailNotifications} onChange={(val) => handleSettingChange('emailNotifications', val)} />
-                </div>
-            </div>
+            </Card>
+            
+            {/* Global User Management - visible only to demo admin for simplicity */}
+            {user.id === 'user-1' && (
+                <Card className="p-6">
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-bold text-dark">Gestione Utenti (Globale)</h2>
+                        <button onClick={() => setAddUserModalOpen(true)} className="flex items-center px-4 py-2 bg-secondary text-primary font-semibold rounded-lg hover:bg-blue-200 transition-colors">
+                            <PlusCircle size={18} className="mr-2" /> Aggiungi Utente
+                        </button>
+                    </div>
+                     <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="p-3 text-sm font-semibold text-gray-600">Nome</th>
+                                    <th className="p-3 text-sm font-semibold text-gray-600">Email</th>
+                                    <th className="p-3 text-sm font-semibold text-gray-600 text-center">Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {allUsers.map(u => (
+                                    <tr key={u.id} className="border-b hover:bg-gray-50">
+                                        <td className="p-3 font-medium text-dark">{u.name}</td>
+                                        <td className="p-3 text-gray-700">{u.email}</td>
+                                        <td className="p-3 text-center">
+                                            <button 
+                                                onClick={() => setDeletingUser(u)} 
+                                                className="text-red-600 hover:text-red-800 p-1.5 rounded-full hover:bg-red-50 disabled:text-gray-400 disabled:cursor-not-allowed"
+                                                disabled={u.id === user.id || allUsers.length <=1}
+                                            >
+                                                <Trash2 size={18}/>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </Card>
+            )}
+
+            {/* Modals */}
+            <EditProfileModal isOpen={isEditProfileModalOpen} onClose={() => setEditProfileModalOpen(false)} user={user} onSave={handleSaveProfile} />
+            <AddUserModal isOpen={isAddUserModalOpen} onClose={() => setAddUserModalOpen(false)} onSave={handleAddUserAndRefresh} />
+            <ShareProjectModal isOpen={isShareModalOpen} onClose={() => setShareModalOpen(false)} onShare={handleShareProject} project={project} />
+            {deletingUser && (
+                <ConfirmDeleteModal 
+                    isOpen={!!deletingUser} 
+                    onClose={() => setDeletingUser(null)} 
+                    onConfirm={() => {
+                        onDeleteUser(deletingUser.id);
+                        setDeletingUser(null);
+                    }}
+                    message={`Sei sicuro di voler eliminare l'utente "${deletingUser.name}"? Verrà rimosso da tutti i progetti.`}
+                />
+            )}
         </div>
-      </Card>
-
-      <div className="flex justify-end items-center">
-        {showSuccess && (
-            <div className="flex items-center text-green-600 mr-4 transition-opacity duration-300">
-                <CheckCircle size={18} className="mr-1" />
-                <span className="font-semibold">{successMessage}</span>
-            </div>
-        )}
-        <button
-            onClick={handleSaveSettings}
-            className="px-6 py-3 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-hover transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-        >
-            Salva Preferenze
-        </button>
-      </div>
-
-    </div>
-    <EditProfileModal
-        isOpen={isProfileModalOpen}
-        onClose={() => setProfileModalOpen(false)}
-        user={user}
-        onSave={handleSaveProfile}
-    />
-     <AddUserModal 
-        isOpen={isAddUserModalOpen}
-        onClose={() => setAddUserModalOpen(false)}
-        onSave={handleSaveNewUser}
-    />
-    <ShareProjectModal
-        isOpen={isShareProjectModalOpen}
-        onClose={() => setShareProjectModalOpen(false)}
-        onShare={handleShareProject}
-        project={project}
-    />
-    {deletingUser && (
-        <ConfirmDeleteModal
-            isOpen={!!deletingUser}
-            onClose={() => setDeletingUser(null)}
-            onConfirm={handleDeleteUser}
-            message={`Sei sicuro di voler eliminare l'utente "${deletingUser.name}"? Questa azione è irreversibile.`}
-        />
-    )}
-    </>
-  );
+    );
 };
 
 export default SettingsScreen;

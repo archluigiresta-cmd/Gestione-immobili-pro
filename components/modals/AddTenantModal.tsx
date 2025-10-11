@@ -23,7 +23,8 @@ const AddTenantModal: React.FC<AddTenantModalProps> = ({ isOpen, onClose, onSave
       setError('Nome, Email e Telefono sono obbligatori.');
       return;
     }
-    onSave({ name, email, phone, contractId, projectId });
+    // FIX: Add missing 'customFields' property to match the Tenant type.
+    onSave({ name, email, phone, contractId, projectId, customFields: [] });
     // Reset form
     setName('');
     setEmail('');

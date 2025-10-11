@@ -73,6 +73,7 @@ export interface Tenant {
   email: string;
   phone: string;
   contractId: string;
+  customFields: CustomField[];
   history: HistoryLog[];
 }
 
@@ -85,6 +86,7 @@ export interface Contract {
   endDate: string; // ISO date string
   rentAmount: number;
   documentUrl: string;
+  customFields: CustomField[];
   history: HistoryLog[];
 }
 
@@ -157,6 +159,7 @@ export interface Document {
     uploadDate: string; // ISO date string
     fileUrl: string;
     expiryDate?: string;
+    customFields: CustomField[];
     history: HistoryLog[];
 }
 

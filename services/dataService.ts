@@ -134,7 +134,7 @@ const getAllTenants = (): Tenant[] => initData('tenants', MOCK_TENANTS);
 export const getTenants = (projectId: string): Tenant[] => getAllTenants().filter(t => t.projectId === projectId);
 export const addTenant = (tenantData: Omit<Tenant, 'id' | 'history'>, userId: string): void => {
     const tenants = getAllTenants();
-    const newTenant: Tenant = { ...tenantData, id: generateId('tenant'), history: [createLogEntry(userId, 'Inquilino aggiunto.')] };
+    const newTenant: Tenant = { ...tenantData, id: generateId('tenant'), customFields: tenantData.customFields || [], history: [createLogEntry(userId, 'Inquilino aggiunto.')] };
     saveData('tenants', [...tenants, newTenant]);
 };
 export const updateTenant = (updatedTenant: Tenant, userId: string): void => {
@@ -154,7 +154,7 @@ const getAllContracts = (): Contract[] => initData('contracts', MOCK_CONTRACTS);
 export const getContracts = (projectId: string): Contract[] => getAllContracts().filter(c => c.projectId === projectId);
 export const addContract = (contractData: Omit<Contract, 'id'|'documentUrl' | 'history'>, userId: string): void => {
     const contracts = getAllContracts();
-    const newContract: Contract = { ...contractData, id: generateId('contract'), documentUrl: '#', history: [createLogEntry(userId, 'Contratto creato.')] };
+    const newContract: Contract = { ...contractData, id: generateId('contract'), documentUrl: '#', customFields: contractData.customFields || [], history: [createLogEntry(userId, 'Contratto creato.')] };
     saveData('contracts', [...contracts, newContract]);
     const property = getAllProperties().find(p => p.id === contractData.propertyId);
     if(property) {
@@ -282,7 +282,7 @@ const syncDeadlineForDocument = (doc: Document, userId: string, existingDeadline
 };
 export const addDocument = (docData: Omit<Document, 'id' | 'history'>, userId: string): void => {
     const documents = getAllDocuments();
-    const newDoc: Document = { ...docData, id: generateId('doc'), history: [createLogEntry(userId, 'Documento caricato.')] };
+    const newDoc: Document = { ...docData, id: generateId('doc'), customFields: docData.customFields || [], history: [createLogEntry(userId, 'Documento caricato.')] };
     saveData('documents', [...documents, newDoc]);
     syncDeadlineForDocument(newDoc, userId, null);
 };

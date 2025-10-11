@@ -41,7 +41,8 @@ const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ isOpen, onClose, on
       setError('Nome, immobile e URL del file sono obbligatori.');
       return;
     }
-    onSave({ ...formData, projectId });
+    // FIX: Add missing 'customFields' property to match the Document type.
+    onSave({ ...formData, projectId, customFields: [] });
     onClose();
   };
 
