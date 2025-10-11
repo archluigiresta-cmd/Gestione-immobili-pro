@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
@@ -89,7 +86,16 @@ const DocumentsScreen: React.FC<DocumentsScreenProps> = ({ projectId, user }) =>
                     <td className="p-3 text-gray-700">{new Date(doc.uploadDate).toLocaleDateString('it-IT')}</td>
                     <td className="p-3 text-center">
                         <div className="flex justify-center items-center gap-4">
-                        <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary"><Download size={18} /></a>
+                        <a 
+                          href={doc.fileData || doc.fileUrl}
+                          download={doc.fileName}
+                          target={doc.fileUrl ? "_blank" : "_self"}
+                          rel="noopener noreferrer"
+                          className="text-gray-500 hover:text-primary"
+                          title={doc.fileName ? `Scarica ${doc.fileName}` : 'Apri link esterno'}
+                        >
+                          <Download size={18} />
+                        </a>
                         <button onClick={() => setEditingDocument(doc)} className="text-blue-600 hover:text-blue-800"><Edit size={18} /></button>
                         <button onClick={() => setDeletingDocument(doc)} className="text-red-600 hover:text-red-800"><Trash2 size={18} /></button>
                         </div>

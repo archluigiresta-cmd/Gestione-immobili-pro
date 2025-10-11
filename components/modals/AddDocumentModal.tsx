@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Document, Property, CustomField, CustomFieldType, DocumentType } from '../../types';
-import { X, PlusCircle, Trash2 } from 'lucide-react';
+import { X, PlusCircle, Trash2, Link, UploadCloud, File as FileIcon } from 'lucide-react';
 import * as dataService from '../../services/dataService';
 
 interface AddDocumentModalProps {
@@ -25,6 +25,8 @@ const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ isOpen, onClose, on
   const [customFields, setCustomFields] = useState<Omit<CustomField, 'id'>[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
   const [error, setError] = useState('');
+  const [uploadType, setUploadType] = useState<'url' | 'file'>('url');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -43,6 +45,24 @@ const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ isOpen, onClose, on
     } else {
         setFormData(prev => ({ ...prev, [name]: value }));
     }
+  };
+  
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+      if (!formData.name) {
+        setFormData(prev => ({ ...prev, name: e.target.files![0].name.replace(/\.[^/.]+$/, "") }));
+      }
+    }
+  };
+
+  const handleFileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
   };
   
   const handleAddCustomField = () => {
@@ -66,13 +86,23 @@ const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ isOpen, onClose, on
       setFormData(getInitialState());
       setCustomFields([]);
       setError('');
+      setUploadType('url');
+      setSelectedFile(null);
       onClose();
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.propertyId || !formData.fileUrl) {
-      setError('Nome, immobile e URL del file sono obbligatori.');
+    if (!formData.name || !formData.propertyId) {
+      setError('Nome del documento e immobile sono obbligatori.');
+      return;
+    }
+    if (uploadType === 'url' && !formData.fileUrl) {
+      setError('L\'URL del file è obbligatorio.');
+      return;
+    }
+    if (uploadType === 'file' && !selectedFile) {
+      setError('Devi selezionare un file da caricare.');
       return;
     }
     if (formData.type === DocumentType.OTHER && !formData.typeOther?.trim()) {
@@ -90,7 +120,26 @@ const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ isOpen, onClose, on
         ...(formData.type === DocumentType.OTHER && { typeOther }),
     };
 
-    onSave({ ...dataToSave, projectId, customFields: finalCustomFields });
+    if (uploadType === 'file' && selectedFile) {
+      const fileData = await handleFileToBase64(selectedFile);
+      onSave({ 
+        ...dataToSave, 
+        projectId, 
+        customFields: finalCustomFields, 
+        fileData, 
+        fileName: selectedFile.name,
+        fileUrl: undefined
+      });
+    } else {
+       onSave({ 
+        ...dataToSave, 
+        projectId, 
+        customFields: finalCustomFields,
+        fileData: undefined,
+        fileName: undefined,
+      });
+    }
+    
     handleClose();
   };
 
@@ -124,7 +173,7 @@ const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ isOpen, onClose, on
               </select>
             </div>
           </div>
-            {formData.type === DocumentType.OTHER && (
+          {formData.type === DocumentType.OTHER && (
                <div className="md:col-start-2">
                 <label className="block text-sm font-medium text-gray-700">Specifica Tipo</label>
                 <input
@@ -137,10 +186,53 @@ const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ isOpen, onClose, on
                 />
               </div>
           )}
+
           <div>
-            <label className="block text-sm font-medium text-gray-700">URL del File</label>
-            <input type="url" name="fileUrl" value={formData.fileUrl} onChange={handleChange} className="mt-1 block w-full input" placeholder="https://" />
+            <label className="block text-sm font-medium text-gray-700 mb-2">Sorgente del Documento</label>
+            <div className="flex gap-2 rounded-lg bg-gray-100 p-1">
+                <button type="button" onClick={() => setUploadType('url')} className={`w-full flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${uploadType === 'url' ? 'bg-primary text-white shadow' : 'text-gray-600'}`}>
+                    <Link size={16}/> Link Esterno (URL)
+                </button>
+                <button type="button" onClick={() => setUploadType('file')} className={`w-full flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${uploadType === 'file' ? 'bg-primary text-white shadow' : 'text-gray-600'}`}>
+                    <UploadCloud size={16}/> Carica File
+                </button>
+            </div>
           </div>
+
+          {uploadType === 'url' ? (
+            <div>
+              <label className="block text-sm font-medium text-gray-700">URL del File</label>
+              <input type="url" name="fileUrl" value={formData.fileUrl || ''} onChange={handleChange} className="mt-1 block w-full input" placeholder="https://" />
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Seleziona File</label>
+              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                  <div className="space-y-1 text-center">
+                      {selectedFile ? (
+                          <>
+                              <FileIcon size={32} className="mx-auto text-green-500"/>
+                              <p className="font-semibold text-dark">{selectedFile.name}</p>
+                              <p className="text-xs text-gray-500">{(selectedFile.size / 1024).toFixed(2)} KB</p>
+                              <button type="button" onClick={() => setSelectedFile(null)} className="text-xs text-red-600 hover:underline">Cambia file</button>
+                          </>
+                      ) : (
+                          <>
+                              <UploadCloud size={32} className="mx-auto text-gray-400"/>
+                              <div className="flex text-sm text-gray-600">
+                                  <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-primary hover:text-primary-hover focus-within:outline-none">
+                                      <span>Cerca un file</span>
+                                      <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} accept=".pdf,.dwg,.jpg,.jpeg,.png,.gif"/>
+                                  </label>
+                                  <p className="pl-1">o trascinalo qui</p>
+                              </div>
+                              <p className="text-xs text-gray-500">PDF, DWG, JPG, PNG, GIF</p>
+                          </>
+                      )}
+                  </div>
+              </div>
+            </div>
+          )}
           
            <div className="pt-2">
             <h3 className="text-md font-semibold text-dark border-b pb-2 mb-3">Campi Personalizzati</h3>

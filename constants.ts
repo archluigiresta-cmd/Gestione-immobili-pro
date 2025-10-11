@@ -44,7 +44,8 @@ export const MOCK_PROPERTIES: Property[] = [
         { id: 'cf-3', label: 'Numero Cliente Servizio Idrico', type: CustomFieldType.TEXT, value: '987654321' },
         { id: 'cf-4', label: 'Allaccio Fognatura', type: CustomFieldType.BOOLEAN, value: true },
     ],
-    history: []
+    history: [],
+    creationDate: '2023-01-10T10:00:00.000Z',
   },
   { 
     id: 'prop-2', 
@@ -59,7 +60,8 @@ export const MOCK_PROPERTIES: Property[] = [
     rentAmount: 1200, 
     imageUrl: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80',
     customFields: [],
-    history: []
+    history: [],
+    creationDate: '2023-02-15T11:30:00.000Z',
   },
   { 
     id: 'prop-3', 
@@ -75,7 +77,8 @@ export const MOCK_PROPERTIES: Property[] = [
     customFields: [
         { id: 'cf-5', label: 'Connessione Fibra Ottica', type: CustomFieldType.BOOLEAN, value: true },
     ],
-    history: []
+    history: [],
+    creationDate: '2023-03-20T14:00:00.000Z',
   },
 ];
 
@@ -111,10 +114,10 @@ export const MOCK_EXPENSES: Expense[] = [
 ];
 
 export const MOCK_DOCUMENTS: Document[] = [
-    { id: 'doc-1', projectId: 'proj-1', name: 'Contratto affitto Verdi', propertyId: 'prop-1', type: DocumentType.CONTRACT, uploadDate: '2023-01-05', fileUrl: '#', customFields: [], history: [] },
-    { id: 'doc-2', projectId: 'proj-1', name: 'Planimetria Villa Paradiso', propertyId: 'prop-1', type: DocumentType.FLOOR_PLAN, uploadDate: '2022-11-20', fileUrl: '#', customFields: [], history: [] },
-    { id: 'doc-3', projectId: 'proj-1', name: 'Certificazione energetica Apt. Centrale', propertyId: 'prop-2', type: DocumentType.CERTIFICATION, uploadDate: '2022-05-10', fileUrl: '#', customFields: [], history: [] },
-    { id: 'doc-4', projectId: 'proj-1', name: 'Polizza Assicurativa Ufficio', propertyId: 'prop-3', type: DocumentType.INSURANCE, uploadDate: '2024-01-20', fileUrl: '#', expiryDate: '2025-01-31', customFields: [], history: [] },
+    { id: 'doc-1', projectId: 'proj-1', name: 'Contratto affitto Verdi', propertyId: 'prop-1', type: DocumentType.CONTRACT, uploadDate: '2023-01-05', fileUrl: 'https://example.com/contratto.pdf', customFields: [], history: [] },
+    { id: 'doc-2', projectId: 'proj-1', name: 'Planimetria Villa Paradiso', propertyId: 'prop-1', type: DocumentType.FLOOR_PLAN, uploadDate: '2022-11-20', fileUrl: 'https://example.com/planimetria.pdf', customFields: [], history: [] },
+    { id: 'doc-3', projectId: 'proj-1', name: 'Certificazione energetica Apt. Centrale', propertyId: 'prop-2', type: DocumentType.CERTIFICATION, uploadDate: '2022-05-10', fileUrl: 'https://example.com/certificazione.pdf', customFields: [], history: [] },
+    { id: 'doc-4', projectId: 'proj-1', name: 'Polizza Assicurativa Ufficio', propertyId: 'prop-3', type: DocumentType.INSURANCE, uploadDate: '2024-01-20', fileUrl: 'https://example.com/polizza.pdf', expiryDate: '2025-01-31', customFields: [], history: [] },
 ];
 
 const currentYear = new Date().getFullYear();

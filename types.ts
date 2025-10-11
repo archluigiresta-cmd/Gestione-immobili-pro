@@ -66,6 +66,7 @@ export interface Property {
   imageUrl: string;
   customFields: CustomField[];
   history: HistoryLog[];
+  creationDate: string; // ISO date string
 }
 
 export interface Tenant {
@@ -170,7 +171,9 @@ export interface Document {
     type: DocumentType;
     typeOther?: string;
     uploadDate: string; // ISO date string
-    fileUrl: string;
+    fileUrl?: string; // For external links
+    fileData?: string; // For uploaded files (base64 data URL)
+    fileName?: string; // Name of the uploaded file
     expiryDate?: string;
     customFields: CustomField[];
     history: HistoryLog[];

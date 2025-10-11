@@ -6,7 +6,7 @@ import * as dataService from '../../services/dataService';
 interface AddPropertyModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (property: Omit<Property, 'id' | 'projectId' | 'customFields' | 'history'>) => void;
+  onSave: (property: Omit<Property, 'id' | 'projectId' | 'customFields' | 'history' | 'creationDate'>) => void;
   projectId: string;
 }
 

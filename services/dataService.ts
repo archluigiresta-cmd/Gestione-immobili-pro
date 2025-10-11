@@ -1,6 +1,49 @@
 import { MOCK_USERS, MOCK_PROPERTIES, MOCK_TENANTS, MOCK_CONTRACTS, MOCK_DEADLINES, MOCK_MAINTENANCES, MOCK_EXPENSES, MOCK_DOCUMENTS, MOCK_PROJECTS, MOCK_PAYMENTS } from '../constants';
 import { User, Property, Tenant, Contract, Deadline, Maintenance, Expense, Document, DeadlineType, Project, HistoryLog, Payment } from '../types';
 
+const CURRENT_DATA_VERSION = 2;
+
+export const migrateData = () => {
+    const storedVersionStr = localStorage.getItem('dataVersion');
+    let storedVersion = storedVersionStr ? parseInt(storedVersionStr, 10) : 1;
+
+    if (storedVersion >= CURRENT_DATA_VERSION) {
+        return; // No migration needed
+    }
+
+    console.log(`Migrating data from version ${storedVersion} to ${CURRENT_DATA_VERSION}`);
+
+    switch (storedVersion) {
+        case 1:
+            // Migration from v1 to v2: Add creationDate to all properties
+            try {
+                const properties = getAllProperties();
+                const migratedProperties = properties.map(p => {
+                    if (!p.creationDate) {
+                        return { ...p, creationDate: new Date().toISOString() };
+                    }
+                    return p;
+                });
+                saveData('properties', migratedProperties);
+                console.log('Successfully migrated properties to v2.');
+            } catch (error) {
+                console.error('Error during v1 to v2 migration:', error);
+                // In a real app, you might want to handle this more gracefully,
+                // e.g., by notifying the user or attempting a backup.
+            }
+            // falls through to the next case if there are more migrations
+        
+        // case 2:
+            // Future migration from v2 to v3 would go here.
+            // ...
+            // break;
+    }
+
+    localStorage.setItem('dataVersion', String(CURRENT_DATA_VERSION));
+    console.log('Data migration complete.');
+};
+
+
 const initData = <T,>(key: string, mockData: T[]): T[] => {
     try {
         const storedData = localStorage.getItem(key);
@@ -22,6 +65,7 @@ const initData = <T,>(key: string, mockData: T[]): T[] => {
         console.error(`Error reading ${key} from localStorage`, error);
     }
     localStorage.setItem(key, JSON.stringify(mockData));
+    localStorage.setItem('dataVersion', String(CURRENT_DATA_VERSION)); // Set version for new users
     return mockData;
 };
 
@@ -95,9 +139,15 @@ export const deleteProject = (id: string): void => {
 const getAllProperties = (): Property[] => initData('properties', MOCK_PROPERTIES);
 export const getProperties = (projectId: string): Property[] => getAllProperties().filter(p => p.projectId === projectId);
 export const getProperty = (projectId: string, id: string): Property | undefined => getProperties(projectId).find(p => p.id === id);
-export const addProperty = (propertyData: Omit<Property, 'id' | 'customFields' | 'history'>, userId: string): Property => {
+export const addProperty = (propertyData: Omit<Property, 'id' | 'customFields' | 'history' | 'creationDate'>, userId: string): Property => {
     const properties = getAllProperties();
-    const newProperty: Property = { ...propertyData, id: generateId('prop'), customFields: [], history: [createLogEntry(userId, 'Immobile creato.')] };
+    const newProperty: Property = { 
+        ...propertyData, 
+        id: generateId('prop'), 
+        customFields: [], 
+        history: [createLogEntry(userId, 'Immobile creato.')],
+        creationDate: new Date().toISOString()
+    };
     saveData('properties', [...properties, newProperty]);
     return newProperty;
 };

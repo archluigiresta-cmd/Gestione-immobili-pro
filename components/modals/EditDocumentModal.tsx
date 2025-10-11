@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Document, Property, CustomField, CustomFieldType, DocumentType } from '../../types';
-import { X, PlusCircle, Trash2 } from 'lucide-react';
+import { X, PlusCircle, Trash2, Link, UploadCloud, File as FileIcon } from 'lucide-react';
 import * as dataService from '../../services/dataService';
 
 interface EditDocumentModalProps {
@@ -15,9 +15,13 @@ const EditDocumentModal: React.FC<EditDocumentModalProps> = ({ isOpen, onClose, 
   const [formData, setFormData] = useState<Document>(document);
   const [properties, setProperties] = useState<Property[]>([]);
   const [error, setError] = useState('');
+  const [uploadType, setUploadType] = useState<'url' | 'file'>(document.fileData ? 'file' : 'url');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
     setFormData(document);
+    setUploadType(document.fileData ? 'file' : 'url');
+    setSelectedFile(null);
   }, [document]);
 
   useEffect(() => {
@@ -37,6 +41,31 @@ const EditDocumentModal: React.FC<EditDocumentModalProps> = ({ isOpen, onClose, 
     } else {
         setFormData(prev => ({ ...prev, [name]: value }));
     }
+  };
+
+  const handleUploadTypeChange = (type: 'url' | 'file') => {
+    setUploadType(type);
+    if (type === 'url') {
+        setFormData(prev => ({...prev, fileData: undefined, fileName: undefined}));
+        setSelectedFile(null);
+    } else {
+        setFormData(prev => ({...prev, fileUrl: undefined}));
+    }
+  };
+  
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+
+  const handleFileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
   };
 
   const handleAddCustomField = () => {
@@ -60,10 +89,18 @@ const EditDocumentModal: React.FC<EditDocumentModalProps> = ({ isOpen, onClose, 
     setFormData(prev => ({ ...prev, customFields: prev.customFields.filter(cf => cf.id !== id) }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.propertyId || !formData.fileUrl) {
-      setError('Nome, immobile e URL del file sono obbligatori.');
+    if (!formData.name || !formData.propertyId) {
+      setError('Nome del documento e immobile sono obbligatori.');
+      return;
+    }
+     if (uploadType === 'url' && !formData.fileUrl) {
+      setError('L\'URL del file è obbligatorio.');
+      return;
+    }
+    if (uploadType === 'file' && !selectedFile && !formData.fileData) {
+      setError('Devi selezionare un file da caricare.');
       return;
     }
     if (formData.type === DocumentType.OTHER && !formData.typeOther?.trim()) {
@@ -73,11 +110,18 @@ const EditDocumentModal: React.FC<EditDocumentModalProps> = ({ isOpen, onClose, 
 
     const cleanedCustomFields = formData.customFields.filter(cf => cf.label.trim() !== '');
     const { typeOther, ...restOfData } = formData;
-    const dataToSave = {
+    let dataToSave = {
         ...restOfData,
         customFields: cleanedCustomFields,
         ...(formData.type === DocumentType.OTHER && { typeOther }),
     };
+
+    if (uploadType === 'file' && selectedFile) {
+        const fileData = await handleFileToBase64(selectedFile);
+        dataToSave.fileData = fileData;
+        dataToSave.fileName = selectedFile.name;
+        dataToSave.fileUrl = undefined;
+    }
 
     onSave(dataToSave);
   };
@@ -125,10 +169,64 @@ const EditDocumentModal: React.FC<EditDocumentModalProps> = ({ isOpen, onClose, 
                 />
               </div>
           )}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">URL del File</label>
-            <input type="url" name="fileUrl" value={formData.fileUrl} onChange={handleChange} className="mt-1 block w-full input" placeholder="https://" />
+
+           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Sorgente del Documento</label>
+            <div className="flex gap-2 rounded-lg bg-gray-100 p-1">
+                <button type="button" onClick={() => handleUploadTypeChange('url')} className={`w-full flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${uploadType === 'url' ? 'bg-primary text-white shadow' : 'text-gray-600'}`}>
+                    <Link size={16}/> Link Esterno (URL)
+                </button>
+                <button type="button" onClick={() => handleUploadTypeChange('file')} className={`w-full flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${uploadType === 'file' ? 'bg-primary text-white shadow' : 'text-gray-600'}`}>
+                    <UploadCloud size={16}/> Carica File
+                </button>
+            </div>
           </div>
+          
+          {uploadType === 'url' ? (
+            <div>
+              <label className="block text-sm font-medium text-gray-700">URL del File</label>
+              <input type="url" name="fileUrl" value={formData.fileUrl || ''} onChange={handleChange} className="mt-1 block w-full input" placeholder="https://" />
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-gray-700">File Caricato</label>
+              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                  <div className="space-y-1 text-center">
+                      {selectedFile ? (
+                          <>
+                              <FileIcon size={32} className="mx-auto text-green-500"/>
+                              <p className="font-semibold text-dark">{selectedFile.name}</p>
+                              <p className="text-xs text-gray-500">{(selectedFile.size / 1024).toFixed(2)} KB</p>
+                              <label htmlFor="file-upload-edit" className="text-sm cursor-pointer text-primary hover:underline">
+                                  Cambia file
+                                  <input id="file-upload-edit" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} accept=".pdf,.dwg,.jpg,.jpeg,.png,.gif"/>
+                              </label>
+                          </>
+                      ) : formData.fileName ? (
+                          <>
+                            <FileIcon size={32} className="mx-auto text-green-500"/>
+                            <p className="font-semibold text-dark">{formData.fileName}</p>
+                            <label htmlFor="file-upload-edit" className="text-sm cursor-pointer text-primary hover:underline">
+                                Clicca per sostituire
+                                <input id="file-upload-edit" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} accept=".pdf,.dwg,.jpg,.jpeg,.png,.gif"/>
+                            </label>
+                          </>
+                      ) : (
+                           <>
+                              <UploadCloud size={32} className="mx-auto text-gray-400"/>
+                              <div className="flex text-sm text-gray-600">
+                                  <label htmlFor="file-upload-edit" className="relative cursor-pointer bg-white rounded-md font-medium text-primary hover:text-primary-hover focus-within:outline-none">
+                                      <span>Cerca un file</span>
+                                      <input id="file-upload-edit" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} accept=".pdf,.dwg,.jpg,.jpeg,.png,.gif"/>
+                                  </label>
+                              </div>
+                              <p className="text-xs text-gray-500">PDF, DWG, JPG, PNG, GIF</p>
+                          </>
+                      )}
+                  </div>
+              </div>
+          </div>
+          )}
 
           <div className="pt-2">
             <h3 className="text-md font-semibold text-dark border-b pb-2 mb-3">Campi Personalizzati</h3>

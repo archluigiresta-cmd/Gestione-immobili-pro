@@ -92,6 +92,9 @@ const App: React.FC = () => {
   }, [user, selectedProject]);
 
   useEffect(() => {
+    // Run data migration check on app startup
+    dataService.migrateData();
+    
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       setIsInstallable(true);
