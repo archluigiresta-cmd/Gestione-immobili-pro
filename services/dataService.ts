@@ -1,5 +1,5 @@
-import { MOCK_USERS, MOCK_PROPERTIES, MOCK_TENANTS, MOCK_CONTRACTS, MOCK_DEADLINES, MOCK_MAINTENANCES, MOCK_EXPENSES, MOCK_DOCUMENTS, MOCK_PROJECTS } from '../constants';
-import { User, Property, Tenant, Contract, Deadline, Maintenance, Expense, Document, DeadlineType, Project, HistoryLog } from '../types';
+import { MOCK_USERS, MOCK_PROPERTIES, MOCK_TENANTS, MOCK_CONTRACTS, MOCK_DEADLINES, MOCK_MAINTENANCES, MOCK_EXPENSES, MOCK_DOCUMENTS, MOCK_PROJECTS, MOCK_PAYMENTS } from '../constants';
+import { User, Property, Tenant, Contract, Deadline, Maintenance, Expense, Document, DeadlineType, Project, HistoryLog, Payment } from '../types';
 
 const initData = <T,>(key: string, mockData: T[]): T[] => {
     try {
@@ -291,4 +291,29 @@ export const deleteDocument = (id: string, userId: string): void => {
     }
     documents = documents.filter(d => d.id !== id);
     saveData('documents', documents);
+};
+
+// Payments
+const getAllPayments = (): Payment[] => initData('payments', MOCK_PAYMENTS);
+export const getPayments = (projectId: string): Payment[] => getAllPayments().filter(p => p.projectId === projectId);
+
+export const addPayment = (paymentData: Omit<Payment, 'id' | 'history'>, userId: string): void => {
+    const payments = getAllPayments();
+    const newPayment: Payment = { ...paymentData, id: generateId('pay'), history: [createLogEntry(userId, 'Pagamento registrato.')] };
+    saveData('payments', [...payments, newPayment]);
+};
+
+export const updatePayment = (updatedPayment: Payment, userId: string): void => {
+    let payments = getAllPayments();
+    const description = `Pagamento aggiornato. Stato: ${updatedPayment.status}, Importo: €${updatedPayment.amount}`;
+    const newLogEntry = createLogEntry(userId, description);
+    const newHistory = [...(updatedPayment.history || []), newLogEntry];
+    payments = payments.map(p => p.id === updatedPayment.id ? { ...updatedPayment, history: newHistory } : p);
+    saveData('payments', payments);
+};
+
+export const deletePayment = (id: string): void => {
+    let payments = getAllPayments();
+    payments = payments.filter(p => p.id !== id);
+    saveData('payments', payments);
 };

@@ -1,47 +1,90 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Card from '../components/ui/Card';
-import { MOCK_PAYMENTS, MOCK_PROPERTIES, MOCK_TENANTS, MOCK_CONTRACTS } from '../constants';
-import { Payment, PaymentStatus, Property } from '../types';
-import { CheckCircle, Clock, AlertCircle, PlusCircle, ArrowUpDown, Download } from 'lucide-react';
+import * as dataService from '../services/dataService';
+import { Payment, PaymentStatus, Property, ProjectMemberRole, User, Contract, Tenant } from '../types';
+import { CheckCircle, Clock, AlertCircle, PlusCircle, Edit, Trash2 } from 'lucide-react';
 import InteractiveTable, { Column } from '../components/ui/InteractiveTable';
 import ExportButton from '../components/ui/ExportButton';
+import AddPaymentModal from '../components/modals/AddPaymentModal';
+import EditPaymentModal from '../components/modals/EditPaymentModal';
+import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
 
-const PaymentsScreen: React.FC = () => {
+interface PaymentsScreenProps {
+  projectId: string;
+  user: User;
+  userRole: ProjectMemberRole;
+}
+
+// FIX: Define an enriched payment type to include tenantName and propertyName.
+interface EnrichedPayment extends Payment {
+    propertyName: string;
+    tenantName: string;
+}
+
+const PaymentsScreen: React.FC<PaymentsScreenProps> = ({ projectId, user, userRole }) => {
+    const [payments, setPayments] = useState<Payment[]>([]);
+    const [properties, setProperties] = useState<Property[]>([]);
+    const [isAddModalOpen, setAddModalOpen] = useState(false);
+    // FIX: Update state types to use the enriched payment type.
+    const [editingPayment, setEditingPayment] = useState<EnrichedPayment | null>(null);
+    const [deletingPayment, setDeletingPayment] = useState<EnrichedPayment | null>(null);
+
     const [filterProperty, setFilterProperty] = useState<string>('all');
     const [filterStatus, setFilterStatus] = useState<PaymentStatus | 'all'>('all');
     const [searchTerm, setSearchTerm] = useState('');
+    
+    const isViewer = userRole === ProjectMemberRole.VIEWER;
 
-    const tenantMap = useMemo(() => {
-        const map = new Map<string, string>();
-        MOCK_TENANTS.forEach(t => map.set(t.id, t.name));
-        return map;
-    }, []);
+    useEffect(() => {
+        loadData();
+    }, [projectId]);
 
-    const contractMap = useMemo(() => {
-        const map = new Map<string, { tenantId: string }>();
-        MOCK_CONTRACTS.forEach(c => map.set(c.id, { tenantId: c.tenantId }));
-        return map;
-    }, []);
-
-    const propertyMap = useMemo(() => {
-        const map = new Map<string, string>();
-        MOCK_PROPERTIES.forEach(p => map.set(p.id, p.name));
-        return map;
-    }, []);
-
-    const getTenantNameByContract = (contractId: string) => {
-        const contract = contractMap.get(contractId);
-        if (!contract) return 'N/A';
-        return tenantMap.get(contract.tenantId) || 'N/A';
+    const loadData = () => {
+        setPayments(dataService.getPayments(projectId));
+        setProperties(dataService.getProperties(projectId));
+    };
+    
+    const handleAddPayment = (paymentData: Omit<Payment, 'id' | 'history'>) => {
+        dataService.addPayment(paymentData, user.id);
+        loadData();
+    };
+    
+    const handleUpdatePayment = (updatedPayment: Payment) => {
+        dataService.updatePayment(updatedPayment, user.id);
+        loadData();
+        setEditingPayment(null);
     };
 
-    const getPropertyName = (id: string) => propertyMap.get(id) || 'N/A';
+    const handleDeletePayment = () => {
+        if (deletingPayment) {
+            dataService.deletePayment(deletingPayment.id);
+            loadData();
+            setDeletingPayment(null);
+        }
+    };
 
-    const enrichedPayments = useMemo(() => MOCK_PAYMENTS.map(p => ({
-        ...p,
-        propertyName: getPropertyName(p.propertyId),
-        tenantName: getTenantNameByContract(p.contractId),
-    })), [propertyMap, tenantMap, contractMap]);
+    const enrichedPayments: EnrichedPayment[] = useMemo(() => {
+        const contracts = dataService.getContracts(projectId);
+        const tenants = dataService.getTenants(projectId);
+
+        const propertyMap = new Map(properties.map(p => [p.id, p.name]));
+        const contractMap = new Map(contracts.map(c => [c.id, { tenantId: c.tenantId }]));
+        const tenantMap = new Map(tenants.map(t => [t.id, t.name]));
+
+        const getTenantNameByContract = (contractId: string) => {
+            const contract = contractMap.get(contractId);
+            return contract ? tenantMap.get(contract.tenantId) || 'N/A' : 'N/A';
+        };
+
+        const getPropertyName = (id: string) => propertyMap.get(id) || 'N/A';
+
+        return payments.map(p => ({
+            ...p,
+            propertyName: getPropertyName(p.propertyId),
+            tenantName: getTenantNameByContract(p.contractId),
+        }));
+    }, [payments, properties, projectId]);
+
 
     const filteredPayments = useMemo(() => {
         return enrichedPayments.filter(payment => {
@@ -63,10 +106,10 @@ const PaymentsScreen: React.FC = () => {
         }
     };
     
-    const columns: Column<(typeof filteredPayments)[0]>[] = [
+    const columns: Column<EnrichedPayment>[] = [
         { header: 'Immobile', accessor: 'propertyName' },
         { header: 'Inquilino', accessor: 'tenantName' },
-        { header: 'Riferimento', accessor: 'referenceMonth', render: (row) => `${row.referenceMonth.toString().padStart(2, '0')}/${row.referenceYear}` },
+        { header: 'Riferimento', accessor: 'referenceMonth', render: (row) => `${String(row.referenceMonth).padStart(2, '0')}/${row.referenceYear}` },
         { header: 'Data Pagamento', accessor: 'paymentDate', render: (row) => row.paymentDate ? new Date(row.paymentDate).toLocaleDateString('it-IT') : '---' },
         { header: 'Importo', accessor: 'amount', render: (row) => `€${row.amount.toLocaleString('it-IT')}`, className: 'text-right font-bold' },
         { 
@@ -83,6 +126,17 @@ const PaymentsScreen: React.FC = () => {
             },
             className: 'text-center'
         },
+        { 
+            header: 'Azioni', 
+            accessor: 'id',
+            render: (row) => (
+                <div className="flex justify-center items-center gap-4">
+                    <button onClick={() => setEditingPayment(row)} className="text-blue-600 hover:text-blue-800 disabled:text-gray-400 disabled:cursor-not-allowed" disabled={isViewer}><Edit size={18} /></button>
+                    <button onClick={() => setDeletingPayment(row)} className="text-red-600 hover:text-red-800 disabled:text-gray-400 disabled:cursor-not-allowed" disabled={isViewer}><Trash2 size={18} /></button>
+                </div>
+            ),
+            className: 'text-center'
+        },
     ];
 
     const statusFilters: {label: string, value: PaymentStatus | 'all'}[] = [
@@ -93,14 +147,16 @@ const PaymentsScreen: React.FC = () => {
     ];
     
     return (
+        <>
       <Card className="p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <h1 className="text-2xl font-bold text-dark">Registro Pagamenti e Entrate</h1>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
             <ExportButton data={filteredPayments} filename="pagamenti.csv" />
             <button
-                onClick={() => alert("Funzionalità 'Registra Pagamento' da implementare.")}
-                className="flex items-center px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm w-full sm:w-auto"
+                onClick={() => setAddModalOpen(true)}
+                className="flex items-center px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm w-full sm:w-auto disabled:bg-gray-400 disabled:cursor-not-allowed"
+                disabled={isViewer}
             >
                 <PlusCircle size={18} className="mr-2" />
                 Registra Pagamento
@@ -119,7 +175,7 @@ const PaymentsScreen: React.FC = () => {
                     className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                 >
                     <option value="all">Tutti gli immobili</option>
-                    {MOCK_PROPERTIES.map((p: Property) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    {properties.map((p: Property) => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
             </div>
             <div className="col-span-1">
@@ -152,6 +208,30 @@ const PaymentsScreen: React.FC = () => {
         <InteractiveTable columns={columns} data={filteredPayments} />
         
       </Card>
+      <AddPaymentModal
+        isOpen={isAddModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onSave={handleAddPayment}
+        projectId={projectId}
+      />
+      {editingPayment && (
+        <EditPaymentModal
+            isOpen={!!editingPayment}
+            onClose={() => setEditingPayment(null)}
+            onSave={handleUpdatePayment}
+            payment={editingPayment}
+            projectId={projectId}
+        />
+      )}
+      {deletingPayment && (
+        <ConfirmDeleteModal
+            isOpen={!!deletingPayment}
+            onClose={() => setDeletingPayment(null)}
+            onConfirm={handleDeletePayment}
+            message={`Sei sicuro di voler eliminare questo pagamento di €${deletingPayment.amount} per ${deletingPayment.tenantName}?`}
+        />
+      )}
+      </>
     );
 };
 

@@ -177,4 +177,5 @@ export interface Payment {
   referenceMonth: number;
   referenceYear: number;
   status: PaymentStatus;
+  history: HistoryLog[];
 }
