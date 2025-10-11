@@ -184,7 +184,7 @@ const App: React.FC = () => {
 
   if (loading) return <SplashScreen />;
   if (!user) return <LoginScreen onLogin={handleLogin} onRegister={handleRegister} />;
-  if (!selectedProject) return <ProjectSelectionScreen user={user} onSelectProject={handleSelectProject} onCreateProject={handleCreateProject} onLogout={handleLogout} />;
+  if (!selectedProject) return <ProjectSelectionScreen user={user} onSelectProject={handleSelectProject} onCreateProject={handleCreateProject} onLogout={handleLogout} onUpdateProfile={handleUpdateProfile} />;
 
   const CurrentScreenComponent = screenComponents[activeScreen];
 

@@ -1,14 +1,17 @@
+
 import React, { useState, useEffect } from 'react';
 import { User, Project } from '../types';
 import * as dataService from '../services/dataService';
-import { Briefcase, PlusCircle, ArrowRight, UserCircle, LogOut } from 'lucide-react';
+import { Briefcase, PlusCircle, ArrowRight, UserCircle, LogOut, Edit } from 'lucide-react';
 import CreateProjectModal from '../components/modals/CreateProjectModal';
+import EditProfileModal from '../components/modals/EditProfileModal';
 
 interface ProjectSelectionScreenProps {
   user: User;
   onSelectProject: (project: Project) => void;
   onCreateProject: (projectName: string) => void;
   onLogout: () => void;
+  onUpdateProfile: (updatedUser: User) => void;
 }
 
 const ProjectCard: React.FC<{ project: Project, onSelect: () => void }> = ({ project, onSelect }) => (
@@ -26,9 +29,10 @@ const ProjectCard: React.FC<{ project: Project, onSelect: () => void }> = ({ pro
 );
 
 
-const ProjectSelectionScreen: React.FC<ProjectSelectionScreenProps> = ({ user, onSelectProject, onCreateProject, onLogout }) => {
+const ProjectSelectionScreen: React.FC<ProjectSelectionScreenProps> = ({ user, onSelectProject, onCreateProject, onLogout, onUpdateProfile }) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
+  const [isProfileModalOpen, setProfileModalOpen] = useState(false);
 
   useEffect(() => {
     setProjects(dataService.getProjectsForUser(user.id));
@@ -38,17 +42,25 @@ const ProjectSelectionScreen: React.FC<ProjectSelectionScreenProps> = ({ user, o
     onCreateProject(projectName);
     setCreateModalOpen(false);
   }
+  
+  const handleSaveProfile = (updatedUser: User) => {
+    onUpdateProfile(updatedUser);
+    setProfileModalOpen(false);
+  };
 
   return (
     <>
     <div className="flex items-center justify-center min-h-screen bg-light">
       <div className="w-full max-w-2xl p-8 space-y-8 bg-white rounded-2xl shadow-2xl m-4">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-start">
             <div className="flex items-center">
                  <UserCircle size={40} className="text-primary mr-4" />
                  <div>
                     <p className="text-gray-600">Benvenuto,</p>
                     <h1 className="text-2xl font-bold text-dark">{user.name}</h1>
+                    <button onClick={() => setProfileModalOpen(true)} className="flex items-center text-xs text-primary hover:underline font-semibold mt-1">
+                        <Edit size={12} className="mr-1"/> Modifica Profilo
+                    </button>
                 </div>
             </div>
             <button onClick={onLogout} className="flex items-center text-sm text-red-600 font-semibold p-2 rounded-lg hover:bg-red-50">
@@ -89,6 +101,12 @@ const ProjectSelectionScreen: React.FC<ProjectSelectionScreenProps> = ({ user, o
         isOpen={isCreateModalOpen}
         onClose={() => setCreateModalOpen(false)}
         onSave={handleCreate}
+    />
+    <EditProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setProfileModalOpen(false)}
+        user={user}
+        onSave={handleSaveProfile}
     />
     </>
   );
