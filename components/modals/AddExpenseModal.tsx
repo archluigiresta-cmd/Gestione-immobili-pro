@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Expense, Property, ExpenseCategory, UtilityType, TaxType } from '../../types';
-import { X } from 'lucide-react';
+import { X, Link, UploadCloud, File as FileIcon } from 'lucide-react';
 import * as dataService from '../../services/dataService';
 
 interface AddExpenseModalProps {
@@ -33,6 +33,9 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onSa
   const [formData, setFormData] = useState(getInitialState());
   const [properties, setProperties] = useState<Property[]>([]);
   const [error, setError] = useState('');
+  const [invoiceUploadType, setInvoiceUploadType] = useState<'url' | 'file'>('url');
+  const [selectedInvoice, setSelectedInvoice] = useState<File | null>(null);
+
 
   useEffect(() => {
     if (isOpen) {
@@ -69,7 +72,22 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onSa
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedInvoice(e.target.files[0]);
+    }
+  };
+
+  const handleFileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.propertyId || !formData.description || formData.amount <= 0 || !formData.date) {
       setError('Immobile, descrizione, importo (> 0) e data sono obbligatori.');
@@ -87,6 +105,13 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onSa
         setError('Specificare il tipo di tassa è obbligatorio.');
         return;
     }
+    if (invoiceUploadType === 'url' && !formData.invoiceUrl?.trim()) {
+        // Not mandatory, just reset file if empty
+        setFormData(prev => ({...prev, invoiceUrl: ''}));
+    }
+    if (invoiceUploadType === 'file' && !selectedInvoice) {
+       // Not mandatory
+    }
     
     let dataToSave: Omit<Expense, 'id' | 'history'> = {
         projectId,
@@ -96,8 +121,14 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onSa
         category: formData.category,
         date: formData.date,
         providerUrl: formData.providerUrl,
-        invoiceUrl: formData.invoiceUrl,
     };
+
+    if (invoiceUploadType === 'file' && selectedInvoice) {
+        dataToSave.invoiceData = await handleFileToBase64(selectedInvoice);
+        dataToSave.invoiceName = selectedInvoice.name;
+    } else {
+        dataToSave.invoiceUrl = formData.invoiceUrl;
+    }
 
     if (formData.category === ExpenseCategory.OTHER) dataToSave.categoryOther = formData.categoryOther;
     
@@ -122,6 +153,8 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onSa
   const handleClose = () => {
       setFormData(getInitialState());
       setError('');
+      setSelectedInvoice(null);
+      setInvoiceUploadType('url');
       onClose();
   }
 
@@ -241,10 +274,48 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onSa
             <label className="block text-sm font-medium text-gray-700">Link al sito del gestore (Opzionale)</label>
             <input type="url" name="providerUrl" value={formData.providerUrl} onChange={handleChange} className="mt-1 block w-full input" placeholder="https://..." />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Link alla fattura (Opzionale)</label>
-            <input type="url" name="invoiceUrl" value={formData.invoiceUrl} onChange={handleChange} className="mt-1 block w-full input" placeholder="https://..." />
-          </div>
+          
+           <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Fattura (Opzionale)</label>
+                <div className="flex gap-2 rounded-lg bg-gray-100 p-1">
+                    <button type="button" onClick={() => setInvoiceUploadType('url')} className={`w-full flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${invoiceUploadType === 'url' ? 'bg-primary text-white shadow' : 'text-gray-600'}`}>
+                        <Link size={16}/> Link Esterno (URL)
+                    </button>
+                    <button type="button" onClick={() => setInvoiceUploadType('file')} className={`w-full flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${invoiceUploadType === 'file' ? 'bg-primary text-white shadow' : 'text-gray-600'}`}>
+                        <UploadCloud size={16}/> Carica File
+                    </button>
+                </div>
+            </div>
+            {invoiceUploadType === 'url' ? (
+                 <div>
+                    <input type="url" name="invoiceUrl" value={formData.invoiceUrl} onChange={handleChange} className="mt-1 block w-full input" placeholder="https://..." />
+                </div>
+            ) : (
+                <div>
+                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                        <div className="space-y-1 text-center">
+                            {selectedInvoice ? (
+                                <>
+                                    <FileIcon size={32} className="mx-auto text-green-500"/>
+                                    <p className="font-semibold text-dark">{selectedInvoice.name}</p>
+                                    <button type="button" onClick={() => setSelectedInvoice(null)} className="text-xs text-red-600 hover:underline">Cambia file</button>
+                                </>
+                            ) : (
+                                <>
+                                    <UploadCloud size={32} className="mx-auto text-gray-400"/>
+                                    <div className="flex text-sm text-gray-600">
+                                        <label htmlFor="invoice-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-primary hover:text-primary-hover focus-within:outline-none">
+                                            <span>Cerca un file</span>
+                                            <input id="invoice-upload" name="invoice-upload" type="file" className="sr-only" onChange={handleFileChange} />
+                                        </label>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+            
           <div className="flex justify-end pt-4">
             <button type="button" onClick={handleClose} className="mr-2 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Annulla</button>
             <button type="submit" className="px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm">Aggiungi Spesa</button>

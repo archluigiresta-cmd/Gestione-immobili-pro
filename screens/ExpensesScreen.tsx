@@ -3,7 +3,7 @@ import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recha
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
 import { Expense, ExpenseCategory, User, UtilityType, TaxType } from '../types';
-import { PlusCircle, Edit, Trash2, ExternalLink, FileText } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, ExternalLink, Download } from 'lucide-react';
 import AddExpenseModal from '../components/modals/AddExpenseModal';
 import EditExpenseModal from '../components/modals/EditExpenseModal';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
@@ -94,7 +94,7 @@ const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ projectId, user }) => {
                                     <th className="p-3 text-sm font-semibold text-gray-600">Categoria</th>
                                     <th className="p-3 text-sm font-semibold text-gray-600">Data</th>
                                     <th className="p-3 text-sm font-semibold text-gray-600 text-right">Importo</th>
-                                    <th className="p-3 text-sm font-semibold text-gray-600 text-center">Link</th>
+                                    <th className="p-3 text-sm font-semibold text-gray-600 text-center">Allegati</th>
                                     <th className="p-3 text-sm font-semibold text-gray-600 text-center">Azioni</th>
                                 </tr>
                             </thead>
@@ -136,9 +136,14 @@ const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ projectId, user }) => {
                                                             <ExternalLink size={18} />
                                                         </a>
                                                     )}
+                                                    {expense.invoiceData && (
+                                                        <a href={expense.invoiceData} download={expense.invoiceName} className="text-gray-500 hover:text-primary" title={`Scarica ${expense.invoiceName}`}>
+                                                            <Download size={18} />
+                                                        </a>
+                                                    )}
                                                     {expense.invoiceUrl && (
-                                                        <a href={expense.invoiceUrl} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary" title="Visualizza fattura">
-                                                            <FileText size={18} />
+                                                         <a href={expense.invoiceUrl} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary" title="Visualizza fattura (link esterno)">
+                                                            <ExternalLink size={18} />
                                                         </a>
                                                     )}
                                                 </div>

@@ -167,6 +167,8 @@ export interface Expense {
   date: string; // ISO date string
   providerUrl?: string;
   invoiceUrl?: string;
+  invoiceData?: string; // For uploaded files (base64 data URL)
+  invoiceName?: string; // Name of the uploaded invoice file
   history: HistoryLog[];
   // Utility fields
   utilityType?: UtilityType;

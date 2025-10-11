@@ -130,13 +130,24 @@ export const MOCK_EXPENSES: Expense[] = [
         amount: 1200, 
         category: ExpenseCategory.TAXES, 
         date: '2024-06-16', 
-        invoiceUrl: '#', 
+        invoiceUrl: 'https://example.com/fattura-imu.pdf', 
         history: [],
         taxType: TaxType.IMU,
         taxReferenceYear: 2024,
         taxDetails: "Rif. F24 #12345"
     },
-    { id: 'exp-4', projectId: 'proj-1', propertyId: 'prop-2', description: 'Riparazione caldaia', amount: 200, category: ExpenseCategory.MAINTENANCE, date: '2024-03-18', history: [] },
+    { 
+        id: 'exp-4', 
+        projectId: 'proj-1', 
+        propertyId: 'prop-2', 
+        description: 'Riparazione caldaia', 
+        amount: 200, 
+        category: ExpenseCategory.MAINTENANCE, 
+        date: '2024-03-18', 
+        history: [],
+        invoiceData: 'data:application/pdf;base64,JVBERi0xLjQKJ...', // Dummy base64 data
+        invoiceName: 'fattura_caldaia_marzo.pdf',
+    },
 ];
 
 export const MOCK_DOCUMENTS: Document[] = [
