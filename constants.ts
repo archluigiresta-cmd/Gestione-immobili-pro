@@ -8,7 +8,7 @@ export const MOCK_USERS: User[] = [
 export const MOCK_PROJECTS: Project[] = [
   {
     id: 'proj-1',
-    name: 'Progetto Milano Centro',
+    name: 'Progetto Esempio (Demo)',
     ownerId: 'user-1',
     members: [
       { userId: 'user-1', role: ProjectMemberRole.OWNER },
