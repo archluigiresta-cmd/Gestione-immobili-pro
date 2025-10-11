@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
-import { Expense, ExpenseCategory, User } from '../types';
+import { Expense, ExpenseCategory, User, UtilityType } from '../types';
 import { PlusCircle, Edit, Trash2, ExternalLink, FileText } from 'lucide-react';
 import AddExpenseModal from '../components/modals/AddExpenseModal';
 import EditExpenseModal from '../components/modals/EditExpenseModal';
@@ -101,13 +101,28 @@ const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ projectId, user }) => {
                             <tbody>
                                 {expenses.map((expense: Expense) => {
                                     const displayCategory = (expense.category === ExpenseCategory.OTHER && expense.categoryOther) ? expense.categoryOther : expense.category;
+                                    const isUtility = expense.category === ExpenseCategory.UTILITIES;
+                                    const utilityDisplayType = (expense.utilityType === UtilityType.OTHER && expense.utilityTypeOther) ? expense.utilityTypeOther : expense.utilityType;
+
                                     return (
                                         <tr key={expense.id} className="border-b hover:bg-gray-50">
                                             <td className="p-3 text-dark font-medium">
-                                            {expense.description}
-                                            <span className="block text-xs text-gray-500">{getPropertyName(expense.propertyId)}</span>
+                                                {expense.description}
+                                                <span className="block text-xs text-gray-500">{getPropertyName(expense.propertyId)}</span>
+                                                {isUtility && expense.utilityProvider && (
+                                                    <span className="block text-xs text-blue-700 font-semibold">Gestore: {expense.utilityProvider}</span>
+                                                )}
                                             </td>
-                                            <td className="p-3 text-gray-700">{displayCategory}</td>
+                                            <td className="p-3 text-gray-700">
+                                                {isUtility && utilityDisplayType ? (
+                                                    <>
+                                                        <span className="font-semibold">{displayCategory}</span>
+                                                        <span className="block text-xs">{utilityDisplayType}</span>
+                                                    </>
+                                                ) : (
+                                                    displayCategory
+                                                )}
+                                            </td>
                                             <td className="p-3 text-gray-700">{new Date(expense.date).toLocaleDateString('it-IT')}</td>
                                             <td className="p-3 text-gray-900 font-bold text-right">€{expense.amount.toLocaleString('it-IT')}</td>
                                             <td className="p-3 text-center">

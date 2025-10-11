@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Expense, Property, ExpenseCategory } from '../../types';
+import { Expense, Property, ExpenseCategory, UtilityType } from '../../types';
 import { X } from 'lucide-react';
 import * as dataService from '../../services/dataService';
 
@@ -26,18 +26,35 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ isOpen, onClose, on
     }
   }, [isOpen, projectId]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    if (name === 'category') {
+    
+    if (name === 'category' && value !== ExpenseCategory.UTILITIES) {
+      setFormData(prev => ({
+        ...prev,
+        category: value as ExpenseCategory,
+        ...(value !== ExpenseCategory.OTHER && { categoryOther: '' }),
+        utilityType: undefined,
+        utilityTypeOther: '',
+        utilityProvider: '',
+        utilityDetails: '',
+      }));
+    } else if (name === 'category') {
         setFormData(prev => ({
             ...prev,
             category: value as ExpenseCategory,
             ...(value !== ExpenseCategory.OTHER && { categoryOther: '' }),
         }));
+    } else if (name === 'utilityType') {
+        setFormData(prev => ({
+            ...prev,
+            utilityType: value as UtilityType,
+            ...(value !== UtilityType.OTHER && { utilityTypeOther: '' }),
+        }));
     } else {
         setFormData(prev => ({
-        ...prev,
-        [name]: name === 'amount' ? Number(value) : value,
+            ...prev,
+            [name]: name === 'amount' ? Number(value) : value,
         }));
     }
   };
@@ -52,12 +69,27 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ isOpen, onClose, on
         setError('Specificare la categoria è obbligatorio quando si seleziona "Altro".');
         return;
     }
+    if (formData.category === ExpenseCategory.UTILITIES) {
+        if (formData.utilityType === UtilityType.OTHER && !formData.utilityTypeOther?.trim()) {
+            setError('Specificare il tipo di utenza è obbligatorio.');
+            return;
+        }
+    }
 
-    const { categoryOther, ...restOfData } = formData;
-    const dataToSave = {
+    const { categoryOther, utilityTypeOther, ...restOfData } = formData;
+    const dataToSave: Expense = {
         ...restOfData,
         ...(formData.category === ExpenseCategory.OTHER && { categoryOther }),
+        ...(formData.category === ExpenseCategory.UTILITIES && { 
+            ...(formData.utilityType === UtilityType.OTHER ? { utilityTypeOther } : {})
+        }),
     };
+
+    if (dataToSave.category !== ExpenseCategory.UTILITIES) {
+        delete dataToSave.utilityType;
+        delete dataToSave.utilityProvider;
+        delete dataToSave.utilityDetails;
+    }
 
     onSave(dataToSave);
   };
@@ -107,6 +139,35 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ isOpen, onClose, on
                 />
               </div>
           )}
+
+          {formData.category === ExpenseCategory.UTILITIES && (
+            <div className="p-4 bg-blue-50 rounded-lg space-y-4 border border-blue-200">
+                <h3 className="text-md font-semibold text-primary">Dettagli Utenza</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Tipo Utenza</label>
+                      <select name="utilityType" value={formData.utilityType || ''} onChange={handleChange} className="mt-1 block w-full input">
+                        {Object.values(UtilityType).map(type => <option key={type} value={type}>{type}</option>)}
+                      </select>
+                    </div>
+                    {formData.utilityType === UtilityType.OTHER && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Specifica Tipo Utenza</label>
+                            <input type="text" name="utilityTypeOther" value={formData.utilityTypeOther || ''} onChange={handleChange} className="mt-1 block w-full input" />
+                        </div>
+                    )}
+                </div>
+                 <div>
+                  <label className="block text-sm font-medium text-gray-700">Gestore</label>
+                  <input type="text" name="utilityProvider" value={formData.utilityProvider || ''} onChange={handleChange} className="mt-1 block w-full input" placeholder="Es. Enel Energia" />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700">Note / Dettagli Aggiuntivi</label>
+                    <textarea name="utilityDetails" value={formData.utilityDetails || ''} onChange={handleChange} rows={2} className="mt-1 block w-full input" placeholder="Es. Codice cliente, POD, PDR..."></textarea>
+                </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">Importo (€)</label>

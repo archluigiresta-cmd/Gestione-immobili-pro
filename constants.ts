@@ -1,4 +1,4 @@
-import { Property, PropertyType, Tenant, Contract, Payment, PaymentStatus, User, Deadline, DeadlineType, Maintenance, MaintenanceStatus, Expense, ExpenseCategory, Document, DocumentType, Project, ProjectMemberRole, CustomFieldType } from './types';
+import { Property, PropertyType, Tenant, Contract, Payment, PaymentStatus, User, Deadline, DeadlineType, Maintenance, MaintenanceStatus, Expense, ExpenseCategory, Document, DocumentType, Project, ProjectMemberRole, CustomFieldType, UtilityType } from './types';
 
 export const MOCK_USERS: User[] = [
   { id: 'user-1', name: 'Luigi Resta', email: 'arch.luigiresta@gmail.com' },
@@ -108,7 +108,20 @@ export const MOCK_MAINTENANCES: Maintenance[] = [
 
 export const MOCK_EXPENSES: Expense[] = [
     { id: 'exp-1', projectId: 'proj-1', propertyId: 'prop-1', description: 'Spese condominiali Aprile', amount: 250, category: ExpenseCategory.CONDOMINIUM, date: '2024-04-05', history: [] },
-    { id: 'exp-2', projectId: 'proj-1', propertyId: 'prop-2', description: 'Bolletta luce', amount: 85.50, category: ExpenseCategory.UTILITIES, date: '2024-04-15', providerUrl: '#', history: [] },
+    { 
+        id: 'exp-2', 
+        projectId: 'proj-1', 
+        propertyId: 'prop-2', 
+        description: 'Bolletta luce Marzo-Aprile', 
+        amount: 85.50, 
+        category: ExpenseCategory.UTILITIES, 
+        date: '2024-04-15', 
+        providerUrl: 'https://www.servizioelettriconazionale.it/', 
+        history: [],
+        utilityType: UtilityType.ELECTRICITY,
+        utilityProvider: 'Servizio Elettrico Nazionale',
+        utilityDetails: 'POD: IT001E00456789'
+    },
     { id: 'exp-3', projectId: 'proj-1', propertyId: 'prop-1', description: 'Tassa Rifiuti (TARI)', amount: 320, category: ExpenseCategory.TAXES, date: '2024-04-20', invoiceUrl: '#', history: [] },
     { id: 'exp-4', projectId: 'proj-1', propertyId: 'prop-2', description: 'Riparazione caldaia', amount: 200, category: ExpenseCategory.MAINTENANCE, date: '2024-03-18', history: [] },
 ];

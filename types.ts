@@ -133,6 +133,14 @@ export interface Maintenance {
   history: HistoryLog[];
 }
 
+export enum UtilityType {
+    ELECTRICITY = 'Energia Elettrica',
+    GAS = 'Gas',
+    WATER = 'Servizio Idrico',
+    INTERNET = 'Internet',
+    OTHER = 'Altro',
+}
+
 export enum ExpenseCategory {
   CONDOMINIUM = 'Condominio',
   UTILITIES = 'Utenze',
@@ -153,6 +161,10 @@ export interface Expense {
   providerUrl?: string;
   invoiceUrl?: string;
   history: HistoryLog[];
+  utilityType?: UtilityType;
+  utilityTypeOther?: string;
+  utilityProvider?: string;
+  utilityDetails?: string;
 }
 
 export enum DocumentType {
