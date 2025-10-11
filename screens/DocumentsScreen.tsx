@@ -1,14 +1,20 @@
 
+
 import React, { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
-import { Document } from '../types';
+import { Document, User } from '../types';
 import { PlusCircle, Edit, Trash2, Download, FileText } from 'lucide-react';
 import AddDocumentModal from '../components/modals/AddDocumentModal';
 import EditDocumentModal from '../components/modals/EditDocumentModal';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
 
-const DocumentsScreen: React.FC = () => {
+interface DocumentsScreenProps {
+  projectId: string;
+  user: User;
+}
+
+const DocumentsScreen: React.FC<DocumentsScreenProps> = ({ projectId, user }) => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
@@ -16,29 +22,29 @@ const DocumentsScreen: React.FC = () => {
 
   useEffect(() => {
     loadDocuments();
-  }, []);
+  }, [projectId]);
 
   const loadDocuments = () => {
-    setDocuments(dataService.getDocuments());
+    setDocuments(dataService.getDocuments(projectId));
   };
 
-  const getPropertyName = (id: string) => dataService.getProperties().find(p => p.id === id)?.name || 'N/A';
+  const getPropertyName = (id: string) => dataService.getProperties(projectId).find(p => p.id === id)?.name || 'N/A';
 
-  const handleAddDocument = (docData: Omit<Document, 'id'>) => {
-    dataService.addDocument(docData);
+  const handleAddDocument = (docData: Omit<Document, 'id' | 'history'>) => {
+    dataService.addDocument({ ...docData, projectId }, user.id);
     loadDocuments();
     setAddModalOpen(false);
   };
 
   const handleUpdateDocument = (updatedDoc: Document) => {
-    dataService.updateDocument(updatedDoc);
+    dataService.updateDocument(updatedDoc, user.id);
     loadDocuments();
     setEditingDocument(null);
   };
 
   const handleDeleteDocument = () => {
     if (deletingDocument) {
-      dataService.deleteDocument(deletingDocument.id);
+      dataService.deleteDocument(deletingDocument.id, user.id);
       loadDocuments();
       setDeletingDocument(null);
     }
@@ -96,6 +102,7 @@ const DocumentsScreen: React.FC = () => {
         isOpen={isAddModalOpen}
         onClose={() => setAddModalOpen(false)}
         onSave={handleAddDocument}
+        projectId={projectId}
       />
       {editingDocument && (
         <EditDocumentModal
@@ -103,6 +110,7 @@ const DocumentsScreen: React.FC = () => {
           onClose={() => setEditingDocument(null)}
           onSave={handleUpdateDocument}
           document={editingDocument}
+          projectId={projectId}
         />
       )}
       {deletingDocument && (

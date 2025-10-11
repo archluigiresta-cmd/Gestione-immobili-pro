@@ -6,10 +6,11 @@ import * as dataService from '../../services/dataService';
 interface AddTenantModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (tenant: Omit<Tenant, 'id'>) => void;
+  onSave: (tenant: Omit<Tenant, 'id' | 'history'>) => void;
+  projectId: string;
 }
 
-const AddTenantModal: React.FC<AddTenantModalProps> = ({ isOpen, onClose, onSave }) => {
+const AddTenantModal: React.FC<AddTenantModalProps> = ({ isOpen, onClose, onSave, projectId }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -22,7 +23,7 @@ const AddTenantModal: React.FC<AddTenantModalProps> = ({ isOpen, onClose, onSave
       setError('Nome, Email e Telefono sono obbligatori.');
       return;
     }
-    onSave({ name, email, phone, contractId });
+    onSave({ name, email, phone, contractId, projectId });
     // Reset form
     setName('');
     setEmail('');
@@ -60,7 +61,7 @@ const AddTenantModal: React.FC<AddTenantModalProps> = ({ isOpen, onClose, onSave
             <label className="block text-sm font-medium text-gray-700">Contratto (Opzionale)</label>
              <select value={contractId} onChange={e => setContractId(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
               <option value="">Nessun contratto</option>
-              {dataService.getContracts().map(c => <option key={c.id} value={c.id}>Contratto per {dataService.getProperties().find(p=>p.id === c.propertyId)?.name}</option>)}
+              {dataService.getContracts(projectId).map(c => <option key={c.id} value={c.id}>Contratto per {dataService.getProperties(projectId).find(p=>p.id === c.propertyId)?.name}</option>)}
             </select>
           </div>
           <div className="flex justify-end pt-4">

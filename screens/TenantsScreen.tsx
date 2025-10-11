@@ -1,21 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
-import { Tenant } from '../types';
+import { Tenant, User } from '../types';
 import { Mail, Phone, Home, PlusCircle, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import AddTenantModal from '../components/modals/AddTenantModal';
 import EditTenantModal from '../components/modals/EditTenantModal';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
 
 
-const TenantCard: React.FC<{ tenant: Tenant, onEdit: () => void, onDelete: () => void }> = ({ tenant, onEdit, onDelete }) => {
+const TenantCard: React.FC<{ tenant: Tenant, onEdit: () => void, onDelete: () => void, projectId: string }> = ({ tenant, onEdit, onDelete, projectId }) => {
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
     const getPropertyByContract = (contractId: string) => {
-        const contract = dataService.getContracts().find(c => c.id === contractId);
+        // FIX: Pass projectId to getContracts and getProperties
+        const contract = dataService.getContracts(projectId).find(c => c.id === contractId);
         if(!contract) return 'Nessun immobile associato';
-        return dataService.getProperties().find(p => p.id === contract.propertyId)?.name || 'N/A';
+        return dataService.getProperties(projectId).find(p => p.id === contract.propertyId)?.name || 'N/A';
     }
     
     useEffect(() => {
@@ -62,8 +63,12 @@ const TenantCard: React.FC<{ tenant: Tenant, onEdit: () => void, onDelete: () =>
     );
 };
 
+interface TenantsScreenProps {
+  projectId: string;
+  user: User;
+}
 
-const TenantsScreen: React.FC = () => {
+const TenantsScreen: React.FC<TenantsScreenProps> = ({ projectId, user }) => {
     const [tenants, setTenants] = useState<Tenant[]>([]);
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
@@ -71,20 +76,20 @@ const TenantsScreen: React.FC = () => {
 
     useEffect(() => {
         loadTenants();
-    }, []);
+    }, [projectId]);
 
     const loadTenants = () => {
-        setTenants(dataService.getTenants());
+        setTenants(dataService.getTenants(projectId));
     };
 
-    const handleAddTenant = (tenantData: Omit<Tenant, 'id'>) => {
-        dataService.addTenant(tenantData);
+    const handleAddTenant = (tenantData: Omit<Tenant, 'id' | 'history'>) => {
+        dataService.addTenant({ ...tenantData, projectId }, user.id);
         loadTenants();
         setAddModalOpen(false);
     };
 
     const handleUpdateTenant = (updatedTenant: Tenant) => {
-        dataService.updateTenant(updatedTenant);
+        dataService.updateTenant(updatedTenant, user.id);
         loadTenants();
         setEditingTenant(null);
     };
@@ -116,6 +121,7 @@ const TenantsScreen: React.FC = () => {
                         tenant={tenant}
                         onEdit={() => setEditingTenant(tenant)}
                         onDelete={() => setDeletingTenant(tenant)}
+                        projectId={projectId}
                     />
                 ))}
             </div>
@@ -124,6 +130,7 @@ const TenantsScreen: React.FC = () => {
                 isOpen={isAddModalOpen}
                 onClose={() => setAddModalOpen(false)}
                 onSave={handleAddTenant}
+                projectId={projectId}
             />
 
             {editingTenant && (
@@ -132,6 +139,7 @@ const TenantsScreen: React.FC = () => {
                     onClose={() => setEditingTenant(null)}
                     onSave={handleUpdateTenant}
                     tenant={editingTenant}
+                    projectId={projectId}
                 />
             )}
 

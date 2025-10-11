@@ -6,10 +6,11 @@ import * as dataService from '../../services/dataService';
 interface AddContractModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (contract: Omit<Contract, 'id' | 'documentUrl'>) => void;
+  onSave: (contract: Omit<Contract, 'id' | 'documentUrl' | 'projectId' | 'history'>) => void;
+  projectId: string;
 }
 
-const AddContractModal: React.FC<AddContractModalProps> = ({ isOpen, onClose, onSave }) => {
+const AddContractModal: React.FC<AddContractModalProps> = ({ isOpen, onClose, onSave, projectId }) => {
   const [propertyId, setPropertyId] = useState('');
   const [tenantId, setTenantId] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -22,10 +23,10 @@ const AddContractModal: React.FC<AddContractModalProps> = ({ isOpen, onClose, on
 
   useEffect(() => {
     if (isOpen) {
-      setAvailableProperties(dataService.getProperties().filter(p => !p.isRented));
-      setTenants(dataService.getTenants());
+      setAvailableProperties(dataService.getProperties(projectId).filter(p => !p.isRented));
+      setTenants(dataService.getTenants(projectId));
     }
-  }, [isOpen]);
+  }, [isOpen, projectId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

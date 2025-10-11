@@ -1,14 +1,15 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Home, Building2, FileText, Calendar, Users, Wrench, CircleDollarSign, Download, BarChart2, Settings, LifeBuoy } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import * as dataService from './services/dataService';
-import { User } from './types';
+import { User, Project, ProjectMemberRole } from './types';
 
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
 import LoginScreen from './screens/LoginScreen';
 import SplashScreen from './screens/SplashScreen';
+import ProjectSelectionScreen from './screens/ProjectSelectionScreen';
 import DashboardScreen from './screens/DashboardScreen';
 import PropertiesScreen from './screens/PropertiesScreen';
 import PropertyDetailScreen from './screens/PropertyDetailScreen';
@@ -75,6 +76,7 @@ export const secondaryNavigationItems: NavItem[] = [
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [activeScreen, setActiveScreen] = useState<Screen>('dashboard');
@@ -82,16 +84,19 @@ const App: React.FC = () => {
   
   const [isInstallable, setIsInstallable] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  
+  const currentUserRole = useMemo(() => {
+    if (!user || !selectedProject) return null;
+    return selectedProject.members.find(m => m.userId === user.id)?.role || null;
+  }, [user, selectedProject]);
 
   useEffect(() => {
-    // Check for PWA install prompt
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       setIsInstallable(true);
       setDeferredPrompt(e);
     });
 
-    // Check for logged-in user
     const loggedInUserId = localStorage.getItem('loggedInUserId');
     if (loggedInUserId) {
       const currentUser = dataService.getUser(loggedInUserId);
@@ -115,8 +120,31 @@ const App: React.FC = () => {
 
   const handleLogout = () => {
     setUser(null);
+    setSelectedProject(null);
     localStorage.removeItem('loggedInUserId');
     setActiveScreen('dashboard');
+  };
+
+  const handleSelectProject = (project: Project) => {
+    setSelectedProject(project);
+    setActiveScreen('dashboard');
+  };
+
+  const handleBackToProjects = () => {
+    setSelectedProject(null);
+    setActiveScreen('dashboard');
+  };
+
+  const handleCreateProject = (projectName: string) => {
+    if (user) {
+        const newProjectData: Omit<Project, 'id'> = {
+            name: projectName,
+            ownerId: user.id,
+            members: [{ userId: user.id, role: ProjectMemberRole.OWNER }]
+        };
+        const newProject = dataService.addProject(newProjectData);
+        handleSelectProject(newProject);
+    }
   };
   
   const handleNavigate = (screen: Screen, id?: string) => {
@@ -140,6 +168,11 @@ const App: React.FC = () => {
   const handleDeleteUser = (userId: string) => {
     dataService.deleteUser(userId);
   };
+  
+  const handleUpdateProject = (project: Project) => {
+      dataService.updateProject(project);
+      setSelectedProject(project);
+  }
 
   const handleInstall = () => {
     if (deferredPrompt) {
@@ -156,9 +189,9 @@ const App: React.FC = () => {
     }
   };
 
-
   if (loading) return <SplashScreen />;
   if (!user) return <LoginScreen onLogin={handleLogin} onRegister={handleRegister} />;
+  if (!selectedProject) return <ProjectSelectionScreen user={user} onSelectProject={handleSelectProject} onCreateProject={handleCreateProject} onLogout={handleLogout} />;
 
   const CurrentScreenComponent = screenComponents[activeScreen];
 
@@ -174,18 +207,24 @@ const App: React.FC = () => {
       />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header 
-          currentScreen={getScreenName(activeScreen)} 
+          currentScreen={getScreenName(activeScreen)}
+          currentProjectName={selectedProject.name}
           toggleSidebar={() => setSidebarOpen(!isSidebarOpen)}
           user={user}
           onLogout={handleLogout}
           onNavigate={handleNavigate}
+          onBackToProjects={handleBackToProjects}
         />
         <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6">
           <CurrentScreenComponent 
             onNavigate={handleNavigate} 
             propertyId={propertyId}
-            onBack={() => handleNavigate('properties')}
+            projectId={selectedProject.id}
             user={user}
+            userRole={currentUserRole}
+            project={selectedProject}
+            onUpdateProject={handleUpdateProject}
+            onBack={() => handleNavigate('properties')}
             onUpdateProfile={handleUpdateProfile}
             onAddUser={handleAddUser}
             onDeleteUser={handleDeleteUser}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
-import { Property } from '../types';
+import { Property, ProjectMemberRole, User } from '../types';
 import { PlusCircle, Edit, Trash2, Eye, MapPin } from 'lucide-react';
 import AddPropertyModal from '../components/modals/AddPropertyModal';
 import EditPropertyModal from '../components/modals/EditPropertyModal';
@@ -10,10 +10,13 @@ import { Screen } from '../App';
 
 interface PropertiesScreenProps {
   onNavigate: (screen: Screen, propertyId?: string) => void;
+  projectId: string;
+  user: User;
+  userRole: ProjectMemberRole;
 }
 
 
-const PropertyCard: React.FC<{ property: Property, onEdit: () => void, onDelete: () => void, onView: () => void }> = ({ property, onEdit, onDelete, onView }) => {
+const PropertyCard: React.FC<{ property: Property, onEdit: () => void, onDelete: () => void, onView: () => void, disabled: boolean }> = ({ property, onEdit, onDelete, onView, disabled }) => {
     return (
         <Card className="flex flex-col group">
             <div className="relative">
@@ -38,8 +41,8 @@ const PropertyCard: React.FC<{ property: Property, onEdit: () => void, onDelete:
                         {property.isRented ? 'Affittato' : 'Libero'}
                     </span>
                     <div className="flex gap-2">
-                        <button onClick={onEdit} className="text-blue-600 hover:text-blue-800 p-1.5 rounded-full hover:bg-blue-50"><Edit size={18} /></button>
-                        <button onClick={onDelete} className="text-red-600 hover:text-red-800 p-1.5 rounded-full hover:bg-red-50"><Trash2 size={18} /></button>
+                        <button onClick={onEdit} className="text-blue-600 hover:text-blue-800 p-1.5 rounded-full hover:bg-blue-50 disabled:text-gray-400 disabled:cursor-not-allowed disabled:hover:bg-transparent" disabled={disabled}><Edit size={18} /></button>
+                        <button onClick={onDelete} className="text-red-600 hover:text-red-800 p-1.5 rounded-full hover:bg-red-50 disabled:text-gray-400 disabled:cursor-not-allowed disabled:hover:bg-transparent" disabled={disabled}><Trash2 size={18} /></button>
                     </div>
                 </div>
             </div>
@@ -48,29 +51,31 @@ const PropertyCard: React.FC<{ property: Property, onEdit: () => void, onDelete:
 };
 
 
-const PropertiesScreen: React.FC<PropertiesScreenProps> = ({ onNavigate }) => {
+const PropertiesScreen: React.FC<PropertiesScreenProps> = ({ onNavigate, projectId, user, userRole }) => {
   const [properties, setProperties] = useState<Property[]>([]);
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
   const [deletingProperty, setDeletingProperty] = useState<Property | null>(null);
 
+  const isViewer = userRole === ProjectMemberRole.VIEWER;
+
   useEffect(() => {
     loadProperties();
-  }, []);
+  }, [projectId]);
 
   const loadProperties = () => {
-    setProperties(dataService.getProperties());
+    setProperties(dataService.getProperties(projectId));
   };
 
-  const handleAddProperty = (propertyData: Omit<Property, 'id'>) => {
-    const newProperty = dataService.addProperty(propertyData);
+  const handleAddProperty = (propertyData: Omit<Property, 'id' | 'projectId' | 'customFields' | 'history'>) => {
+    const newProperty = dataService.addProperty({ ...propertyData, projectId }, user.id);
     loadProperties();
     setAddModalOpen(false);
     onNavigate('propertyDetail', newProperty.id);
   };
 
   const handleUpdateProperty = (updatedProperty: Property) => {
-    dataService.updateProperty(updatedProperty);
+    dataService.updateProperty(updatedProperty, user.id);
     loadProperties();
     setEditingProperty(null);
   };
@@ -89,7 +94,8 @@ const PropertiesScreen: React.FC<PropertiesScreenProps> = ({ onNavigate }) => {
         <h1 className="text-2xl font-bold text-dark">Elenco Immobili</h1>
         <button
           onClick={() => setAddModalOpen(true)}
-          className="flex items-center px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm"
+          className="flex items-center px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
+          disabled={isViewer}
         >
           <PlusCircle size={18} className="mr-2" />
           Aggiungi Immobile
@@ -103,6 +109,7 @@ const PropertiesScreen: React.FC<PropertiesScreenProps> = ({ onNavigate }) => {
             onView={() => onNavigate('propertyDetail', prop.id)}
             onEdit={() => setEditingProperty(prop)}
             onDelete={() => setDeletingProperty(prop)}
+            disabled={isViewer}
           />
         ))}
       </div>
@@ -111,6 +118,7 @@ const PropertiesScreen: React.FC<PropertiesScreenProps> = ({ onNavigate }) => {
         isOpen={isAddModalOpen}
         onClose={() => setAddModalOpen(false)}
         onSave={handleAddProperty}
+        projectId={projectId}
       />
       {editingProperty && (
         <EditPropertyModal

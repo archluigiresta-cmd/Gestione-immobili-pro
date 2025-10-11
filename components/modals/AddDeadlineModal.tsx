@@ -1,4 +1,6 @@
 
+
+
 import React, { useState, useEffect } from 'react';
 import { Deadline, DeadlineType, Property } from '../../types';
 import { X } from 'lucide-react';
@@ -7,10 +9,11 @@ import * as dataService from '../../services/dataService';
 interface AddDeadlineModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (deadline: Omit<Deadline, 'id' | 'isCompleted'>) => void;
+  onSave: (deadline: Omit<Deadline, 'id' | 'isCompleted' | 'history'>) => void;
+  projectId: string;
 }
 
-const AddDeadlineModal: React.FC<AddDeadlineModalProps> = ({ isOpen, onClose, onSave }) => {
+const AddDeadlineModal: React.FC<AddDeadlineModalProps> = ({ isOpen, onClose, onSave, projectId }) => {
   const [formData, setFormData] = useState({
     propertyId: '',
     title: '',
@@ -22,9 +25,10 @@ const AddDeadlineModal: React.FC<AddDeadlineModalProps> = ({ isOpen, onClose, on
 
   useEffect(() => {
     if (isOpen) {
-      setProperties(dataService.getProperties());
+      // FIX: Pass projectId to getProperties
+      setProperties(dataService.getProperties(projectId));
     }
-  }, [isOpen]);
+  }, [isOpen, projectId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -37,7 +41,8 @@ const AddDeadlineModal: React.FC<AddDeadlineModalProps> = ({ isOpen, onClose, on
       setError('Tutti i campi sono obbligatori.');
       return;
     }
-    onSave(formData);
+    // FIX: Add projectId to the object passed to onSave to match the expected type.
+    onSave({ ...formData, projectId });
     onClose();
   };
 

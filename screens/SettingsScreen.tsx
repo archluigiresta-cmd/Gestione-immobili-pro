@@ -1,18 +1,22 @@
 
 import React, { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
-import { User } from '../types';
-import { UserCircle, Palette, Bell, CheckCircle, Users as UsersIcon, PlusCircle, Trash2 } from 'lucide-react';
+import { User, Project, ProjectMemberRole } from '../types';
+import { UserCircle, Palette, Bell, CheckCircle, Users as UsersIcon, PlusCircle, Trash2, Briefcase } from 'lucide-react';
 import EditProfileModal from '../components/modals/EditProfileModal';
 import AddUserModal from '../components/modals/AddUserModal';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
+import ShareProjectModal from '../components/modals/ShareProjectModal';
 import * as dataService from '../services/dataService';
 
 interface SettingsScreenProps {
   user: User;
+  project: Project;
+  userRole: ProjectMemberRole;
   onUpdateProfile: (user: User) => void;
   onAddUser: (userData: Omit<User, 'id'>) => void;
   onDeleteUser: (userId: string) => void;
+  onUpdateProject: (project: Project) => void;
 }
 
 const ToggleSwitch: React.FC<{ label: string; enabled: boolean; onChange: (enabled: boolean) => void; }> = ({ label, enabled, onChange }) => (
@@ -28,13 +32,14 @@ const ToggleSwitch: React.FC<{ label: string; enabled: boolean; onChange: (enabl
 );
 
 
-const SettingsScreen: React.FC<SettingsScreenProps> = ({ user, onUpdateProfile, onAddUser, onDeleteUser }) => {
+const SettingsScreen: React.FC<SettingsScreenProps> = ({ user, project, userRole, onUpdateProfile, onAddUser, onDeleteUser, onUpdateProject }) => {
     const [settings, setSettings] = useState({
         darkMode: false,
         emailNotifications: true,
     });
     const [isProfileModalOpen, setProfileModalOpen] = useState(false);
     const [isAddUserModalOpen, setAddUserModalOpen] = useState(false);
+    const [isShareProjectModalOpen, setShareProjectModalOpen] = useState(false);
     const [deletingUser, setDeletingUser] = useState<User | null>(null);
     const [allUsers, setAllUsers] = useState<User[]>([]);
     const [showSuccess, setShowSuccess] = useState(false);
@@ -85,13 +90,32 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ user, onUpdateProfile, 
             showSuccessWithMessage("Utente eliminato.");
         }
     }
+    
+    const handleShareProject = (userId: string, role: ProjectMemberRole) => {
+        const updatedProject = {
+            ...project,
+            members: [...project.members, { userId, role }]
+        };
+        onUpdateProject(updatedProject);
+        setShareProjectModalOpen(false);
+        showSuccessWithMessage("Progetto condiviso!");
+    }
+
+    const handleRemoveMember = (userId: string) => {
+        const updatedProject = {
+            ...project,
+            members: project.members.filter(m => m.userId !== userId)
+        };
+        onUpdateProject(updatedProject);
+        showSuccessWithMessage("Membro rimosso.");
+    }
 
   return (
     <>
     <div className="max-w-4xl mx-auto space-y-8">
         <div>
             <h1 className="text-3xl font-bold text-dark">Impostazioni</h1>
-            <p className="text-gray-500 mt-1">Gestisci il tuo profilo e le preferenze dell'applicazione.</p>
+            <p className="text-gray-500 mt-1">Gestisci il tuo profilo, gli utenti e le preferenze dell'applicazione.</p>
         </div>
 
       <Card className="p-6">
@@ -105,9 +129,45 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ user, onUpdateProfile, 
         </div>
       </Card>
       
+      {userRole === ProjectMemberRole.OWNER && (
+        <Card className="p-6">
+            <h3 className="text-xl font-bold text-dark mb-4 border-b pb-2 flex justify-between items-center">
+                <span className="flex items-center"><Briefcase size={20} className="mr-3 text-primary" />Gestione Progetto "{project.name}"</span>
+                <button onClick={() => setShareProjectModalOpen(true)} className="flex items-center text-sm px-3 py-1.5 bg-secondary text-primary font-semibold rounded-lg hover:bg-blue-200 transition-colors">
+                    <PlusCircle size={16} className="mr-2"/> Condividi
+                </button>
+            </h3>
+            <div className="space-y-3">
+                {project.members.map(member => {
+                    const memberUser = dataService.getUser(member.userId);
+                    if (!memberUser) return null;
+                    return (
+                        <div key={member.userId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div className="flex items-center">
+                                <UserCircle size={28} className="text-primary mr-3"/>
+                                <div>
+                                    <p className="font-semibold text-dark">{memberUser.name} {memberUser.id === user.id && <span className="text-xs font-normal text-gray-500">(Tu)</span>}</p>
+                                    <p className="text-sm text-gray-500">{memberUser.email}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                               <span className="text-sm font-medium text-gray-600 bg-gray-200 px-2 py-0.5 rounded-md">{member.role}</span>
+                               {member.role !== ProjectMemberRole.OWNER && (
+                                   <button onClick={() => handleRemoveMember(member.userId)} className="p-2 text-red-500 hover:bg-red-100 rounded-full transition-colors">
+                                       <Trash2 size={18}/>
+                                   </button>
+                               )}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </Card>
+      )}
+
       <Card className="p-6">
         <h3 className="text-xl font-bold text-dark mb-4 border-b pb-2 flex justify-between items-center">
-            <span className="flex items-center"><UsersIcon size={20} className="mr-3 text-primary" />Gestione Utenti</span>
+            <span className="flex items-center"><UsersIcon size={20} className="mr-3 text-primary" />Gestione Account Utenti</span>
             <button onClick={() => setAddUserModalOpen(true)} className="flex items-center text-sm px-3 py-1.5 bg-secondary text-primary font-semibold rounded-lg hover:bg-blue-200 transition-colors">
                 <PlusCircle size={16} className="mr-2"/> Aggiungi Utente
             </button>
@@ -180,6 +240,12 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ user, onUpdateProfile, 
         isOpen={isAddUserModalOpen}
         onClose={() => setAddUserModalOpen(false)}
         onSave={handleSaveNewUser}
+    />
+    <ShareProjectModal
+        isOpen={isShareProjectModalOpen}
+        onClose={() => setShareProjectModalOpen(false)}
+        onShare={handleShareProject}
+        project={project}
     />
     {deletingUser && (
         <ConfirmDeleteModal

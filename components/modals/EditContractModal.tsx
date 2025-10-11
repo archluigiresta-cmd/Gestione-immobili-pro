@@ -8,9 +8,10 @@ interface EditContractModalProps {
   onClose: () => void;
   onSave: (contract: Contract) => void;
   contract: Contract;
+  projectId: string;
 }
 
-const EditContractModal: React.FC<EditContractModalProps> = ({ isOpen, onClose, onSave, contract }) => {
+const EditContractModal: React.FC<EditContractModalProps> = ({ isOpen, onClose, onSave, contract, projectId }) => {
   const [formData, setFormData] = useState<Contract>(contract);
   const [error, setError] = useState('');
 
@@ -23,10 +24,10 @@ const EditContractModal: React.FC<EditContractModalProps> = ({ isOpen, onClose, 
 
   useEffect(() => {
     if (isOpen) {
-      setProperties(dataService.getProperties());
-      setTenants(dataService.getTenants());
+      setProperties(dataService.getProperties(projectId));
+      setTenants(dataService.getTenants(projectId));
     }
-  }, [isOpen]);
+  }, [isOpen, projectId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;

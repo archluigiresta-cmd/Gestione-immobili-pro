@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { Maintenance, MaintenanceStatus, Property } from '../../types';
 import { X } from 'lucide-react';
@@ -9,9 +10,10 @@ interface EditMaintenanceModalProps {
   onClose: () => void;
   onSave: (maintenance: Maintenance) => void;
   maintenance: Maintenance;
+  projectId: string;
 }
 
-const EditMaintenanceModal: React.FC<EditMaintenanceModalProps> = ({ isOpen, onClose, onSave, maintenance }) => {
+const EditMaintenanceModal: React.FC<EditMaintenanceModalProps> = ({ isOpen, onClose, onSave, maintenance, projectId }) => {
   const [formData, setFormData] = useState<Maintenance>(maintenance);
   const [properties, setProperties] = useState<Property[]>([]);
   const [error, setError] = useState('');
@@ -22,9 +24,10 @@ const EditMaintenanceModal: React.FC<EditMaintenanceModalProps> = ({ isOpen, onC
 
   useEffect(() => {
     if (isOpen) {
-      setProperties(dataService.getProperties());
+      // FIX: Pass projectId to getProperties
+      setProperties(dataService.getProperties(projectId));
     }
-  }, [isOpen]);
+  }, [isOpen, projectId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;

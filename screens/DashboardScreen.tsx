@@ -31,9 +31,14 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color, onClick 
   </div>
 );
 
+interface WidgetProps {
+  projectId: string;
+}
+
 // Widget Components
-const UpcomingDeadlinesWidget: React.FC = () => {
-    const deadlines = dataService.getDeadlines();
+const UpcomingDeadlinesWidget: React.FC<WidgetProps> = ({ projectId }) => {
+    // FIX: Pass projectId to getDeadlines
+    const deadlines = dataService.getDeadlines(projectId);
     const upcomingDeadlinesList = deadlines
     .filter(d => !d.isCompleted)
     .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
@@ -70,8 +75,9 @@ const UpcomingDeadlinesWidget: React.FC = () => {
     );
 };
 
-const RecentExpensesWidget: React.FC = () => {
-    const expenses = dataService.getExpenses();
+const RecentExpensesWidget: React.FC<WidgetProps> = ({ projectId }) => {
+    // FIX: Pass projectId to getExpenses
+    const expenses = dataService.getExpenses(projectId);
     const recentExpensesData = expenses.slice(-6).map(e => ({
         name: e.description.substring(0, 15) + (e.description.length > 15 ? '...' : ''),
         importo: e.amount,
@@ -92,8 +98,9 @@ const RecentExpensesWidget: React.FC = () => {
     );
 };
 
-const MaintenanceRequestsWidget: React.FC = () => {
-    const maintenances = dataService.getMaintenances();
+const MaintenanceRequestsWidget: React.FC<WidgetProps> = ({ projectId }) => {
+    // FIX: Pass projectId to getMaintenances
+    const maintenances = dataService.getMaintenances(projectId);
     const openRequests = maintenances.filter(m => m.status !== MaintenanceStatus.COMPLETED).slice(0, 5);
     return (
         <Card className="p-4">
@@ -103,7 +110,8 @@ const MaintenanceRequestsWidget: React.FC = () => {
                     <li key={m.id} className="flex items-start justify-between py-2 border-b last:border-b-0">
                         <div>
                             <p className="font-semibold text-dark">{m.description}</p>
-                            <p className="text-sm text-gray-500">{dataService.getProperty(m.propertyId)?.name}</p>
+                            {/* FIX: Pass projectId to getProperty */}
+                            <p className="text-sm text-gray-500">{dataService.getProperty(projectId, m.propertyId)?.name}</p>
                         </div>
                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${m.status === MaintenanceStatus.REQUESTED ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'}`}>
                             {m.status}
@@ -116,8 +124,9 @@ const MaintenanceRequestsWidget: React.FC = () => {
     );
 }
 
-const ExpensesSummaryWidget: React.FC = () => {
-    const expenses = dataService.getExpenses();
+const ExpensesSummaryWidget: React.FC<WidgetProps> = ({ projectId }) => {
+    // FIX: Pass projectId to getExpenses
+    const expenses = dataService.getExpenses(projectId);
     const expensesByCategory = expenses.reduce((acc, expense) => {
         if (!acc[expense.category]) acc[expense.category] = 0;
         acc[expense.category] += expense.amount;
@@ -152,9 +161,10 @@ export const availableDashboardWidgets = [
 
 interface DashboardScreenProps {
   onNavigate: (screen: Screen) => void;
+  projectId: string;
 }
 
-const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate }) => {
+const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate, projectId }) => {
   const [properties, setProperties] = useState<Property[]>([]);
   const [deadlines, setDeadlines] = useState<Deadline[]>([]);
   const [isCustomizeModalOpen, setCustomizeModalOpen] = useState(false);
@@ -165,9 +175,10 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate }) => {
   });
 
   useEffect(() => {
-    setProperties(dataService.getProperties());
-    setDeadlines(dataService.getDeadlines()); 
-  }, []);
+    // FIX: Pass projectId to dataService calls
+    setProperties(dataService.getProperties(projectId));
+    setDeadlines(dataService.getDeadlines(projectId)); 
+  }, [projectId]);
 
   const totalRent = properties.reduce((acc, p) => acc + (p.isRented && p.rentAmount ? p.rentAmount : 0), 0);
   const occupancyRate = properties.length > 0 ? (properties.filter(p => p.isRented).length / properties.length) * 100 : 0;
@@ -204,7 +215,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate }) => {
             const widget = availableDashboardWidgets.find(w => w.id === widgetId);
             if (!widget) return null;
             const WidgetComponent = widget.component;
-            return <WidgetComponent key={widgetId} />;
+            return <WidgetComponent key={widgetId} projectId={projectId} />;
         })}
       </div>
       

@@ -1,13 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Property, Tenant, Contract, Expense, Maintenance, Deadline, Document } from '../types';
+import { Property, Tenant, Contract, Expense, Maintenance, Deadline, Document, ProjectMemberRole, CustomField, CustomFieldType, HistoryLog, User } from '../types';
 import * as dataService from '../services/dataService';
 import Card from '../components/ui/Card';
-import { ArrowLeft, Building2, Square, BedDouble, FileText, CircleDollarSign, Wrench, Calendar, Users, PlusCircle } from 'lucide-react';
+import { ArrowLeft, Building2, Square, BedDouble, FileText, CircleDollarSign, Wrench, Calendar, Users, PlusCircle, Edit, Trash2, Info, History, UserCircle } from 'lucide-react';
+import AddCustomFieldModal from '../components/modals/AddCustomFieldModal';
+import EditCustomFieldModal from '../components/modals/EditCustomFieldModal';
+import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
 
 interface PropertyDetailScreenProps {
   propertyId: string;
+  projectId: string;
+  user: User;
+  userRole: ProjectMemberRole;
   onBack: () => void;
+  onNavigate: (screen: string) => void;
 }
+
+const generateId = (prefix: string): string => `${prefix}-${new Date().getTime()}-${Math.random().toString(36).substr(2, 9)}`;
 
 // Sub-components for tabs
 const ExpensesTab: React.FC<{ expenses: Expense[] }> = ({ expenses }) => (
@@ -74,8 +83,32 @@ const DocumentsTab: React.FC<{ documents: Document[] }> = ({ documents }) => (
     </div>
 );
 
+const HistoryTab: React.FC<{ historyLogs: HistoryLog[] }> = ({ historyLogs }) => {
+    const getUserName = (userId: string) => dataService.getUser(userId)?.name || 'Utente Sconosciuto';
 
-const PropertyDetailScreen: React.FC<PropertyDetailScreenProps> = ({ propertyId, onBack }) => {
+    const sortedHistory = [...(historyLogs || [])].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    return (
+        <div className="space-y-4">
+            {sortedHistory.map(log => (
+                <div key={log.id} className="flex items-start gap-4 p-3 bg-gray-50 rounded-lg">
+                    <UserCircle size={24} className="text-primary mt-1" />
+                    <div>
+                        <p className="font-semibold text-dark">{getUserName(log.userId)}</p>
+                        <p className="text-sm text-gray-700">{log.description}</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                            {new Date(log.timestamp).toLocaleString('it-IT', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                    </div>
+                </div>
+            ))}
+            {sortedHistory.length === 0 && <p className="text-center p-4 text-gray-500">Nessuna cronologia di modifiche disponibile.</p>}
+        </div>
+    );
+};
+
+
+const PropertyDetailScreen: React.FC<PropertyDetailScreenProps> = ({ propertyId, projectId, user, userRole, onBack, onNavigate }) => {
   const [property, setProperty] = useState<Property | null>(null);
   const [contract, setContract] = useState<Contract | null>(null);
   const [tenant, setTenant] = useState<Tenant | null>(null);
@@ -86,25 +119,65 @@ const PropertyDetailScreen: React.FC<PropertyDetailScreenProps> = ({ propertyId,
   
   const [activeTab, setActiveTab] = useState('tenant');
   
-  useEffect(() => {
-    const prop = dataService.getProperty(propertyId);
+  const [isAddCfModalOpen, setAddCfModalOpen] = useState(false);
+  const [editingCf, setEditingCf] = useState<CustomField | null>(null);
+  const [deletingCf, setDeletingCf] = useState<CustomField | null>(null);
+
+  const isViewer = userRole === ProjectMemberRole.VIEWER;
+
+  const loadPropertyData = () => {
+    const prop = dataService.getProperty(projectId, propertyId);
     if (prop) {
       setProperty(prop);
-      setExpenses(dataService.getExpenses().filter(e => e.propertyId === prop.id));
-      setMaintenances(dataService.getMaintenances().filter(m => m.propertyId === prop.id));
-      setDeadlines(dataService.getDeadlines().filter(d => d.propertyId === prop.id));
-      setDocuments(dataService.getDocuments().filter(d => d.propertyId === prop.id));
+      setExpenses(dataService.getExpenses(projectId).filter(e => e.propertyId === prop.id));
+      setMaintenances(dataService.getMaintenances(projectId).filter(m => m.propertyId === prop.id));
+      setDeadlines(dataService.getDeadlines(projectId).filter(d => d.propertyId === prop.id));
+      setDocuments(dataService.getDocuments(projectId).filter(d => d.propertyId === prop.id));
 
       if (prop.isRented) {
-        const linkedContract = dataService.getContracts().find(c => c.propertyId === prop.id);
+        const linkedContract = dataService.getContracts(projectId).find(c => c.propertyId === prop.id);
         setContract(linkedContract || null);
         if (linkedContract) {
-          const linkedTenant = dataService.getTenants().find(t => t.id === linkedContract.tenantId);
+          const linkedTenant = dataService.getTenants(projectId).find(t => t.id === linkedContract.tenantId);
           setTenant(linkedTenant || null);
         }
+      } else {
+        setContract(null);
+        setTenant(null);
       }
     }
-  }, [propertyId]);
+  }
+
+  useEffect(() => {
+    loadPropertyData();
+  }, [propertyId, projectId]);
+  
+  const handleAddCustomField = (fieldData: Omit<CustomField, 'id'>) => {
+      if(!property) return;
+      const newField: CustomField = { ...fieldData, id: generateId('cf') };
+      const updatedProperty = { ...property, customFields: [...property.customFields, newField] };
+      dataService.updateProperty(updatedProperty, user.id);
+      loadPropertyData();
+      setAddCfModalOpen(false);
+  }
+  
+  const handleUpdateCustomField = (updatedField: CustomField) => {
+      if(!property) return;
+      const updatedFields = property.customFields.map(f => f.id === updatedField.id ? updatedField : f);
+      const updatedProperty = { ...property, customFields: updatedFields };
+      dataService.updateProperty(updatedProperty, user.id);
+      loadPropertyData();
+      setEditingCf(null);
+  }
+  
+  const handleDeleteCustomField = () => {
+      if(!property || !deletingCf) return;
+      const updatedFields = property.customFields.filter(f => f.id !== deletingCf.id);
+      const updatedProperty = { ...property, customFields: updatedFields };
+      dataService.updateProperty(updatedProperty, user.id);
+      loadPropertyData();
+      setDeletingCf(null);
+  }
 
   if (!property) {
     return (
@@ -117,7 +190,7 @@ const PropertyDetailScreen: React.FC<PropertyDetailScreenProps> = ({ propertyId,
     );
   }
 
-  const tabs = [
+  const baseTabs = [
     { id: 'tenant', label: 'Inquilino/Contratto', icon: Users },
     { id: 'expenses', label: 'Spese', icon: CircleDollarSign },
     { id: 'maintenance', label: 'Manutenzioni', icon: Wrench },
@@ -125,14 +198,49 @@ const PropertyDetailScreen: React.FC<PropertyDetailScreenProps> = ({ propertyId,
     { id: 'documents', label: 'Documenti', icon: FileText },
   ];
 
+  const tabs = userRole === ProjectMemberRole.OWNER
+    ? [...baseTabs, { id: 'history', label: 'Cronologia', icon: History }]
+    : baseTabs;
+
+
+  const handleAddButton = () => {
+    const screenMap: { [key: string]: string } = {
+        expenses: 'expenses',
+        maintenance: 'maintenance',
+        deadlines: 'deadlines',
+        documents: 'documents',
+        tenant: 'contracts'
+    };
+    if(screenMap[activeTab]) {
+        onNavigate(screenMap[activeTab]);
+    }
+  }
+  
+  const renderCustomFieldValue = (field: CustomField) => {
+    if(field.type === CustomFieldType.BOOLEAN) {
+        return <span className={`font-bold ${field.value ? 'text-green-600' : 'text-red-600'}`}>{field.value ? 'Sì' : 'No'}</span>
+    }
+    return <span className="text-dark font-mono">{field.value}</span>
+  }
+  
+  const allHistory = [
+    ...(property.history || []),
+    ...expenses.flatMap(i => i.history || []),
+    ...maintenances.flatMap(i => i.history || []),
+    ...deadlines.flatMap(i => i.history || []),
+    ...documents.flatMap(i => i.history || []),
+    ...(contract?.history || []),
+    ...(tenant?.history || []),
+  ];
+
   return (
-    <div>
-      <button onClick={onBack} className="flex items-center text-primary mb-6 hover:underline font-semibold">
+    <div className="space-y-6">
+      <button onClick={onBack} className="flex items-center text-primary hover:underline font-semibold">
         <ArrowLeft size={18} className="mr-2" /> Torna a tutti gli immobili
       </button>
       
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div className="xl:col-span-1">
+        <div className="xl:col-span-1 space-y-6">
             <Card className="sticky top-6">
                 <img src={property.imageUrl} alt={property.name} className="w-full h-56 object-cover rounded-t-xl" />
                 <div className="p-6">
@@ -146,6 +254,34 @@ const PropertyDetailScreen: React.FC<PropertyDetailScreenProps> = ({ propertyId,
                     </div>
                 </div>
             </Card>
+
+            <Card className="p-6">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold text-dark flex items-center"><Info size={18} className="mr-2 text-primary"/>Informazioni Personalizzate</h2>
+                    <button 
+                        onClick={() => setAddCfModalOpen(true)}
+                        className="flex items-center text-sm px-3 py-1.5 bg-secondary text-primary font-semibold rounded-lg hover:bg-blue-200 transition-colors disabled:bg-gray-200 disabled:text-gray-500 disabled:cursor-not-allowed"
+                        disabled={isViewer}
+                    >
+                        <PlusCircle size={16} className="mr-2"/> Aggiungi Campo
+                    </button>
+                </div>
+                <div className="space-y-3">
+                    {property.customFields.length > 0 ? property.customFields.map(field => (
+                        <div key={field.id} className="flex justify-between items-center p-2 bg-gray-50 rounded-md">
+                           <div>
+                             <p className="text-sm font-semibold text-gray-800">{field.label}</p>
+                             {renderCustomFieldValue(field)}
+                           </div>
+                           {!isViewer && <div>
+                               <button onClick={() => setEditingCf(field)} className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-full"><Edit size={16}/></button>
+                               <button onClick={() => setDeletingCf(field)} className="p-1.5 text-red-600 hover:bg-red-100 rounded-full"><Trash2 size={16}/></button>
+                           </div>}
+                        </div>
+                    )) : <p className="text-sm text-center text-gray-500 py-4">Nessun campo personalizzato. Aggiungine uno!</p>}
+                </div>
+            </Card>
+
         </div>
         <div className="xl:col-span-2">
             <Card>
@@ -163,9 +299,15 @@ const PropertyDetailScreen: React.FC<PropertyDetailScreenProps> = ({ propertyId,
                 <div className="p-6">
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-xl font-bold text-dark">{tabs.find(t=>t.id === activeTab)?.label}</h2>
-                        <button className="flex items-center text-sm px-3 py-1.5 bg-secondary text-primary font-semibold rounded-lg hover:bg-blue-200 transition-colors">
-                            <PlusCircle size={16} className="mr-2"/> Aggiungi
-                        </button>
+                        {activeTab !== 'history' && (
+                            <button 
+                                onClick={handleAddButton}
+                                className="flex items-center text-sm px-3 py-1.5 bg-secondary text-primary font-semibold rounded-lg hover:bg-blue-200 transition-colors disabled:bg-gray-200 disabled:text-gray-500 disabled:cursor-not-allowed"
+                                disabled={isViewer}
+                            >
+                                <PlusCircle size={16} className="mr-2"/> Aggiungi
+                            </button>
+                        )}
                     </div>
 
                     {activeTab === 'tenant' && (
@@ -183,10 +325,35 @@ const PropertyDetailScreen: React.FC<PropertyDetailScreenProps> = ({ propertyId,
                     {activeTab === 'maintenance' && <MaintenanceTab maintenances={maintenances} />}
                     {activeTab === 'deadlines' && <DeadlinesTab deadlines={deadlines} />}
                     {activeTab === 'documents' && <DocumentsTab documents={documents} />}
+                    {activeTab === 'history' && <HistoryTab historyLogs={allHistory} />}
                 </div>
             </Card>
         </div>
       </div>
+      
+      <AddCustomFieldModal 
+        isOpen={isAddCfModalOpen}
+        onClose={() => setAddCfModalOpen(false)}
+        onSave={handleAddCustomField}
+      />
+      
+      {editingCf && (
+        <EditCustomFieldModal 
+            isOpen={!!editingCf}
+            onClose={() => setEditingCf(null)}
+            onSave={handleUpdateCustomField}
+            field={editingCf}
+        />
+      )}
+
+      {deletingCf && (
+        <ConfirmDeleteModal
+            isOpen={!!deletingCf}
+            onClose={() => setDeletingCf(null)}
+            onConfirm={handleDeleteCustomField}
+            message={`Sei sicuro di voler eliminare il campo "${deletingCf.label}"?`}
+        />
+      )}
     </div>
   );
 };

@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { Document, Property } from '../../types';
 import { X } from 'lucide-react';
@@ -7,25 +8,27 @@ import * as dataService from '../../services/dataService';
 interface AddDocumentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (document: Omit<Document, 'id'>) => void;
+  onSave: (document: Omit<Document, 'id' | 'history'>) => void;
+  projectId: string;
 }
 
-const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ isOpen, onClose, onSave }) => {
+const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ isOpen, onClose, onSave, projectId }) => {
   const [formData, setFormData] = useState({
     name: '',
     propertyId: '',
     type: 'Contratto',
     uploadDate: new Date().toISOString().split('T')[0],
     fileUrl: '',
+    expiryDate: undefined as string | undefined,
   });
   const [properties, setProperties] = useState<Property[]>([]);
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (isOpen) {
-      setProperties(dataService.getProperties());
+      setProperties(dataService.getProperties(projectId));
     }
-  }, [isOpen]);
+  }, [isOpen, projectId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -38,7 +41,7 @@ const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ isOpen, onClose, on
       setError('Nome, immobile e URL del file sono obbligatori.');
       return;
     }
-    onSave(formData);
+    onSave({ ...formData, projectId });
     onClose();
   };
 

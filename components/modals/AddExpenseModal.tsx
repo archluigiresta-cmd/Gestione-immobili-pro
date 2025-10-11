@@ -6,10 +6,11 @@ import * as dataService from '../../services/dataService';
 interface AddExpenseModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (expense: Omit<Expense, 'id'>) => void;
+  onSave: (expense: Omit<Expense, 'id' | 'history'>) => void;
+  projectId: string;
 }
 
-const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onSave }) => {
+const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onSave, projectId }) => {
   const [formData, setFormData] = useState({
     propertyId: '',
     description: '',
@@ -24,9 +25,9 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onSa
 
   useEffect(() => {
     if (isOpen) {
-      setProperties(dataService.getProperties());
+      setProperties(dataService.getProperties(projectId));
     }
-  }, [isOpen]);
+  }, [isOpen, projectId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -42,7 +43,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onSa
       setError('Immobile, descrizione, importo (> 0) e data sono obbligatori.');
       return;
     }
-    onSave(formData);
+    onSave({ ...formData, projectId });
     onClose();
   };
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
-import { Expense, ExpenseCategory } from '../types';
+import { Expense, ExpenseCategory, User } from '../types';
 import { PlusCircle, Edit, Trash2, ExternalLink, FileText } from 'lucide-react';
 import AddExpenseModal from '../components/modals/AddExpenseModal';
 import EditExpenseModal from '../components/modals/EditExpenseModal';
@@ -16,7 +16,12 @@ const COLORS = {
   [ExpenseCategory.OTHER]: '#AF19FF',
 };
 
-const ExpensesScreen: React.FC = () => {
+interface ExpensesScreenProps {
+  projectId: string;
+  user: User;
+}
+
+const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ projectId, user }) => {
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
@@ -24,20 +29,20 @@ const ExpensesScreen: React.FC = () => {
 
     useEffect(() => {
         loadExpenses();
-    }, []);
+    }, [projectId]);
 
     const loadExpenses = () => {
-        setExpenses(dataService.getExpenses());
+        setExpenses(dataService.getExpenses(projectId));
     };
 
-    const handleAddExpense = (expenseData: Omit<Expense, 'id'>) => {
-        dataService.addExpense(expenseData);
+    const handleAddExpense = (expenseData: Omit<Expense, 'id' | 'history'>) => {
+        dataService.addExpense({ ...expenseData, projectId }, user.id);
         loadExpenses();
         setAddModalOpen(false);
     };
 
     const handleUpdateExpense = (updatedExpense: Expense) => {
-        dataService.updateExpense(updatedExpense);
+        dataService.updateExpense(updatedExpense, user.id);
         loadExpenses();
         setEditingExpense(null);
     };
@@ -50,7 +55,7 @@ const ExpensesScreen: React.FC = () => {
         }
     };
     
-    const getPropertyName = (id: string) => dataService.getProperties().find(p => p.id === id)?.name || 'N/A';
+    const getPropertyName = (id: string) => dataService.getProperties(projectId).find(p => p.id === id)?.name || 'N/A';
 
     const expensesByCategory = expenses.reduce((acc, expense) => {
         const category = expense.category;
@@ -150,6 +155,7 @@ const ExpensesScreen: React.FC = () => {
         isOpen={isAddModalOpen}
         onClose={() => setAddModalOpen(false)}
         onSave={handleAddExpense}
+        projectId={projectId}
       />
       {editingExpense && (
         <EditExpenseModal
@@ -157,6 +163,7 @@ const ExpensesScreen: React.FC = () => {
           onClose={() => setEditingExpense(null)}
           onSave={handleUpdateExpense}
           expense={editingExpense}
+          projectId={projectId}
         />
       )}
       {deletingExpense && (

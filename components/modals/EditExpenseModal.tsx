@@ -8,9 +8,10 @@ interface EditExpenseModalProps {
   onClose: () => void;
   onSave: (expense: Expense) => void;
   expense: Expense;
+  projectId: string;
 }
 
-const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ isOpen, onClose, onSave, expense }) => {
+const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ isOpen, onClose, onSave, expense, projectId }) => {
   const [formData, setFormData] = useState<Expense>(expense);
   const [properties, setProperties] = useState<Property[]>([]);
   const [error, setError] = useState('');
@@ -21,9 +22,10 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ isOpen, onClose, on
 
   useEffect(() => {
     if (isOpen) {
-      setProperties(dataService.getProperties());
+      // FIX: Pass projectId to getProperties
+      setProperties(dataService.getProperties(projectId));
     }
-  }, [isOpen]);
+  }, [isOpen, projectId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;

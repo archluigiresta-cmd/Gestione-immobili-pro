@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { Document, Property } from '../../types';
 import { X } from 'lucide-react';
@@ -9,9 +10,10 @@ interface EditDocumentModalProps {
   onClose: () => void;
   onSave: (document: Document) => void;
   document: Document;
+  projectId: string;
 }
 
-const EditDocumentModal: React.FC<EditDocumentModalProps> = ({ isOpen, onClose, onSave, document }) => {
+const EditDocumentModal: React.FC<EditDocumentModalProps> = ({ isOpen, onClose, onSave, document, projectId }) => {
   const [formData, setFormData] = useState<Document>(document);
   const [properties, setProperties] = useState<Property[]>([]);
   const [error, setError] = useState('');
@@ -22,9 +24,10 @@ const EditDocumentModal: React.FC<EditDocumentModalProps> = ({ isOpen, onClose, 
 
   useEffect(() => {
     if (isOpen) {
-      setProperties(dataService.getProperties());
+      // FIX: Pass projectId to getProperties
+      setProperties(dataService.getProperties(projectId));
     }
-  }, [isOpen]);
+  }, [isOpen, projectId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;

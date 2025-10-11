@@ -1,45 +1,52 @@
 import React, { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
-import { Contract } from '../types';
+import { Contract, ProjectMemberRole, User } from '../types';
 import { Download, PlusCircle, Edit, Trash2 } from 'lucide-react';
 import AddContractModal from '../components/modals/AddContractModal';
 import EditContractModal from '../components/modals/EditContractModal';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
 
+interface ContractsScreenProps {
+  projectId: string;
+  user: User;
+  userRole: ProjectMemberRole;
+}
 
-const ContractsScreen: React.FC = () => {
+const ContractsScreen: React.FC<ContractsScreenProps> = ({ projectId, user, userRole }) => {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [editingContract, setEditingContract] = useState<Contract | null>(null);
   const [deletingContract, setDeletingContract] = useState<Contract | null>(null);
 
+  const isViewer = userRole === ProjectMemberRole.VIEWER;
+
   useEffect(() => {
     loadContracts();
-  }, []);
+  }, [projectId]);
 
   const loadContracts = () => {
-    setContracts(dataService.getContracts());
+    setContracts(dataService.getContracts(projectId));
   };
   
-  const getPropertyName = (id: string) => dataService.getProperties().find(p => p.id === id)?.name || 'N/A';
-  const getTenantName = (id: string) => dataService.getTenants().find(t => t.id === id)?.name || 'N/A';
+  const getPropertyName = (id: string) => dataService.getProperties(projectId).find(p => p.id === id)?.name || 'N/A';
+  const getTenantName = (id: string) => dataService.getTenants(projectId).find(t => t.id === id)?.name || 'N/A';
 
-  const handleAddContract = (contractData: Omit<Contract, 'id' | 'documentUrl'>) => {
-    dataService.addContract(contractData);
+  const handleAddContract = (contractData: Omit<Contract, 'id' | 'documentUrl' | 'projectId' | 'history'>) => {
+    dataService.addContract({ ...contractData, projectId }, user.id);
     loadContracts();
     setAddModalOpen(false);
   };
 
   const handleUpdateContract = (updatedContract: Contract) => {
-    dataService.updateContract(updatedContract);
+    dataService.updateContract(updatedContract, user.id);
     loadContracts();
     setEditingContract(null);
   };
   
   const handleDeleteContract = () => {
     if (deletingContract) {
-      dataService.deleteContract(deletingContract.id);
+      dataService.deleteContract(deletingContract.id, user.id);
       loadContracts();
       setDeletingContract(null);
     }
@@ -52,7 +59,8 @@ const ContractsScreen: React.FC = () => {
         <h1 className="text-2xl font-bold text-dark">Gestione Contratti</h1>
         <button
           onClick={() => setAddModalOpen(true)}
-          className="flex items-center px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm"
+          className="flex items-center px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
+          disabled={isViewer}
         >
           <PlusCircle size={18} className="mr-2" />
           Nuovo Contratto
@@ -86,8 +94,8 @@ const ContractsScreen: React.FC = () => {
                 </td>
                 <td className="p-3 text-center">
                     <div className="flex justify-center items-center gap-4">
-                        <button onClick={() => setEditingContract(contract)} className="text-blue-600 hover:text-blue-800"><Edit size={18} /></button>
-                        <button onClick={() => setDeletingContract(contract)} className="text-red-600 hover:text-red-800"><Trash2 size={18} /></button>
+                        <button onClick={() => setEditingContract(contract)} className="text-blue-600 hover:text-blue-800 disabled:text-gray-400 disabled:cursor-not-allowed" disabled={isViewer}><Edit size={18} /></button>
+                        <button onClick={() => setDeletingContract(contract)} className="text-red-600 hover:text-red-800 disabled:text-gray-400 disabled:cursor-not-allowed" disabled={isViewer}><Trash2 size={18} /></button>
                     </div>
                 </td>
               </tr>
@@ -101,6 +109,7 @@ const ContractsScreen: React.FC = () => {
       isOpen={isAddModalOpen}
       onClose={() => setAddModalOpen(false)}
       onSave={handleAddContract}
+      projectId={projectId}
     />
     {editingContract && (
       <EditContractModal
@@ -108,6 +117,7 @@ const ContractsScreen: React.FC = () => {
         onClose={() => setEditingContract(null)}
         onSave={handleUpdateContract}
         contract={editingContract}
+        projectId={projectId}
       />
     )}
     {deletingContract && (

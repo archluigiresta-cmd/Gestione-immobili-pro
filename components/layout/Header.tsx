@@ -1,18 +1,20 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Menu, UserCircle, Settings, LogOut } from 'lucide-react';
+import { Menu, UserCircle, Settings, LogOut, Briefcase } from 'lucide-react';
 import { User } from '../../types';
 import { Screen } from '../../App';
 
 interface HeaderProps {
   currentScreen: string;
+  currentProjectName: string;
   toggleSidebar: () => void;
   user: User;
   onLogout: () => void;
   onNavigate: (screen: Screen) => void;
+  onBackToProjects: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ currentScreen, toggleSidebar, user, onLogout, onNavigate }) => {
+const Header: React.FC<HeaderProps> = ({ currentScreen, currentProjectName, toggleSidebar, user, onLogout, onNavigate, onBackToProjects }) => {
   const [isDropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -34,9 +36,18 @@ const Header: React.FC<HeaderProps> = ({ currentScreen, toggleSidebar, user, onL
         <button onClick={toggleSidebar} className="text-gray-600 mr-4 lg:hidden">
           <Menu size={24} />
         </button>
-        <h1 className="text-xl md:text-2xl font-bold text-dark">{currentScreen}</h1>
+        <div>
+            <h1 className="text-xl md:text-2xl font-bold text-dark">{currentScreen}</h1>
+            <p className="text-xs text-gray-500 font-medium">{currentProjectName}</p>
+        </div>
       </div>
       <div className="flex items-center gap-4">
+        <button 
+            onClick={onBackToProjects}
+            className="hidden sm:flex items-center text-sm px-3 py-2 bg-secondary text-primary font-semibold rounded-lg hover:bg-blue-200 transition-colors"
+        >
+            <Briefcase size={16} className="mr-2"/> Cambia Progetto
+        </button>
         <div className="relative" ref={dropdownRef}>
           <button 
               onClick={() => setDropdownOpen(!isDropdownOpen)}
@@ -63,6 +74,17 @@ const Header: React.FC<HeaderProps> = ({ currentScreen, toggleSidebar, user, onL
                       className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100"
                   >
                       <Settings size={16} className="mr-2" /> Impostazioni
+                  </a>
+                  <a
+                      href="#"
+                      onClick={(e) => {
+                          e.preventDefault();
+                          onBackToProjects();
+                          setDropdownOpen(false);
+                      }}
+                       className="flex sm:hidden items-center px-4 py-2 text-gray-700 hover:bg-gray-100"
+                  >
+                      <Briefcase size={16} className="mr-2" /> Cambia Progetto
                   </a>
                   <a
                       href="#"

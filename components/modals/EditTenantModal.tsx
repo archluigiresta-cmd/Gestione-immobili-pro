@@ -8,9 +8,10 @@ interface EditTenantModalProps {
   onClose: () => void;
   onSave: (tenant: Tenant) => void;
   tenant: Tenant;
+  projectId: string;
 }
 
-const EditTenantModal: React.FC<EditTenantModalProps> = ({ isOpen, onClose, onSave, tenant }) => {
+const EditTenantModal: React.FC<EditTenantModalProps> = ({ isOpen, onClose, onSave, tenant, projectId }) => {
   const [formData, setFormData] = useState<Tenant>(tenant);
   const [error, setError] = useState('');
 
@@ -61,7 +62,8 @@ const EditTenantModal: React.FC<EditTenantModalProps> = ({ isOpen, onClose, onSa
             <label className="block text-sm font-medium text-gray-700">Contratto</label>
             <select name="contractId" value={formData.contractId} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
               <option value="">Nessun contratto</option>
-              {dataService.getContracts().map(c => <option key={c.id} value={c.id}>Contratto per {dataService.getProperties().find(p=>p.id === c.propertyId)?.name}</option>)}
+              {/* FIX: Pass projectId to dataService calls */}
+              {dataService.getContracts(projectId).map(c => <option key={c.id} value={c.id}>Contratto per {dataService.getProperties(projectId).find(p=>p.id === c.propertyId)?.name}</option>)}
             </select>
           </div>
           <div className="flex justify-end pt-4">

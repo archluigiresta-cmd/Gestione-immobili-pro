@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { Maintenance, MaintenanceStatus, Property } from '../../types';
 import { X } from 'lucide-react';
@@ -7,25 +8,27 @@ import * as dataService from '../../services/dataService';
 interface AddMaintenanceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (maintenance: Omit<Maintenance, 'id'>) => void;
+  onSave: (maintenance: Omit<Maintenance, 'id' | 'history'>) => void;
+  projectId: string;
 }
 
-const AddMaintenanceModal: React.FC<AddMaintenanceModalProps> = ({ isOpen, onClose, onSave }) => {
+const AddMaintenanceModal: React.FC<AddMaintenanceModalProps> = ({ isOpen, onClose, onSave, projectId }) => {
   const [formData, setFormData] = useState({
     propertyId: '',
     description: '',
     status: MaintenanceStatus.REQUESTED,
     requestDate: new Date().toISOString().split('T')[0],
     cost: null as number | null,
+    completionDate: undefined as string | undefined,
   });
   const [properties, setProperties] = useState<Property[]>([]);
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (isOpen) {
-      setProperties(dataService.getProperties());
+      setProperties(dataService.getProperties(projectId));
     }
-  }, [isOpen]);
+  }, [isOpen, projectId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -41,7 +44,7 @@ const AddMaintenanceModal: React.FC<AddMaintenanceModalProps> = ({ isOpen, onClo
       setError('Immobile e Descrizione sono obbligatori.');
       return;
     }
-    onSave(formData);
+    onSave({ ...formData, projectId });
     onClose();
   };
 

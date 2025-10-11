@@ -6,13 +6,14 @@ import * as dataService from '../../services/dataService';
 interface AddPropertyModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (property: Omit<Property, 'id'>) => void;
+  onSave: (property: Omit<Property, 'id' | 'projectId' | 'customFields' | 'history'>) => void;
+  projectId: string;
 }
 
-const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ isOpen, onClose, onSave }) => {
-  const getNextCode = () => `IMM-${String(dataService.getProperties().length + 1).padStart(3, '0')}`;
+const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ isOpen, onClose, onSave, projectId }) => {
+  const getNextCode = () => `IMM-${String(dataService.getProperties(projectId).length + 1).padStart(3, '0')}`;
 
-  const [formData, setFormData] = useState({
+  const getInitialFormData = () => ({
     code: getNextCode(),
     name: '',
     address: '',
@@ -23,6 +24,8 @@ const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ isOpen, onClose, on
     rentAmount: undefined,
     imageUrl: ''
   });
+
+  const [formData, setFormData] = useState(getInitialFormData());
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [error, setError] = useState('');
   
@@ -57,10 +60,14 @@ const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ isOpen, onClose, on
     }
     onSave(formData);
     onClose();
-    // Reset state for next time
-    setFormData({ ...formData, code: getNextCode(), name: '', address: '', surface: 0, imageUrl: '' });
-    setImagePreview(null);
   };
+
+  const handleClose = () => {
+     setFormData(getInitialFormData());
+     setImagePreview(null);
+     setError('');
+     onClose();
+  }
 
   if (!isOpen) return null;
 
@@ -69,7 +76,7 @@ const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ isOpen, onClose, on
       <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-2xl m-4 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-dark">Aggiungi Nuovo Immobile</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-800"><X size={24} /></button>
+          <button onClick={handleClose} className="text-gray-500 hover:text-gray-800"><X size={24} /></button>
         </div>
         {error && <p className="bg-red-100 text-red-700 p-2 rounded mb-4 text-sm">{error}</p>}
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -127,7 +134,7 @@ const AddPropertyModal: React.FC<AddPropertyModalProps> = ({ isOpen, onClose, on
               </div>
           </div>
           <div className="flex justify-end pt-4">
-            <button type="button" onClick={onClose} className="mr-2 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Annulla</button>
+            <button type="button" onClick={handleClose} className="mr-2 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Annulla</button>
             <button type="submit" className="px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm">Crea Immobile</button>
           </div>
         </form>

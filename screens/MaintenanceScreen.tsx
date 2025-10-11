@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
-import { Maintenance, MaintenanceStatus } from '../types';
+import { Maintenance, MaintenanceStatus, User } from '../types';
 import { PlusCircle, Edit, Trash2, Wrench, Clock, CheckCircle } from 'lucide-react';
 import AddMaintenanceModal from '../components/modals/AddMaintenanceModal';
 import EditMaintenanceModal from '../components/modals/EditMaintenanceModal';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
 
-const MaintenanceScreen: React.FC = () => {
+interface MaintenanceScreenProps {
+  projectId: string;
+  user: User;
+}
+
+const MaintenanceScreen: React.FC<MaintenanceScreenProps> = ({ projectId, user }) => {
   const [maintenances, setMaintenances] = useState<Maintenance[]>([]);
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [editingMaintenance, setEditingMaintenance] = useState<Maintenance | null>(null);
@@ -15,22 +20,22 @@ const MaintenanceScreen: React.FC = () => {
 
   useEffect(() => {
     loadMaintenances();
-  }, []);
+  }, [projectId]);
 
   const loadMaintenances = () => {
-    setMaintenances(dataService.getMaintenances());
+    setMaintenances(dataService.getMaintenances(projectId));
   };
 
-  const getPropertyName = (id: string) => dataService.getProperties().find(p => p.id === id)?.name || 'N/A';
+  const getPropertyName = (id: string) => dataService.getProperties(projectId).find(p => p.id === id)?.name || 'N/A';
   
-  const handleAddMaintenance = (data: Omit<Maintenance, 'id'>) => {
-    dataService.addMaintenance(data);
+  const handleAddMaintenance = (data: Omit<Maintenance, 'id' | 'history'>) => {
+    dataService.addMaintenance({ ...data, projectId }, user.id);
     loadMaintenances();
     setAddModalOpen(false);
   };
   
   const handleUpdateMaintenance = (updatedMaintenance: Maintenance) => {
-    dataService.updateMaintenance(updatedMaintenance);
+    dataService.updateMaintenance(updatedMaintenance, user.id);
     loadMaintenances();
     setEditingMaintenance(null);
   };
@@ -116,6 +121,7 @@ const MaintenanceScreen: React.FC = () => {
         isOpen={isAddModalOpen}
         onClose={() => setAddModalOpen(false)}
         onSave={handleAddMaintenance}
+        projectId={projectId}
       />
       {editingMaintenance && (
         <EditMaintenanceModal
@@ -123,6 +129,7 @@ const MaintenanceScreen: React.FC = () => {
           onClose={() => setEditingMaintenance(null)}
           onSave={handleUpdateMaintenance}
           maintenance={editingMaintenance}
+          projectId={projectId}
         />
       )}
       {deletingMaintenance && (

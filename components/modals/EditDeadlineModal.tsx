@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { Deadline, DeadlineType, Property } from '../../types';
 import { X } from 'lucide-react';
@@ -9,9 +10,10 @@ interface EditDeadlineModalProps {
   onClose: () => void;
   onSave: (deadline: Deadline) => void;
   deadline: Deadline;
+  projectId: string;
 }
 
-const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({ isOpen, onClose, onSave, deadline }) => {
+const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({ isOpen, onClose, onSave, deadline, projectId }) => {
   const [formData, setFormData] = useState<Deadline>(deadline);
   const [properties, setProperties] = useState<Property[]>([]);
   const [error, setError] = useState('');
@@ -22,9 +24,10 @@ const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({ isOpen, onClose, 
   
   useEffect(() => {
     if (isOpen) {
-      setProperties(dataService.getProperties());
+      // FIX: Pass projectId to getProperties
+      setProperties(dataService.getProperties(projectId));
     }
-  }, [isOpen]);
+  }, [isOpen, projectId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
