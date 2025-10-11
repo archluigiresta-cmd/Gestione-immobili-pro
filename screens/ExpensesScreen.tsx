@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
-import { Expense, ExpenseCategory, User, UtilityType } from '../types';
+import { Expense, ExpenseCategory, User, UtilityType, TaxType } from '../types';
 import { PlusCircle, Edit, Trash2, ExternalLink, FileText } from 'lucide-react';
 import AddExpenseModal from '../components/modals/AddExpenseModal';
 import EditExpenseModal from '../components/modals/EditExpenseModal';
@@ -103,6 +103,8 @@ const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ projectId, user }) => {
                                     const displayCategory = (expense.category === ExpenseCategory.OTHER && expense.categoryOther) ? expense.categoryOther : expense.category;
                                     const isUtility = expense.category === ExpenseCategory.UTILITIES;
                                     const utilityDisplayType = (expense.utilityType === UtilityType.OTHER && expense.utilityTypeOther) ? expense.utilityTypeOther : expense.utilityType;
+                                    const isTax = expense.category === ExpenseCategory.TAXES;
+                                    const taxDisplayType = (expense.taxType === TaxType.OTHER && expense.taxTypeOther) ? expense.taxTypeOther : expense.taxType;
 
                                     return (
                                         <tr key={expense.id} className="border-b hover:bg-gray-50">
@@ -112,15 +114,17 @@ const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ projectId, user }) => {
                                                 {isUtility && expense.utilityProvider && (
                                                     <span className="block text-xs text-blue-700 font-semibold">Gestore: {expense.utilityProvider}</span>
                                                 )}
+                                                {isTax && expense.taxReferenceYear && (
+                                                     <span className="block text-xs text-yellow-700 font-semibold">Anno: {expense.taxReferenceYear}</span>
+                                                )}
                                             </td>
                                             <td className="p-3 text-gray-700">
-                                                {isUtility && utilityDisplayType ? (
-                                                    <>
-                                                        <span className="font-semibold">{displayCategory}</span>
-                                                        <span className="block text-xs">{utilityDisplayType}</span>
-                                                    </>
-                                                ) : (
-                                                    displayCategory
+                                                <span className="font-semibold">{displayCategory}</span>
+                                                {isUtility && utilityDisplayType && (
+                                                    <span className="block text-xs">{utilityDisplayType}</span>
+                                                )}
+                                                {isTax && taxDisplayType && (
+                                                    <span className="block text-xs">{taxDisplayType}</span>
                                                 )}
                                             </td>
                                             <td className="p-3 text-gray-700">{new Date(expense.date).toLocaleDateString('it-IT')}</td>

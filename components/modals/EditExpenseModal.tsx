@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Expense, Property, ExpenseCategory, UtilityType } from '../../types';
+import { Expense, Property, ExpenseCategory, UtilityType, TaxType } from '../../types';
 import { X } from 'lucide-react';
 import * as dataService from '../../services/dataService';
 
@@ -29,34 +29,30 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ isOpen, onClose, on
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     
-    if (name === 'category' && value !== ExpenseCategory.UTILITIES) {
-      setFormData(prev => ({
-        ...prev,
-        category: value as ExpenseCategory,
-        ...(value !== ExpenseCategory.OTHER && { categoryOther: '' }),
-        utilityType: undefined,
-        utilityTypeOther: '',
-        utilityProvider: '',
-        utilityDetails: '',
-      }));
-    } else if (name === 'category') {
-        setFormData(prev => ({
-            ...prev,
-            category: value as ExpenseCategory,
-            ...(value !== ExpenseCategory.OTHER && { categoryOther: '' }),
-        }));
-    } else if (name === 'utilityType') {
-        setFormData(prev => ({
-            ...prev,
-            utilityType: value as UtilityType,
-            ...(value !== UtilityType.OTHER && { utilityTypeOther: '' }),
-        }));
-    } else {
-        setFormData(prev => ({
-            ...prev,
-            [name]: name === 'amount' ? Number(value) : value,
-        }));
-    }
+    setFormData(prev => {
+        const newState = { ...prev, [name]: name === 'amount' || name === 'taxReferenceYear' ? Number(value) : value };
+        
+        if (name === 'category') {
+            newState.categoryOther = '';
+            if (value !== ExpenseCategory.UTILITIES) {
+                delete newState.utilityType;
+                delete newState.utilityTypeOther;
+                delete newState.utilityProvider;
+                delete newState.utilityDetails;
+            }
+            if (value !== ExpenseCategory.TAXES) {
+                delete newState.taxType;
+                delete newState.taxTypeOther;
+                delete newState.taxReferenceYear;
+                delete newState.taxDetails;
+            }
+        }
+
+        if(name === 'utilityType' && value !== UtilityType.OTHER) delete newState.utilityTypeOther;
+        if(name === 'taxType' && value !== TaxType.OTHER) delete newState.taxTypeOther;
+
+        return newState;
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -69,26 +65,35 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ isOpen, onClose, on
         setError('Specificare la categoria è obbligatorio quando si seleziona "Altro".');
         return;
     }
-    if (formData.category === ExpenseCategory.UTILITIES) {
-        if (formData.utilityType === UtilityType.OTHER && !formData.utilityTypeOther?.trim()) {
-            setError('Specificare il tipo di utenza è obbligatorio.');
-            return;
-        }
+    if (formData.category === ExpenseCategory.UTILITIES && formData.utilityType === UtilityType.OTHER && !formData.utilityTypeOther?.trim()) {
+        setError('Specificare il tipo di utenza è obbligatorio.');
+        return;
+    }
+    if (formData.category === ExpenseCategory.TAXES && formData.taxType === TaxType.OTHER && !formData.taxTypeOther?.trim()) {
+        setError('Specificare il tipo di tassa è obbligatorio.');
+        return;
     }
 
-    const { categoryOther, utilityTypeOther, ...restOfData } = formData;
-    const dataToSave: Expense = {
-        ...restOfData,
-        ...(formData.category === ExpenseCategory.OTHER && { categoryOther }),
-        ...(formData.category === ExpenseCategory.UTILITIES && { 
-            ...(formData.utilityType === UtilityType.OTHER ? { utilityTypeOther } : {})
-        }),
-    };
+    let dataToSave: Expense = { ...formData };
 
+    if (dataToSave.category !== ExpenseCategory.OTHER) delete dataToSave.categoryOther;
+    
     if (dataToSave.category !== ExpenseCategory.UTILITIES) {
         delete dataToSave.utilityType;
+        delete dataToSave.utilityTypeOther;
         delete dataToSave.utilityProvider;
         delete dataToSave.utilityDetails;
+    } else if (dataToSave.utilityType !== UtilityType.OTHER) {
+        delete dataToSave.utilityTypeOther;
+    }
+    
+    if (dataToSave.category !== ExpenseCategory.TAXES) {
+        delete dataToSave.taxType;
+        delete dataToSave.taxTypeOther;
+        delete dataToSave.taxReferenceYear;
+        delete dataToSave.taxDetails;
+    } else if (dataToSave.taxType !== TaxType.OTHER) {
+        delete dataToSave.taxTypeOther;
     }
 
     onSave(dataToSave);
@@ -164,6 +169,34 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ isOpen, onClose, on
                 <div>
                     <label className="block text-sm font-medium text-gray-700">Note / Dettagli Aggiuntivi</label>
                     <textarea name="utilityDetails" value={formData.utilityDetails || ''} onChange={handleChange} rows={2} className="mt-1 block w-full input" placeholder="Es. Codice cliente, POD, PDR..."></textarea>
+                </div>
+            </div>
+          )}
+
+          {formData.category === ExpenseCategory.TAXES && (
+            <div className="p-4 bg-yellow-50 rounded-lg space-y-4 border border-yellow-200">
+                <h3 className="text-md font-semibold text-yellow-800">Dettagli Tassa</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Tipo Tassa</label>
+                      <select name="taxType" value={formData.taxType || ''} onChange={handleChange} className="mt-1 block w-full input">
+                        {Object.values(TaxType).map(type => <option key={type} value={type}>{type}</option>)}
+                      </select>
+                    </div>
+                    {formData.taxType === TaxType.OTHER && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Specifica Tipo Tassa</label>
+                            <input type="text" name="taxTypeOther" value={formData.taxTypeOther || ''} onChange={handleChange} className="mt-1 block w-full input" />
+                        </div>
+                    )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Anno di Riferimento</label>
+                  <input type="number" name="taxReferenceYear" value={formData.taxReferenceYear || ''} onChange={handleChange} className="mt-1 block w-full input" placeholder="Es. 2024" />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700">Note / Dettagli Aggiuntivi</label>
+                    <textarea name="taxDetails" value={formData.taxDetails || ''} onChange={handleChange} rows={2} className="mt-1 block w-full input" placeholder="Es. Acconto, Saldo, Rif. F24..."></textarea>
                 </div>
             </div>
           )}

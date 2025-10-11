@@ -141,6 +141,13 @@ export enum UtilityType {
     OTHER = 'Altro',
 }
 
+export enum TaxType {
+    IMU = 'IMU',
+    TARI = 'TARI',
+    IRPEF = 'IRPEF',
+    OTHER = 'Altro',
+}
+
 export enum ExpenseCategory {
   CONDOMINIUM = 'Condominio',
   UTILITIES = 'Utenze',
@@ -161,10 +168,16 @@ export interface Expense {
   providerUrl?: string;
   invoiceUrl?: string;
   history: HistoryLog[];
+  // Utility fields
   utilityType?: UtilityType;
   utilityTypeOther?: string;
   utilityProvider?: string;
   utilityDetails?: string;
+  // Tax fields
+  taxType?: TaxType;
+  taxTypeOther?: string;
+  taxReferenceYear?: number;
+  taxDetails?: string;
 }
 
 export enum DocumentType {
