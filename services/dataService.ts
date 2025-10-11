@@ -5,7 +5,18 @@ const initData = <T,>(key: string, mockData: T[]): T[] => {
     try {
         const storedData = localStorage.getItem(key);
         if (storedData) {
-            return JSON.parse(storedData);
+            let parsedData = JSON.parse(storedData);
+
+            // Special check for projects to ensure the demo project exists for the demo user
+            if (key === 'projects') {
+                const demoProjectExists = parsedData.some((p: Project) => p.id === 'proj-1');
+                const demoProject = MOCK_PROJECTS.find(p => p.id === 'proj-1');
+                if (!demoProjectExists && demoProject) {
+                    parsedData.push(demoProject);
+                    saveData(key, parsedData); // Save the corrected list back to localStorage
+                }
+            }
+            return parsedData;
         }
     } catch (error) {
         console.error(`Error reading ${key} from localStorage`, error);
