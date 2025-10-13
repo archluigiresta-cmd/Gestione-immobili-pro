@@ -83,7 +83,6 @@ const MaintenanceScreen: React.FC<MaintenanceScreenProps> = ({ projectId, user }
     });
   };
 
-  // FIX: Explicitly type the accumulator in reduce to aid type inference.
   const groupedMaintenances = useMemo(() => {
     return maintenances.reduce<Record<string, Maintenance[]>>((acc, item) => {
         (acc[item.propertyId] = acc[item.propertyId] || []).push(item);
@@ -132,7 +131,7 @@ const MaintenanceScreen: React.FC<MaintenanceScreenProps> = ({ projectId, user }
               const propertyName = propertyMap.get(propertyId) || 'Immobile non trovato';
               const isOpen = openSections.has(propertyId);
               return (
-                  <div key={propertyId} className={`rounded-lg overflow-hidden border ${getPropertyColors(index)}`}>
+                  <div key={propertyId} className={`rounded-lg overflow-hidden border-l-4 ${getPropertyColors(index)} bg-white shadow-sm`}>
                       <button onClick={() => toggleSection(propertyId)} className={`w-full flex justify-between items-center p-4 text-left font-bold text-lg ${isOpen ? 'bg-gray-100' : 'bg-gray-50 hover:bg-gray-100'}`}>
                           <span>{propertyName} <span className="text-sm font-medium text-gray-500">({items.length} richieste)</span></span>
                           <ChevronDown className={`transform transition-transform ${isOpen ? 'rotate-180' : ''}`} />

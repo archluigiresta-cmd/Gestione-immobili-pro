@@ -15,7 +15,6 @@ interface PaymentsScreenProps {
   userRole: ProjectMemberRole;
 }
 
-// FIX: Change interface extension to a type intersection to fix property resolution issues.
 type EnrichedPayment = Payment & {
     propertyName: string;
     tenantName: string;
@@ -77,7 +76,6 @@ const PaymentsScreen: React.FC<PaymentsScreenProps> = ({ projectId, user, userRo
         const tenants = dataService.getTenants(projectId);
 
         const propertyMap = new Map(properties.map(p => [p.id, p.name]));
-        // FIX: Explicitly type the Map to aid type inference.
         const contractMap: Map<string, { tenantId: string; }> = new Map(contracts.map(c => [c.id, { tenantId: c.tenantId }]));
         const tenantMap = new Map(tenants.map(t => [t.id, t.name]));
 
@@ -165,7 +163,6 @@ const PaymentsScreen: React.FC<PaymentsScreenProps> = ({ projectId, user, userRo
       });
     };
 
-    // FIX: Explicitly type the accumulator in reduce to aid type inference.
     const groupedPayments = useMemo(() => {
       return filteredPayments.reduce<Record<string, EnrichedPayment[]>>((acc, payment) => {
           (acc[payment.propertyId] = acc[payment.propertyId] || []).push(payment);
@@ -236,7 +233,7 @@ const PaymentsScreen: React.FC<PaymentsScreenProps> = ({ projectId, user, userRo
               const propertyName = properties.find(p => p.id === propertyId)?.name || 'Immobile non trovato';
               const isOpen = openSections.has(propertyId);
               return (
-                  <div key={propertyId} className={`rounded-lg overflow-hidden border ${getPropertyColors(index)}`}>
+                  <div key={propertyId} className={`rounded-lg overflow-hidden border-l-4 ${getPropertyColors(index)} bg-white shadow-sm`}>
                       <button onClick={() => toggleSection(propertyId)} className={`w-full flex justify-between items-center p-4 text-left font-bold text-lg ${isOpen ? 'bg-gray-100' : 'bg-gray-50 hover:bg-gray-100'}`}>
                           <span>{propertyName} <span className="text-sm font-medium text-gray-500">({paymentsForProperty.length} pagamenti)</span></span>
                           <ChevronDown className={`transform transition-transform ${isOpen ? 'rotate-180' : ''}`} />

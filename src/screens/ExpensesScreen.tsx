@@ -94,7 +94,6 @@ const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ projectId, user }) => {
       });
     };
 
-    // FIX: Explicitly type the accumulator in reduce to aid type inference.
     const groupedExpenses = useMemo(() => {
       return expenses.reduce<Record<string, Expense[]>>((acc, item) => {
           (acc[item.propertyId] = acc[item.propertyId] || []).push(item);
@@ -161,12 +160,12 @@ const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ projectId, user }) => {
                     Aggiungi Spesa
                 </button>
             </div>
-            <Card className="p-4 space-y-4">
+            <div className="space-y-4">
               {Object.entries(groupedExpenses).map(([propertyId, items], index) => {
                   const propertyName = propertyMap.get(propertyId) || 'Immobile non trovato';
                   const isOpen = openSections.has(propertyId);
                   return (
-                      <div key={propertyId} className={`rounded-lg overflow-hidden border ${getPropertyColors(index)}`}>
+                      <div key={propertyId} className={`rounded-lg overflow-hidden border-l-4 ${getPropertyColors(index)} bg-white shadow-sm`}>
                           <button onClick={() => toggleSection(propertyId)} className={`w-full flex justify-between items-center p-4 text-left font-bold text-lg ${isOpen ? 'bg-gray-100' : 'bg-gray-50 hover:bg-gray-100'}`}>
                               <span>{propertyName} <span className="text-sm font-medium text-gray-500">({items.length} spese)</span></span>
                               <ChevronDown className={`transform transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -179,7 +178,7 @@ const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ projectId, user }) => {
                       </div>
                   );
               })}
-            </Card>
+            </div>
         </div>
         <Card className="lg:col-span-2 p-6">
             <h2 className="text-xl font-bold text-dark mb-4">Riepilogo per Categoria</h2>
