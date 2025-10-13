@@ -257,8 +257,10 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
                 accessor: col.key,
                 render: (row) => {
                     const value = row[col.key];
+                    if (value === null || value === undefined) return '';
                     if (typeof value === 'boolean') return value ? 'Sì' : 'No';
-                    return value;
+                    if (typeof value === 'object') return JSON.stringify(value);
+                    return String(value);
                 }
             }));
     } else {
