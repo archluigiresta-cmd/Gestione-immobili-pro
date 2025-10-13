@@ -1,7 +1,8 @@
+
 const CACHE_NAME = 'gest-immo-pro-cache-v1';
 const URLS_TO_CACHE = [
   '/',
-  '/index.html',
+  '/index.html'
 ];
 
 self.addEventListener('install', (event) => {
