@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
-import { Contract, ProjectMemberRole, User } from '../types';
-import { Download, PlusCircle, Edit, Trash2 } from 'lucide-react';
+import { Contract, ProjectMemberRole, User, Property } from '../types';
+import { Download, PlusCircle, Edit, Trash2, ChevronDown } from 'lucide-react';
 import AddContractModal from '../components/modals/AddContractModal';
 import EditContractModal from '../components/modals/EditContractModal';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
+import InteractiveTable, { Column } from '../components/ui/InteractiveTable';
 
 interface ContractsScreenProps {
   projectId: string;
@@ -13,11 +14,21 @@ interface ContractsScreenProps {
   userRole: ProjectMemberRole;
 }
 
+const getPropertyColors = (index: number) => {
+    const colors = [
+        'border-blue-500', 'border-green-500', 'border-indigo-500', 'border-purple-500',
+        'border-pink-500', 'border-yellow-500', 'border-red-500', 'border-teal-500'
+    ];
+    return colors[index % colors.length];
+};
+
 const ContractsScreen: React.FC<ContractsScreenProps> = ({ projectId, user, userRole }) => {
   const [contracts, setContracts] = useState<Contract[]>([]);
+  const [properties, setProperties] = useState<Property[]>([]);
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [editingContract, setEditingContract] = useState<Contract | null>(null);
   const [deletingContract, setDeletingContract] = useState<Contract | null>(null);
+  const [openSections, setOpenSections] = useState<Set<string>>(new Set());
 
   const isViewer = userRole === ProjectMemberRole.VIEWER;
 
@@ -27,9 +38,9 @@ const ContractsScreen: React.FC<ContractsScreenProps> = ({ projectId, user, user
 
   const loadContracts = () => {
     setContracts(dataService.getContracts(projectId));
+    setProperties(dataService.getProperties(projectId));
   };
   
-  const getPropertyName = (id: string) => dataService.getProperties(projectId).find(p => p.id === id)?.name || 'N/A';
   const getTenantName = (id: string) => dataService.getTenants(projectId).find(t => t.id === id)?.name || 'N/A';
 
   const handleAddContract = (contractData: Omit<Contract, 'id' | 'documentUrl' | 'projectId' | 'history'>) => {
@@ -52,6 +63,45 @@ const ContractsScreen: React.FC<ContractsScreenProps> = ({ projectId, user, user
     }
   };
 
+  const toggleSection = (propertyId: string) => {
+    setOpenSections(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(propertyId)) {
+            newSet.delete(propertyId);
+        } else {
+            newSet.add(propertyId);
+        }
+        return newSet;
+    });
+  };
+
+  const groupedContracts = useMemo(() => {
+    return contracts.reduce<Record<string, Contract[]>>((acc, contract) => {
+        (acc[contract.propertyId] = acc[contract.propertyId] || []).push(contract);
+        return acc;
+    }, {});
+  }, [contracts]);
+  
+  const columns: Column<Contract>[] = [
+      { header: 'Inquilino', accessor: 'tenantId', render: (row) => getTenantName(row.tenantId) },
+      { header: 'Inizio', accessor: 'startDate', render: (row) => new Date(row.startDate).toLocaleDateString('it-IT') },
+      { header: 'Fine', accessor: 'endDate', render: (row) => new Date(row.endDate).toLocaleDateString('it-IT') },
+      { header: 'Canone', accessor: 'rentAmount', render: (row) => `€${row.rentAmount.toLocaleString('it-IT')}`, className: 'font-semibold' },
+      { header: 'Documento', accessor: 'documentUrl', render: (row) => (
+          <a href={row.documentUrl} target="_blank" rel="noopener noreferrer" className="inline-block text-primary hover:text-primary-hover">
+              <Download size={20} />
+          </a>
+      ), className: 'text-center' },
+      { header: 'Azioni', accessor: 'id', render: (row) => (
+          <div className="flex justify-center items-center gap-4">
+              <button onClick={() => setEditingContract(row)} className="text-blue-600 hover:text-blue-800 disabled:text-gray-400" disabled={isViewer}><Edit size={18} /></button>
+              <button onClick={() => setDeletingContract(row)} className="text-red-600 hover:text-red-800 disabled:text-gray-400" disabled={isViewer}><Trash2 size={18} /></button>
+          </div>
+      ), className: 'text-center' },
+  ];
+
+  const propertyMap = useMemo(() => new Map(properties.map(p => [p.id, p.name])), [properties]);
+
   return (
     <>
     <Card className="p-6">
@@ -66,42 +116,24 @@ const ContractsScreen: React.FC<ContractsScreenProps> = ({ projectId, user, user
           Nuovo Contratto
         </button>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="p-3 text-sm font-semibold text-gray-600">Immobile</th>
-              <th className="p-3 text-sm font-semibold text-gray-600">Inquilino</th>
-              <th className="p-3 text-sm font-semibold text-gray-600">Inizio</th>
-              <th className="p-3 text-sm font-semibold text-gray-600">Fine</th>
-              <th className="p-3 text-sm font-semibold text-gray-600">Canone</th>
-              <th className="p-3 text-sm font-semibold text-gray-600 text-center">Documento</th>
-              <th className="p-3 text-sm font-semibold text-gray-600 text-center">Azioni</th>
-            </tr>
-          </thead>
-          <tbody>
-            {contracts.map((contract: Contract) => (
-              <tr key={contract.id} className="border-b hover:bg-gray-50">
-                <td className="p-3 text-dark font-medium">{getPropertyName(contract.propertyId)}</td>
-                <td className="p-3 text-gray-700">{getTenantName(contract.tenantId)}</td>
-                <td className="p-3 text-gray-700">{new Date(contract.startDate).toLocaleDateString('it-IT')}</td>
-                <td className="p-3 text-gray-700">{new Date(contract.endDate).toLocaleDateString('it-IT')}</td>
-                <td className="p-3 text-gray-700 font-semibold">€{contract.rentAmount.toLocaleString('it-IT')}</td>
-                <td className="p-3 text-center">
-                  <a href={contract.documentUrl} target="_blank" rel="noopener noreferrer" className="inline-block text-primary hover:text-primary-hover">
-                    <Download size={20} />
-                  </a>
-                </td>
-                <td className="p-3 text-center">
-                    <div className="flex justify-center items-center gap-4">
-                        <button onClick={() => setEditingContract(contract)} className="text-blue-600 hover:text-blue-800 disabled:text-gray-400 disabled:cursor-not-allowed" disabled={isViewer}><Edit size={18} /></button>
-                        <button onClick={() => setDeletingContract(contract)} className="text-red-600 hover:text-red-800 disabled:text-gray-400 disabled:cursor-not-allowed" disabled={isViewer}><Trash2 size={18} /></button>
-                    </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="space-y-4">
+        {Object.entries(groupedContracts).map(([propertyId, contractsForProperty], index) => {
+            const propertyName = propertyMap.get(propertyId) || 'Immobile non trovato';
+            const isOpen = openSections.has(propertyId);
+            return (
+                <div key={propertyId} className={`rounded-lg overflow-hidden border-l-4 ${getPropertyColors(index)} bg-white shadow-sm`}>
+                    <button onClick={() => toggleSection(propertyId)} className={`w-full flex justify-between items-center p-4 text-left font-bold text-lg ${isOpen ? 'bg-gray-100' : 'bg-gray-50 hover:bg-gray-100'}`}>
+                        <span>{propertyName} <span className="text-sm font-medium text-gray-500">({contractsForProperty.length} contratti)</span></span>
+                        <ChevronDown className={`transform transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {isOpen && (
+                        <div className="p-2 bg-white">
+                            <InteractiveTable columns={columns} data={contractsForProperty} />
+                        </div>
+                    )}
+                </div>
+            );
+        })}
       </div>
     </Card>
 
@@ -125,7 +157,7 @@ const ContractsScreen: React.FC<ContractsScreenProps> = ({ projectId, user, user
         isOpen={!!deletingContract}
         onClose={() => setDeletingContract(null)}
         onConfirm={handleDeleteContract}
-        message={`Sei sicuro di voler eliminare il contratto per l'immobile "${getPropertyName(deletingContract.propertyId)}"?`}
+        message={`Sei sicuro di voler eliminare il contratto per l'immobile "${propertyMap.get(deletingContract.propertyId)}"?`}
       />
     )}
     </>

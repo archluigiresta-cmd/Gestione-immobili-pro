@@ -1,7 +1,10 @@
-
-import React, { useState } from 'react';
-import { ChevronDown, LifeBuoy } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { ChevronDown, LifeBuoy, Bot, User, Send, LoaderCircle } from 'lucide-react';
 import Card from '../components/ui/Card';
+import { GoogleGenAI } from "@google/genai";
+
+// Initialize Gemini AI
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
 
 const faqData = [
     {
@@ -45,6 +48,111 @@ const FaqItem: React.FC<{ item: typeof faqData[0], isOpen: boolean, onToggle: ()
     );
 };
 
+interface Message {
+    role: 'user' | 'model';
+    content: string;
+}
+
+const AiAssistant: React.FC = () => {
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [input, setInput] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages, isLoading]);
+
+    const handleSendMessage = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!input.trim() || isLoading) return;
+
+        const userMessage: Message = { role: 'user', content: input };
+        setMessages(prev => [...prev, userMessage]);
+        setInput('');
+        setIsLoading(true);
+
+        try {
+            const systemInstruction = "Sei un assistente virtuale esperto per l'applicazione 'Gestore Immobili PRO'. Il tuo scopo è aiutare gli utenti a capire e utilizzare al meglio l'app. L'applicazione serve a gestire proprietà immobiliari. Le sue sezioni principali sono: Dashboard (riepilogo), Immobili (elenco proprietà), Inquilini, Contratti, Pagamenti, Scadenze, Manutenzioni, Spese, Documenti, Report e Analisi Finanziaria. Rispondi in modo chiaro, conciso e amichevole. Utilizza la formattazione markdown (come grassetto o elenchi puntati) per migliorare la leggibilità. Basa le tue risposte sulla conoscenza fornita riguardo le funzionalità dell'app.";
+            
+            const responseStream = await ai.models.generateContentStream({
+                model: 'gemini-2.5-flash',
+                contents: input,
+                 config: {
+                    systemInstruction: systemInstruction,
+                 },
+            });
+            
+            let currentResponse = '';
+            setMessages(prev => [...prev, { role: 'model', content: '' }]);
+
+            for await (const chunk of responseStream) {
+                currentResponse += chunk.text;
+                setMessages(prev => {
+                    const newMessages = [...prev];
+                    newMessages[newMessages.length - 1].content = currentResponse;
+                    return newMessages;
+                });
+            }
+
+        } catch (error) {
+            console.error("Error calling Gemini API:", error);
+            setMessages(prev => [...prev, { role: 'model', content: "Spiacente, si è verificato un errore. Riprova più tardi." }]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    return (
+        <Card className="flex flex-col h-[600px]">
+            <div className="p-4 border-b flex items-center gap-3">
+                <Bot size={24} className="text-primary"/>
+                <h2 className="text-xl font-bold text-dark">Assistente AI</h2>
+            </div>
+            <div className="flex-1 p-4 overflow-y-auto space-y-4">
+                {messages.map((msg, index) => (
+                    <div key={index} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
+                        {msg.role === 'model' && <div className="bg-primary p-2 rounded-full text-white"><Bot size={18}/></div>}
+                        <div className={`max-w-md rounded-lg p-3 ${msg.role === 'user' ? 'bg-primary text-white' : 'bg-gray-100 text-dark'}`}>
+                            <p className="whitespace-pre-wrap">{msg.content}</p>
+                        </div>
+                         {msg.role === 'user' && <div className="bg-gray-200 p-2 rounded-full text-dark"><User size={18}/></div>}
+                    </div>
+                ))}
+                 {isLoading && messages[messages.length - 1]?.role !== 'model' && (
+                     <div className="flex items-start gap-3">
+                         <div className="bg-primary p-2 rounded-full text-white"><Bot size={18}/></div>
+                         <div className="max-w-md rounded-lg p-3 bg-gray-100 text-dark flex items-center gap-2">
+                            <span className="font-semibold">L'assistente sta scrivendo</span>
+                             <LoaderCircle size={16} className="animate-spin" />
+                         </div>
+                     </div>
+                 )}
+                <div ref={messagesEndRef} />
+            </div>
+            <div className="p-4 border-t">
+                <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+                    <input 
+                        type="text" 
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        placeholder="Chiedi qualcosa sull'app..."
+                        className="flex-1 input"
+                        disabled={isLoading}
+                    />
+                    <button type="submit" className="p-2.5 bg-primary text-white rounded-lg hover:bg-primary-hover disabled:bg-gray-400" disabled={isLoading || !input.trim()}>
+                        <Send size={20} />
+                    </button>
+                </form>
+            </div>
+        </Card>
+    );
+};
+
 
 const HelpScreen: React.FC = () => {
     const [openIndex, setOpenIndex] = useState<number | null>(0);
@@ -60,18 +168,24 @@ const HelpScreen: React.FC = () => {
                 <h1 className="text-2xl font-bold text-dark">Aiuto e Supporto</h1>
             </div>
             <p className="text-gray-600">
-                Benvenuto nella sezione di aiuto. Qui troverai le risposte alle domande più comuni sul funzionamento dell'applicazione.
+                Benvenuto nella sezione di aiuto. Qui troverai le risposte alle domande più comuni e un assistente AI pronto a rispondere alle tue domande sull'app.
             </p>
-            <Card className="overflow-hidden">
-                {faqData.map((item, index) => (
-                    <FaqItem
-                        key={index}
-                        item={item}
-                        isOpen={openIndex === index}
-                        onToggle={() => handleToggle(index)}
-                    />
-                ))}
-            </Card>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                 <Card className="overflow-hidden">
+                    <div className="p-4 border-b">
+                        <h2 className="text-xl font-bold text-dark">Domande Frequenti (FAQ)</h2>
+                    </div>
+                    {faqData.map((item, index) => (
+                        <FaqItem
+                            key={index}
+                            item={item}
+                            isOpen={openIndex === index}
+                            onToggle={() => handleToggle(index)}
+                        />
+                    ))}
+                </Card>
+                <AiAssistant />
+            </div>
         </div>
     );
 };

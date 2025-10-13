@@ -1,18 +1,25 @@
-
-
 import React, { useState, useEffect, useMemo } from 'react';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
-import { Deadline, DeadlineType, User } from '../types';
-import { PlusCircle, Edit, Trash2, CheckCircle, List, CalendarDays } from 'lucide-react';
+import { Deadline, DeadlineType, User, Property } from '../types';
+import { PlusCircle, Edit, Trash2, CheckCircle, List, CalendarDays, ChevronDown } from 'lucide-react';
 import AddDeadlineModal from '../components/modals/AddDeadlineModal';
 import EditDeadlineModal from '../components/modals/EditDeadlineModal';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
+import InteractiveTable, { Column } from '../components/ui/InteractiveTable';
 
 interface DeadlinesScreenProps {
   projectId: string;
   user: User;
 }
+
+const getPropertyColors = (index: number) => {
+    const colors = [
+        'border-purple-500', 'border-pink-500', 'border-yellow-500', 'border-red-500',
+        'border-teal-500', 'border-blue-500', 'border-green-500', 'border-indigo-500'
+    ];
+    return colors[index % colors.length];
+};
 
 const getDeadlineTypePillStyle = (type: DeadlineType) => {
     switch (type) {
@@ -41,11 +48,9 @@ const CalendarView: React.FC<{ deadlines: Deadline[], onEdit: (d: Deadline) => v
         const startDayOfWeek = (firstDayOfMonth.getDay() + 6) % 7; // 0=Mon, 6=Sun
 
         const monthGrid = [];
-        // Add blank days for the start of the month
         for (let i = 0; i < startDayOfWeek; i++) {
             monthGrid.push(null);
         }
-        // Add days of the month
         for (let i = 1; i <= daysInMonth; i++) {
             monthGrid.push(new Date(year, month, i));
         }
@@ -119,50 +124,46 @@ const CalendarView: React.FC<{ deadlines: Deadline[], onEdit: (d: Deadline) => v
 
 const DeadlinesScreen: React.FC<DeadlinesScreenProps> = ({ projectId, user }) => {
   const [deadlines, setDeadlines] = useState<Deadline[]>([]);
+  const [properties, setProperties] = useState<Property[]>([]);
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [editingDeadline, setEditingDeadline] = useState<Deadline | null>(null);
   const [deletingDeadline, setDeletingDeadline] = useState<Deadline | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [openSections, setOpenSections] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    loadDeadlines();
+    loadData();
   }, [projectId]);
 
-  const loadDeadlines = () => {
+  const loadData = () => {
     setDeadlines(dataService.getDeadlines(projectId).sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()));
+    setProperties(dataService.getProperties(projectId));
   };
-
-  const getPropertyName = (id: string) => dataService.getProperties(projectId).find(p => p.id === id)?.name || 'N/A';
   
   const handleAddDeadline = (deadlineData: Omit<Deadline, 'id' | 'isCompleted' | 'history'>) => {
     dataService.addDeadline({ ...deadlineData, projectId }, user.id);
-    loadDeadlines();
+    loadData();
     setAddModalOpen(false);
   };
   
   const handleUpdateDeadline = (updatedDeadline: Deadline) => {
     dataService.updateDeadline(updatedDeadline, user.id);
-    loadDeadlines();
+    loadData();
     setEditingDeadline(null);
   };
   
   const handleDeleteDeadline = () => {
     if (deletingDeadline) {
       dataService.deleteDeadline(deletingDeadline.id);
-      loadDeadlines();
+      loadData();
       setDeletingDeadline(null);
     }
   };
 
   const handleToggleStatus = (id: string) => {
     dataService.toggleDeadlineStatus(id, user.id);
-    loadDeadlines();
+    loadData();
   };
-
-  const getDaysDiff = (dueDate: string) => {
-      const diff = new Date(dueDate).getTime() - new Date().getTime();
-      return Math.ceil(diff / (1000 * 3600 * 24));
-  }
 
   const getDeadlineTypeStyle = (type: DeadlineType) => {
     switch (type) {
@@ -174,6 +175,57 @@ const DeadlinesScreen: React.FC<DeadlinesScreenProps> = ({ projectId, user }) =>
       default: return 'bg-gray-100 text-gray-800';
     }
   };
+
+  const toggleSection = (propertyId: string) => {
+    setOpenSections(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(propertyId)) {
+            newSet.delete(propertyId);
+        } else {
+            newSet.add(propertyId);
+        }
+        return newSet;
+    });
+  };
+
+  const groupedDeadlines = useMemo(() => {
+    return deadlines.reduce<Record<string, Deadline[]>>((acc, deadline) => {
+        (acc[deadline.propertyId] = acc[deadline.propertyId] || []).push(deadline);
+        return acc;
+    }, {});
+  }, [deadlines]);
+  
+  const columns: Column<Deadline>[] = [
+      { header: 'Stato', accessor: 'isCompleted', render: (row) => (
+          <button onClick={() => handleToggleStatus(row.id)} className={`p-2 rounded-full ${row.isCompleted ? 'text-green-600 bg-green-100' : 'text-gray-400 hover:bg-gray-100'}`}>
+              <CheckCircle size={20} />
+          </button>
+      ), className: 'text-center' },
+      { header: 'Scadenza', accessor: 'dueDate', render: (row) => {
+          const daysLeft = Math.ceil((new Date(row.dueDate).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
+          const isOverdue = !row.isCompleted && daysLeft < 0;
+          const urgencyColor = isOverdue ? 'text-red-500' : daysLeft < 7 ? 'text-yellow-600' : 'text-gray-600';
+          return (
+              <div className={`font-medium ${urgencyColor}`}>
+                  {new Date(row.dueDate).toLocaleDateString('it-IT')}
+                  {!row.isCompleted && <span className="text-xs block">{isOverdue ? `Scaduto da ${Math.abs(daysLeft)} gg` : `Mancano ${daysLeft} gg`}</span>}
+              </div>
+          );
+      }},
+      { header: 'Titolo', accessor: 'title', className: 'font-medium text-dark' },
+      { header: 'Tipo', accessor: 'type', render: (row) => {
+          const displayType = (row.type === DeadlineType.OTHER && row.typeOther) ? row.typeOther : row.type;
+          return <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getDeadlineTypeStyle(row.type)}`}>{displayType}</span>;
+      }},
+      { header: 'Azioni', accessor: 'id', render: (row) => (
+           <div className="flex justify-center items-center gap-4">
+              <button onClick={() => setEditingDeadline(row)} className="text-blue-600 hover:text-blue-800"><Edit size={18} /></button>
+              <button onClick={() => setDeletingDeadline(row)} className="text-red-600 hover:text-red-800"><Trash2 size={18} /></button>
+          </div>
+      ), className: 'text-center' },
+  ];
+
+  const propertyMap = useMemo(() => new Map(properties.map(p => [p.id, p.name])), [properties]);
 
   return (
     <>
@@ -200,54 +252,24 @@ const DeadlinesScreen: React.FC<DeadlinesScreenProps> = ({ projectId, user }) =>
         </div>
         
         {viewMode === 'list' ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className="p-3 text-sm font-semibold text-gray-600">Stato</th>
-                  <th className="p-3 text-sm font-semibold text-gray-600">Scadenza</th>
-                  <th className="p-3 text-sm font-semibold text-gray-600">Titolo</th>
-                  <th className="p-3 text-sm font-semibold text-gray-600">Immobile</th>
-                  <th className="p-3 text-sm font-semibold text-gray-600">Tipo</th>
-                  <th className="p-3 text-sm font-semibold text-gray-600 text-center">Azioni</th>
-                </tr>
-              </thead>
-              <tbody>
-                {deadlines.map(d => {
-                  const daysLeft = getDaysDiff(d.dueDate);
-                  const isOverdue = !d.isCompleted && daysLeft < 0;
-                  const urgencyColor = isOverdue ? 'text-red-500' : daysLeft < 7 ? 'text-yellow-600' : 'text-gray-600';
-                  const displayType = (d.type === DeadlineType.OTHER && d.typeOther) ? d.typeOther : d.type;
-
-                  return (
-                    <tr key={d.id} className={`border-b hover:bg-gray-50 ${d.isCompleted ? 'bg-green-50' : ''}`}>
-                      <td className="p-3 text-center">
-                        <button onClick={() => handleToggleStatus(d.id)} className={`p-2 rounded-full ${d.isCompleted ? 'text-green-600 bg-green-100' : 'text-gray-400 hover:bg-gray-100'}`}>
-                            <CheckCircle size={20} />
-                        </button>
-                      </td>
-                      <td className={`p-3 font-medium ${urgencyColor}`}>
-                          {new Date(d.dueDate).toLocaleDateString('it-IT')}
-                          {!d.isCompleted && <span className="text-xs block">{isOverdue ? `Scaduto da ${Math.abs(daysLeft)} gg` : `Mancano ${daysLeft} gg`}</span>}
-                      </td>
-                      <td className="p-3 text-dark font-medium">{d.title}</td>
-                      <td className="p-3 text-gray-700">{getPropertyName(d.propertyId)}</td>
-                      <td className="p-3">
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getDeadlineTypeStyle(d.type)}`}>
-                          {displayType}
-                        </span>
-                      </td>
-                      <td className="p-3 text-center">
-                        <div className="flex justify-center items-center gap-4">
-                            <button onClick={() => setEditingDeadline(d)} className="text-blue-600 hover:text-blue-800"><Edit size={18} /></button>
-                            <button onClick={() => setDeletingDeadline(d)} className="text-red-600 hover:text-red-800"><Trash2 size={18} /></button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="space-y-4">
+            {Object.entries(groupedDeadlines).map(([propertyId, deadlinesForProperty], index) => {
+              const propertyName = propertyMap.get(propertyId) || 'Immobile non trovato';
+              const isOpen = openSections.has(propertyId);
+              return (
+                  <div key={propertyId} className={`rounded-lg overflow-hidden border-l-4 ${getPropertyColors(index)} bg-white shadow-sm`}>
+                      <button onClick={() => toggleSection(propertyId)} className={`w-full flex justify-between items-center p-4 text-left font-bold text-lg ${isOpen ? 'bg-gray-100' : 'bg-gray-50 hover:bg-gray-100'}`}>
+                          <span>{propertyName} <span className="text-sm font-medium text-gray-500">({deadlinesForProperty.length} scadenze)</span></span>
+                          <ChevronDown className={`transform transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                      </button>
+                      {isOpen && (
+                          <div className="p-2 bg-white">
+                              <InteractiveTable columns={columns} data={deadlinesForProperty} />
+                          </div>
+                      )}
+                  </div>
+              );
+            })}
           </div>
         ) : (
           <CalendarView deadlines={deadlines} onEdit={setEditingDeadline} />

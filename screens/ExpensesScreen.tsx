@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
-import { Expense, ExpenseCategory, User, UtilityType, TaxType } from '../types';
-import { PlusCircle, Edit, Trash2, ExternalLink, Download } from 'lucide-react';
+import { Expense, ExpenseCategory, User, UtilityType, TaxType, Property } from '../types';
+import { PlusCircle, Edit, Trash2, ExternalLink, Download, ChevronDown } from 'lucide-react';
 import AddExpenseModal from '../components/modals/AddExpenseModal';
 import EditExpenseModal from '../components/modals/EditExpenseModal';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
+import InteractiveTable, { Column } from '../components/ui/InteractiveTable';
+
 
 const COLORS = {
   [ExpenseCategory.CONDOMINIUM]: '#0088FE',
@@ -16,6 +18,14 @@ const COLORS = {
   [ExpenseCategory.OTHER]: '#AF19FF',
 };
 
+const getPropertyColors = (index: number) => {
+    const colors = [
+        'border-red-500', 'border-teal-500', 'border-blue-500', 'border-green-500',
+        'border-indigo-500', 'border-purple-500', 'border-pink-500', 'border-yellow-500'
+    ];
+    return colors[index % colors.length];
+};
+
 interface ExpensesScreenProps {
   projectId: string;
   user: User;
@@ -23,9 +33,11 @@ interface ExpensesScreenProps {
 
 const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ projectId, user }) => {
     const [expenses, setExpenses] = useState<Expense[]>([]);
+    const [properties, setProperties] = useState<Property[]>([]);
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
     const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
+    const [openSections, setOpenSections] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         loadExpenses();
@@ -33,6 +45,7 @@ const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ projectId, user }) => {
 
     const loadExpenses = () => {
         setExpenses(dataService.getExpenses(projectId));
+        setProperties(dataService.getProperties(projectId));
     };
 
     const handleAddExpense = (expenseData: Omit<Expense, 'id' | 'history'>) => {
@@ -54,8 +67,6 @@ const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ projectId, user }) => {
             setDeletingExpense(null);
         }
     };
-    
-    const getPropertyName = (id: string) => dataService.getProperties(projectId).find(p => p.id === id)?.name || 'N/A';
 
     const expensesByCategory = expenses.reduce((acc, expense) => {
         const category = expense.category;
@@ -70,7 +81,71 @@ const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ projectId, user }) => {
         name,
         value,
     }));
+
+    const toggleSection = (propertyId: string) => {
+      setOpenSections(prev => {
+          const newSet = new Set(prev);
+          if (newSet.has(propertyId)) {
+              newSet.delete(propertyId);
+          } else {
+              newSet.add(propertyId);
+          }
+          return newSet;
+      });
+    };
+
+    const groupedExpenses = useMemo(() => {
+      return expenses.reduce<Record<string, Expense[]>>((acc, item) => {
+          (acc[item.propertyId] = acc[item.propertyId] || []).push(item);
+          return acc;
+      }, {});
+    }, [expenses]);
+
+    const columns: Column<Expense>[] = [
+      { header: 'Descrizione', accessor: 'description', render: (row) => {
+          const isUtility = row.category === ExpenseCategory.UTILITIES;
+          const isTax = row.category === ExpenseCategory.TAXES;
+          return (
+              <div>
+                  <span className="font-medium text-dark">{row.description}</span>
+                  {isUtility && row.utilityProvider && <span className="block text-xs text-blue-700 font-semibold">Gestore: {row.utilityProvider}</span>}
+                  {isTax && row.taxReferenceYear && <span className="block text-xs text-yellow-700 font-semibold">Anno: {row.taxReferenceYear}</span>}
+              </div>
+          );
+      }},
+      { header: 'Categoria', accessor: 'category', render: (row) => {
+          const displayCategory = (row.category === ExpenseCategory.OTHER && row.categoryOther) ? row.categoryOther : row.category;
+          const isUtility = row.category === ExpenseCategory.UTILITIES;
+          const utilityDisplayType = (row.utilityType === UtilityType.OTHER && row.utilityTypeOther) ? row.utilityTypeOther : row.utilityType;
+          const isTax = row.category === ExpenseCategory.TAXES;
+          const taxDisplayType = (row.taxType === TaxType.OTHER && row.taxTypeOther) ? row.taxTypeOther : row.taxType;
+          return (
+              <div>
+                  <span className="font-semibold">{displayCategory}</span>
+                  {isUtility && utilityDisplayType && <span className="block text-xs">{utilityDisplayType}</span>}
+                  {isTax && taxDisplayType && <span className="block text-xs">{taxDisplayType}</span>}
+              </div>
+          );
+      }},
+      { header: 'Data', accessor: 'date', render: (row) => new Date(row.date).toLocaleDateString('it-IT') },
+      { header: 'Importo', accessor: 'amount', render: (row) => `€${row.amount.toLocaleString('it-IT')}`, className: 'text-right font-bold text-gray-900' },
+      { header: 'Allegati', accessor: 'id', render: (row) => (
+          <div className="flex justify-center items-center gap-4">
+              {row.providerUrl && <a href={row.providerUrl} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary" title="Link al gestore"><ExternalLink size={18} /></a>}
+              {row.invoiceData && <a href={row.invoiceData} download={row.invoiceName} className="text-gray-500 hover:text-primary" title={`Scarica ${row.invoiceName}`}><Download size={18} /></a>}
+              {row.invoiceUrl && <a href={row.invoiceUrl} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary" title="Visualizza fattura (link esterno)"><ExternalLink size={18} /></a>}
+          </div>
+      ), className: 'text-center' },
+      { header: 'Azioni', accessor: 'id', render: (row) => (
+           <div className="flex justify-center items-center gap-4">
+              <button onClick={() => setEditingExpense(row)} className="text-blue-600 hover:text-blue-800"><Edit size={18} /></button>
+              <button onClick={() => setDeletingExpense(row)} className="text-red-600 hover:text-red-800"><Trash2 size={18} /></button>
+          </div>
+      ), className: 'text-center' },
+    ];
   
+    const propertyMap = useMemo(() => new Map(properties.map(p => [p.id, p.name])), [properties]);
+
     return (
       <>
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -85,82 +160,25 @@ const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ projectId, user }) => {
                     Aggiungi Spesa
                 </button>
             </div>
-            <Card>
-                <div className="overflow-x-auto p-2">
-                        <table className="w-full text-left">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="p-3 text-sm font-semibold text-gray-600">Descrizione</th>
-                                    <th className="p-3 text-sm font-semibold text-gray-600">Categoria</th>
-                                    <th className="p-3 text-sm font-semibold text-gray-600">Data</th>
-                                    <th className="p-3 text-sm font-semibold text-gray-600 text-right">Importo</th>
-                                    <th className="p-3 text-sm font-semibold text-gray-600 text-center">Allegati</th>
-                                    <th className="p-3 text-sm font-semibold text-gray-600 text-center">Azioni</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {expenses.map((expense: Expense) => {
-                                    const displayCategory = (expense.category === ExpenseCategory.OTHER && expense.categoryOther) ? expense.categoryOther : expense.category;
-                                    const isUtility = expense.category === ExpenseCategory.UTILITIES;
-                                    const utilityDisplayType = (expense.utilityType === UtilityType.OTHER && expense.utilityTypeOther) ? expense.utilityTypeOther : expense.utilityType;
-                                    const isTax = expense.category === ExpenseCategory.TAXES;
-                                    const taxDisplayType = (expense.taxType === TaxType.OTHER && expense.taxTypeOther) ? expense.taxTypeOther : expense.taxType;
-
-                                    return (
-                                        <tr key={expense.id} className="border-b hover:bg-gray-50">
-                                            <td className="p-3 text-dark font-medium">
-                                                {expense.description}
-                                                <span className="block text-xs text-gray-500">{getPropertyName(expense.propertyId)}</span>
-                                                {isUtility && expense.utilityProvider && (
-                                                    <span className="block text-xs text-blue-700 font-semibold">Gestore: {expense.utilityProvider}</span>
-                                                )}
-                                                {isTax && expense.taxReferenceYear && (
-                                                     <span className="block text-xs text-yellow-700 font-semibold">Anno: {expense.taxReferenceYear}</span>
-                                                )}
-                                            </td>
-                                            <td className="p-3 text-gray-700">
-                                                <span className="font-semibold">{displayCategory}</span>
-                                                {isUtility && utilityDisplayType && (
-                                                    <span className="block text-xs">{utilityDisplayType}</span>
-                                                )}
-                                                {isTax && taxDisplayType && (
-                                                    <span className="block text-xs">{taxDisplayType}</span>
-                                                )}
-                                            </td>
-                                            <td className="p-3 text-gray-700">{new Date(expense.date).toLocaleDateString('it-IT')}</td>
-                                            <td className="p-3 text-gray-900 font-bold text-right">€{expense.amount.toLocaleString('it-IT')}</td>
-                                            <td className="p-3 text-center">
-                                                <div className="flex justify-center items-center gap-4">
-                                                    {expense.providerUrl && (
-                                                        <a href={expense.providerUrl} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary" title="Link al gestore">
-                                                            <ExternalLink size={18} />
-                                                        </a>
-                                                    )}
-                                                    {expense.invoiceData && (
-                                                        <a href={expense.invoiceData} download={expense.invoiceName} className="text-gray-500 hover:text-primary" title={`Scarica ${expense.invoiceName}`}>
-                                                            <Download size={18} />
-                                                        </a>
-                                                    )}
-                                                    {expense.invoiceUrl && (
-                                                         <a href={expense.invoiceUrl} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary" title="Visualizza fattura (link esterno)">
-                                                            <ExternalLink size={18} />
-                                                        </a>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td className="p-3 text-center">
-                                            <div className="flex justify-center items-center gap-4">
-                                                <button onClick={() => setEditingExpense(expense)} className="text-blue-600 hover:text-blue-800"><Edit size={18} /></button>
-                                                <button onClick={() => setDeletingExpense(expense)} className="text-red-600 hover:text-red-800"><Trash2 size={18} /></button>
-                                            </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                </div>
-            </Card>
+            <div className="space-y-4">
+              {Object.entries(groupedExpenses).map(([propertyId, items], index) => {
+                  const propertyName = propertyMap.get(propertyId) || 'Immobile non trovato';
+                  const isOpen = openSections.has(propertyId);
+                  return (
+                      <div key={propertyId} className={`rounded-lg overflow-hidden border-l-4 ${getPropertyColors(index)} bg-white shadow-sm`}>
+                          <button onClick={() => toggleSection(propertyId)} className={`w-full flex justify-between items-center p-4 text-left font-bold text-lg ${isOpen ? 'bg-gray-100' : 'bg-gray-50 hover:bg-gray-100'}`}>
+                              <span>{propertyName} <span className="text-sm font-medium text-gray-500">({items.length} spese)</span></span>
+                              <ChevronDown className={`transform transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                          </button>
+                          {isOpen && (
+                              <div className="p-2 bg-white">
+                                  <InteractiveTable columns={columns} data={items} />
+                              </div>
+                          )}
+                      </div>
+                  );
+              })}
+            </div>
         </div>
         <Card className="lg:col-span-2 p-6">
             <h2 className="text-xl font-bold text-dark mb-4">Riepilogo per Categoria</h2>

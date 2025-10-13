@@ -1,22 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
-import { Document, User, DocumentType } from '../types';
-import { PlusCircle, Edit, Trash2, Download, FileText } from 'lucide-react';
+import { Document, User, DocumentType, Property } from '../types';
+import { PlusCircle, Edit, Trash2, Download, FileText, ChevronDown } from 'lucide-react';
 import AddDocumentModal from '../components/modals/AddDocumentModal';
 import EditDocumentModal from '../components/modals/EditDocumentModal';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
+import InteractiveTable, { Column } from '../components/ui/InteractiveTable';
 
 interface DocumentsScreenProps {
   projectId: string;
   user: User;
 }
 
+const getPropertyColors = (index: number) => {
+    const colors = [
+        'border-teal-500', 'border-blue-500', 'border-green-500', 'border-indigo-500',
+        'border-purple-500', 'border-pink-500', 'border-yellow-500', 'border-red-500'
+    ];
+    return colors[index % colors.length];
+};
+
 const DocumentsScreen: React.FC<DocumentsScreenProps> = ({ projectId, user }) => {
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [properties, setProperties] = useState<Property[]>([]);
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
   const [deletingDocument, setDeletingDocument] = useState<Document | null>(null);
+  const [openSections, setOpenSections] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadDocuments();
@@ -24,9 +35,8 @@ const DocumentsScreen: React.FC<DocumentsScreenProps> = ({ projectId, user }) =>
 
   const loadDocuments = () => {
     setDocuments(dataService.getDocuments(projectId));
+    setProperties(dataService.getProperties(projectId));
   };
-
-  const getPropertyName = (id: string) => dataService.getProperties(projectId).find(p => p.id === id)?.name || 'N/A';
 
   const handleAddDocument = (docData: Omit<Document, 'id' | 'history'>) => {
     dataService.addDocument({ ...docData, projectId }, user.id);
@@ -48,6 +58,47 @@ const DocumentsScreen: React.FC<DocumentsScreenProps> = ({ projectId, user }) =>
     }
   };
 
+  const toggleSection = (propertyId: string) => {
+    setOpenSections(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(propertyId)) {
+            newSet.delete(propertyId);
+        } else {
+            newSet.add(propertyId);
+        }
+        return newSet;
+    });
+  };
+
+  const groupedDocuments = useMemo(() => {
+    return documents.reduce<Record<string, Document[]>>((acc, doc) => {
+        (acc[doc.propertyId] = acc[doc.propertyId] || []).push(doc);
+        return acc;
+    }, {});
+  }, [documents]);
+
+  const columns: Column<Document>[] = [
+      { header: 'Nome Documento', accessor: 'name', render: row => (
+          <div className="flex items-center">
+              <FileText size={18} className="mr-2 text-primary" />
+              <span className="font-medium text-dark">{row.name}</span>
+          </div>
+      )},
+      { header: 'Tipo', accessor: 'type', render: row => (row.type === DocumentType.OTHER && row.typeOther) ? row.typeOther : row.type },
+      { header: 'Data Caricamento', accessor: 'uploadDate', render: row => new Date(row.uploadDate).toLocaleDateString('it-IT') },
+      { header: 'Azioni', accessor: 'id', render: row => (
+          <div className="flex justify-center items-center gap-4">
+              <a href={row.fileData || row.fileUrl} download={row.fileName} target={row.fileUrl ? "_blank" : "_self"} rel="noopener noreferrer" className="text-gray-500 hover:text-primary" title={row.fileName ? `Scarica ${row.fileName}` : 'Apri link esterno'}>
+                  <Download size={18} />
+              </a>
+              <button onClick={() => setEditingDocument(row)} className="text-blue-600 hover:text-blue-800"><Edit size={18} /></button>
+              <button onClick={() => setDeletingDocument(row)} className="text-red-600 hover:text-red-800"><Trash2 size={18} /></button>
+          </div>
+      ), className: 'text-center' },
+  ];
+
+  const propertyMap = useMemo(() => new Map(properties.map(p => [p.id, p.name])), [properties]);
+
   return (
     <>
       <Card className="p-6">
@@ -61,50 +112,24 @@ const DocumentsScreen: React.FC<DocumentsScreenProps> = ({ projectId, user }) =>
             Carica Documento
           </button>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-gray-50">
-                <th className="p-3 text-sm font-semibold text-gray-600">Nome Documento</th>
-                <th className="p-3 text-sm font-semibold text-gray-600">Immobile Associato</th>
-                <th className="p-3 text-sm font-semibold text-gray-600">Tipo</th>
-                <th className="p-3 text-sm font-semibold text-gray-600">Data Caricamento</th>
-                <th className="p-3 text-sm font-semibold text-gray-600 text-center">Azioni</th>
-              </tr>
-            </thead>
-            <tbody>
-              {documents.map(doc => {
-                const displayType = (doc.type === DocumentType.OTHER && doc.typeOther) ? doc.typeOther : doc.type;
-                return (
-                    <tr key={doc.id} className="border-b hover:bg-gray-50">
-                    <td className="p-3 text-dark font-medium flex items-center">
-                        <FileText size={18} className="mr-2 text-primary" />
-                        {doc.name}
-                    </td>
-                    <td className="p-3 text-gray-700">{getPropertyName(doc.propertyId)}</td>
-                    <td className="p-3 text-gray-700">{displayType}</td>
-                    <td className="p-3 text-gray-700">{new Date(doc.uploadDate).toLocaleDateString('it-IT')}</td>
-                    <td className="p-3 text-center">
-                        <div className="flex justify-center items-center gap-4">
-                        <a 
-                          href={doc.fileData || doc.fileUrl}
-                          download={doc.fileName}
-                          target={doc.fileUrl ? "_blank" : "_self"}
-                          rel="noopener noreferrer"
-                          className="text-gray-500 hover:text-primary"
-                          title={doc.fileName ? `Scarica ${doc.fileName}` : 'Apri link esterno'}
-                        >
-                          <Download size={18} />
-                        </a>
-                        <button onClick={() => setEditingDocument(doc)} className="text-blue-600 hover:text-blue-800"><Edit size={18} /></button>
-                        <button onClick={() => setDeletingDocument(doc)} className="text-red-600 hover:text-red-800"><Trash2 size={18} /></button>
-                        </div>
-                    </td>
-                    </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="space-y-4">
+            {Object.entries(groupedDocuments).map(([propertyId, docsForProperty], index) => {
+              const propertyName = propertyMap.get(propertyId) || 'Immobile non trovato';
+              const isOpen = openSections.has(propertyId);
+              return (
+                  <div key={propertyId} className={`rounded-lg overflow-hidden border-l-4 ${getPropertyColors(index)} bg-white shadow-sm`}>
+                      <button onClick={() => toggleSection(propertyId)} className={`w-full flex justify-between items-center p-4 text-left font-bold text-lg ${isOpen ? 'bg-gray-100' : 'bg-gray-50 hover:bg-gray-100'}`}>
+                          <span>{propertyName} <span className="text-sm font-medium text-gray-500">({docsForProperty.length} documenti)</span></span>
+                          <ChevronDown className={`transform transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                      </button>
+                      {isOpen && (
+                          <div className="p-2 bg-white">
+                              <InteractiveTable columns={columns} data={docsForProperty} />
+                          </div>
+                      )}
+                  </div>
+              );
+            })}
         </div>
       </Card>
 

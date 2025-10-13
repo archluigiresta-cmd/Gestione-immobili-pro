@@ -1,4 +1,4 @@
-// FIX: Create App.tsx to resolve module not found errors.
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { LayoutDashboard, Building, FileText, Users, DollarSign, Calendar, Wrench, BarChart3, HelpCircle, Settings, Download, LineChart } from 'lucide-react';
 import * as dataService from './services/dataService';
