@@ -83,11 +83,12 @@ const MaintenanceScreen: React.FC<MaintenanceScreenProps> = ({ projectId, user }
     });
   };
 
+  // FIX: Explicitly type the accumulator in reduce to aid type inference.
   const groupedMaintenances = useMemo(() => {
-    return maintenances.reduce((acc, item) => {
+    return maintenances.reduce<Record<string, Maintenance[]>>((acc, item) => {
         (acc[item.propertyId] = acc[item.propertyId] || []).push(item);
         return acc;
-    }, {} as Record<string, Maintenance[]>);
+    }, {});
   }, [maintenances]);
 
   const columns: Column<Maintenance>[] = [

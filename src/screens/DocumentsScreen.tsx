@@ -70,11 +70,12 @@ const DocumentsScreen: React.FC<DocumentsScreenProps> = ({ projectId, user }) =>
     });
   };
 
+  // FIX: Explicitly type the accumulator in reduce to aid type inference.
   const groupedDocuments = useMemo(() => {
-    return documents.reduce((acc, doc) => {
+    return documents.reduce<Record<string, Document[]>>((acc, doc) => {
         (acc[doc.propertyId] = acc[doc.propertyId] || []).push(doc);
         return acc;
-    }, {} as Record<string, Document[]>);
+    }, {});
   }, [documents]);
 
   const columns: Column<Document>[] = [

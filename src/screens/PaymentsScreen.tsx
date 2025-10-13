@@ -15,10 +15,11 @@ interface PaymentsScreenProps {
   userRole: ProjectMemberRole;
 }
 
-interface EnrichedPayment extends Payment {
+// FIX: Change interface extension to a type intersection to fix property resolution issues.
+type EnrichedPayment = Payment & {
     propertyName: string;
     tenantName: string;
-}
+};
 
 const getPropertyColors = (index: number) => {
     const colors = [
@@ -76,7 +77,8 @@ const PaymentsScreen: React.FC<PaymentsScreenProps> = ({ projectId, user, userRo
         const tenants = dataService.getTenants(projectId);
 
         const propertyMap = new Map(properties.map(p => [p.id, p.name]));
-        const contractMap = new Map(contracts.map(c => [c.id, { tenantId: c.tenantId }]));
+        // FIX: Explicitly type the Map to aid type inference.
+        const contractMap: Map<string, { tenantId: string; }> = new Map(contracts.map(c => [c.id, { tenantId: c.tenantId }]));
         const tenantMap = new Map(tenants.map(t => [t.id, t.name]));
 
         const getTenantNameByContract = (contractId: string) => {
@@ -163,11 +165,12 @@ const PaymentsScreen: React.FC<PaymentsScreenProps> = ({ projectId, user, userRo
       });
     };
 
+    // FIX: Explicitly type the accumulator in reduce to aid type inference.
     const groupedPayments = useMemo(() => {
-      return filteredPayments.reduce((acc, payment) => {
+      return filteredPayments.reduce<Record<string, EnrichedPayment[]>>((acc, payment) => {
           (acc[payment.propertyId] = acc[payment.propertyId] || []).push(payment);
           return acc;
-      }, {} as Record<string, EnrichedPayment[]>);
+      }, {});
     }, [filteredPayments]);
     
     return (

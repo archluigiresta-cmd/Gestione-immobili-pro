@@ -94,11 +94,12 @@ const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ projectId, user }) => {
       });
     };
 
+    // FIX: Explicitly type the accumulator in reduce to aid type inference.
     const groupedExpenses = useMemo(() => {
-      return expenses.reduce((acc, item) => {
+      return expenses.reduce<Record<string, Expense[]>>((acc, item) => {
           (acc[item.propertyId] = acc[item.propertyId] || []).push(item);
           return acc;
-      }, {} as Record<string, Expense[]>);
+      }, {});
     }, [expenses]);
 
     const columns: Column<Expense>[] = [

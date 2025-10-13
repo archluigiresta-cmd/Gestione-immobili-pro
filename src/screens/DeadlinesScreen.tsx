@@ -188,11 +188,12 @@ const DeadlinesScreen: React.FC<DeadlinesScreenProps> = ({ projectId, user }) =>
     });
   };
 
+  // FIX: Explicitly type the accumulator in reduce to aid type inference.
   const groupedDeadlines = useMemo(() => {
-    return deadlines.reduce((acc, deadline) => {
+    return deadlines.reduce<Record<string, Deadline[]>>((acc, deadline) => {
         (acc[deadline.propertyId] = acc[deadline.propertyId] || []).push(deadline);
         return acc;
-    }, {} as Record<string, Deadline[]>);
+    }, {});
   }, [deadlines]);
   
   const columns: Column<Deadline>[] = [

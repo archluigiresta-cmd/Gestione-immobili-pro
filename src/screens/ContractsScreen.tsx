@@ -75,11 +75,12 @@ const ContractsScreen: React.FC<ContractsScreenProps> = ({ projectId, user, user
     });
   };
 
+  // FIX: Explicitly type the accumulator in reduce to aid type inference.
   const groupedContracts = useMemo(() => {
-    return contracts.reduce((acc, contract) => {
+    return contracts.reduce<Record<string, Contract[]>>((acc, contract) => {
         (acc[contract.propertyId] = acc[contract.propertyId] || []).push(contract);
         return acc;
-    }, {} as Record<string, Contract[]>);
+    }, {});
   }, [contracts]);
   
   const columns: Column<Contract>[] = [
