@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import Card from '../components/ui/Card';
 import InteractiveTable, { Column } from '../components/ui/InteractiveTable';
 import ExportButton from '../components/ui/ExportButton';
@@ -124,6 +124,7 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
                 { key: 'code', label: 'Codice' }, { key: 'name', label: 'Nome' }, { key: 'address', label: 'Indirizzo' },
                 { key: 'type', label: 'Tipo' }, { key: 'surface', label: 'Superficie' }, { key: 'rooms', label: 'Locali' },
                 { key: 'isRented', label: 'Affittato' }, { key: 'rentAmount', label: 'Canone' },
+                 { key: 'creationDate', label: 'Data Creazione' },
             ];
             customFields = properties.flatMap(p => p.customFields);
             break;
@@ -169,20 +170,23 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
         return newSet;
     });
   };
-
-  const flattenDataWithCustomFields = (data: any[], type: ReportType) => {
+  
+  const prepareRegistryData = useCallback((data: any[], type: ReportType) => {
     const propertyMap = new Map(properties.map(p => [p.id, p]));
     const tenantMap = new Map(tenants.map(t => [t.id, t]));
+    const contractMap = new Map(contracts.map(c => [c.id, c]));
 
     return data.map(item => {
         const flatItem: any = { ...item };
         
+        // Flatten custom fields into top-level properties
         if (item.customFields) {
             item.customFields.forEach((cf: CustomField) => {
                 flatItem[`cf_${cf.label}`] = cf.value;
             });
         }
 
+        // Add related data
         if (item.propertyId) {
             flatItem.propertyName = propertyMap.get(item.propertyId)?.name || 'N/A';
         }
@@ -190,17 +194,19 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
             flatItem.tenantName = tenantMap.get(item.tenantId)?.name || 'N/A';
         }
         if (type === 'tenants' && item.contractId) {
-             const contract = contracts.find(c => c.id === item.contractId);
+             const contract = contractMap.get(item.contractId);
              if (contract) {
                  flatItem.propertyName = propertyMap.get(contract.propertyId)?.name || 'N/A';
              }
         }
         
+        // Remove complex objects to prevent rendering errors
         delete flatItem.customFields;
         delete flatItem.history;
         return flatItem;
     });
-  };
+  }, [properties, tenants, contracts]);
+
 
   const handleGenerateReport = () => {
     let data: any[] = [];
@@ -215,11 +221,15 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
     else if (reportType === 'documents') data = documents;
 
     const filtered = data.filter(item => {
-      const itemDate = new Date(item.date || item.requestDate || item.dueDate || item.uploadDate || item.startDate);
+      const itemDateStr = item.date || item.requestDate || item.dueDate || item.uploadDate || item.startDate || item.creationDate;
+      if (!isRegistryReport && !itemDateStr) return true;
+      
+      const itemDate = new Date(itemDateStr);
       const start = startDate ? new Date(startDate) : null;
       const end = endDate ? new Date(endDate) : null;
       
       if(end) end.setHours(23, 59, 59, 999);
+      if(start) start.setHours(0,0,0,0);
 
       if (start && itemDate < start) return false;
       if (end && itemDate > end) return false;
@@ -229,7 +239,7 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
       return true;
     });
 
-    const finalData = isRegistryReport ? flattenDataWithCustomFields(filtered, reportType!) : filtered;
+    const finalData = isRegistryReport ? prepareRegistryData(filtered, reportType!) : filtered;
     setReportData(finalData);
     setIsGenerated(true);
   };
@@ -243,6 +253,60 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
     }
   };
 
+  const getTextFromCell = useCallback((cellData: any): string => {
+    if (cellData === null || typeof cellData === 'undefined') return '';
+    if (typeof cellData === 'boolean') return cellData ? 'Sì' : 'No';
+    if (cellData instanceof Date && !isNaN(cellData.getTime())) return cellData.toLocaleDateString('it-IT');
+    
+    if (React.isValidElement(cellData)) {
+        const props = cellData.props;
+        if (typeof props === 'object' && props !== null && 'children' in props) {
+          const { children } = props as { children?: React.ReactNode };
+          if (Array.isArray(children)) {
+              return children.map(child => getTextFromCell(child)).join('');
+          }
+          return getTextFromCell(children);
+        }
+        return '';
+    }
+    
+    if (typeof cellData === 'object') {
+      try {
+        return JSON.stringify(cellData);
+      } catch (e) {
+        return '[Oggetto complesso]';
+      }
+    }
+    
+    return String(cellData);
+  }, []);
+
+  const renderRegistryCell = useCallback((data: any, key: string): React.ReactNode => {
+    if (data === null || typeof data === 'undefined') return '';
+    if (React.isValidElement(data)) return data;
+    if (typeof data === 'boolean') return data ? 'Sì' : 'No';
+
+    if (typeof data === 'string' && (key.toLowerCase().includes('date') || key.toLowerCase().includes('start') || key.toLowerCase().includes('end'))) {
+        if (!data) return '';
+        const date = new Date(data);
+        if (!isNaN(date.getTime())) {
+            const utcDate = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+            return utcDate.toLocaleDateString('it-IT');
+        }
+    }
+    
+    if (data instanceof Date) {
+        return isNaN(data.getTime()) ? 'Data non valida' : data.toLocaleDateString('it-IT');
+    }
+
+    if (typeof data === 'object') {
+        try { return JSON.stringify(data); } catch (e) { return '[Oggetto complesso]'; }
+    }
+    
+    return String(data);
+  }, []);
+
+
   const { columns, total } = useMemo(() => {
     let cols: Column<any>[] = [];
     let tot = 0;
@@ -255,13 +319,7 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
             .map(col => ({
                 header: col.label,
                 accessor: col.key,
-                render: (row) => {
-                    const value = row[col.key];
-                    if (value === null || value === undefined) return '';
-                    if (typeof value === 'boolean') return value ? 'Sì' : 'No';
-                    if (typeof value === 'object') return JSON.stringify(value);
-                    return String(value);
-                }
+                render: (row: any) => renderRegistryCell(row[col.key], col.key),
             }));
     } else {
        switch (reportType) {
@@ -297,22 +355,23 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
         }
     }
     return { columns: cols, total: tot };
-  }, [reportType, reportData, properties, selectedColumns, getAvailableColumns]);
+  }, [reportType, reportData, properties, selectedColumns, getAvailableColumns, renderRegistryCell]);
   
   const preparedExportData = useMemo(() => {
     if (!isGenerated || reportData.length === 0) return [];
-    if (!reportTypesConfig.registry.some(r => r.id === reportType)) return reportData;
-
+    
     return reportData.map(row => {
         const newRow: any = {};
         columns.forEach(col => {
-            newRow[col.header] = row[col.accessor];
+            const header = col.header;
+            const cellData = col.render ? col.render(row) : row[col.accessor as any];
+            newRow[header] = getTextFromCell(cellData);
         });
         return newRow;
     });
-  }, [reportData, columns, isGenerated, reportType]);
+  }, [reportData, columns, isGenerated, getTextFromCell]);
 
-  const handleExportPdf = () => {
+  const handleExportPdf = useCallback(() => {
     if (reportData.length === 0) {
       alert("Nessun dato da esportare.");
       return;
@@ -332,20 +391,14 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
       head: [columns.map(c => c.header)],
       body: reportData.map(row => 
         columns.map(col => {
-            const value = row[col.accessor as any];
-            if (value === null || value === undefined) return '';
-            if (typeof value === 'boolean') return value ? 'Sì' : 'No';
-            if (typeof col.render === 'function') {
-                const renderedValue = col.render(row);
-                if (typeof renderedValue === 'string') return renderedValue;
-            }
-            return String(value);
+            const cellData = col.render ? col.render(row) : row[col.accessor as any];
+            return getTextFromCell(cellData);
         })
       ),
     });
 
     doc.save(`report_${reportType}.pdf`);
-  };
+  }, [reportData, columns, reportType, getTextFromCell]);
 
   return (
     <div className="space-y-6">
