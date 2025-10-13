@@ -5,7 +5,7 @@ import { X } from 'lucide-react';
 interface AddUserModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (userData: Omit<User, 'id'>) => void;
+  onSave: (userData: Omit<User, 'id' | 'status'>) => void;
 }
 
 const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onSave }) => {

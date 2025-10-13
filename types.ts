@@ -5,10 +5,16 @@ export interface HistoryLog {
   description: string;
 }
 
+export enum UserStatus {
+  ACTIVE = 'Attivo',
+  PENDING = 'In attesa di approvazione',
+}
+
 export interface User {
   id: string;
   name: string;
   email: string;
+  status: UserStatus;
 }
 
 export enum ProjectMemberRole {

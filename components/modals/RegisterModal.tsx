@@ -5,7 +5,7 @@ import { X } from 'lucide-react';
 interface RegisterModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onRegister: (userData: Omit<User, 'id'>) => void;
+  onRegister: (userData: Omit<User, 'id' | 'status'>) => void;
 }
 
 const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, onRegister }) => {

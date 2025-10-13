@@ -1,9 +1,8 @@
-
-import React, { useState, useRef } from 'react';
-import { User, Project, ProjectMemberRole } from '../types';
+import React, { useState, useRef, useEffect } from 'react';
+import { User, Project, ProjectMemberRole, UserStatus } from '../types';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
-import { UserCircle, Edit, Trash2, Shield, PlusCircle, Share2, Users, HardDrive, Upload } from 'lucide-react';
+import { UserCircle, Edit, Trash2, Shield, PlusCircle, Share2, Users, HardDrive, Upload, Check, X } from 'lucide-react';
 
 import EditProfileModal from '../components/modals/EditProfileModal';
 import AddUserModal from '../components/modals/AddUserModal';
@@ -15,8 +14,9 @@ interface SettingsScreenProps {
   project: Project;
   onUpdateProfile: (updatedUser: User) => void;
   onUpdateProject: (updatedProject: Project) => void;
-  onAddUser: (userData: Omit<User, 'id'>) => void;
+  onAddUser: (userData: Omit<User, 'id' | 'status'>) => void;
   onDeleteUser: (userId: string) => void;
+  onApproveUser: (userId: string) => void;
   userRole: ProjectMemberRole;
 }
 
@@ -27,6 +27,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
   onUpdateProject,
   onAddUser,
   onDeleteUser,
+  onApproveUser,
   userRole
 }) => {
     const [isEditProfileModalOpen, setEditProfileModalOpen] = useState(false);
@@ -37,9 +38,12 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
     const [newProjectName, setNewProjectName] = useState(project.name);
     
     const fileInputRef = useRef<HTMLInputElement>(null);
+    
+    // Refresh user list from dataService on each render
+    const allUsers = dataService.getUsers();
+    const pendingUsers = allUsers.filter(u => u.status === UserStatus.PENDING);
 
     const isOwner = userRole === ProjectMemberRole.OWNER;
-    const allUsers = dataService.getUsers();
     
     const projectMembers = project.members.map(member => {
         const memberUser = allUsers.find(u => u.id === member.userId);
@@ -81,7 +85,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
         setShareModalOpen(false);
     }
     
-    const handleAddUserAndRefresh = (userData: Omit<User, 'id'>) => {
+    const handleAddUserAndRefresh = (userData: Omit<User, 'id' | 'status'>) => {
       onAddUser(userData);
     }
 
@@ -145,6 +149,38 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
         <div className="space-y-6">
             <h1 className="text-2xl font-bold text-dark">Impostazioni</h1>
             
+            {user.id === 'user-1' && (
+                <Card className="p-6 border-l-4 border-yellow-400 bg-yellow-50">
+                    <h2 className="text-xl font-bold text-yellow-800 mb-4">Pannello Amministratore</h2>
+                    
+                    <div className="bg-white rounded-lg p-4">
+                         <h3 className="text-lg font-semibold text-dark mb-3">Richieste di Registrazione in Sospeso</h3>
+                         {pendingUsers.length > 0 ? (
+                            <div className="space-y-3">
+                                {pendingUsers.map(u => (
+                                    <div key={u.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
+                                        <div>
+                                            <p className="font-semibold">{u.name}</p>
+                                            <p className="text-sm text-gray-600">{u.email}</p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button onClick={() => onApproveUser(u.id)} className="flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 font-semibold rounded-lg hover:bg-green-200">
+                                                <Check size={16}/> Approva
+                                            </button>
+                                            <button onClick={() => setDeletingUser(u)} className="flex items-center gap-1 px-3 py-1.5 bg-red-100 text-red-700 font-semibold rounded-lg hover:bg-red-200">
+                                                <X size={16}/> Rifiuta
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                         ) : (
+                            <p className="text-center text-gray-500 py-4">Nessuna richiesta di registrazione in sospeso.</p>
+                         )}
+                    </div>
+                </Card>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card className="p-6">
                     <div className="flex justify-between items-center mb-4">
@@ -268,6 +304,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
                                 <tr>
                                     <th className="p-3 text-sm font-semibold text-gray-600">Nome</th>
                                     <th className="p-3 text-sm font-semibold text-gray-600">Email</th>
+                                    <th className="p-3 text-sm font-semibold text-gray-600">Stato</th>
                                     <th className="p-3 text-sm font-semibold text-gray-600 text-center">Azioni</th>
                                 </tr>
                             </thead>
@@ -276,11 +313,16 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
                                     <tr key={u.id} className="border-b hover:bg-gray-50">
                                         <td className="p-3 font-medium text-dark">{u.name}</td>
                                         <td className="p-3 text-gray-700">{u.email}</td>
+                                        <td className="p-3">
+                                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${u.status === UserStatus.ACTIVE ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                                                {u.status}
+                                            </span>
+                                        </td>
                                         <td className="p-3 text-center">
                                             <button 
                                                 onClick={() => setDeletingUser(u)} 
                                                 className="text-red-600 hover:text-red-800 p-1.5 rounded-full hover:bg-red-50 disabled:text-gray-400 disabled:cursor-not-allowed"
-                                                disabled={u.id === user.id || allUsers.length <=1}
+                                                disabled={u.id === user.id && allUsers.filter(us => us.status === UserStatus.ACTIVE).length <=1}
                                             >
                                                 <Trash2 size={18}/>
                                             </button>
@@ -304,7 +346,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
                         onDeleteUser(deletingUser.id);
                         setDeletingUser(null);
                     }}
-                    message={`Sei sicuro di voler eliminare l'utente "${deletingUser.name}"? Verrà rimosso da tutti i progetti.`}
+                    message={`Sei sicuro di voler eliminare l'utente "${deletingUser.name}"? L'azione è irreversibile.`}
                 />
             )}
         </div>

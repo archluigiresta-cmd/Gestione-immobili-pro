@@ -1,6 +1,5 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { Menu, UserCircle, Settings, LogOut, Briefcase } from 'lucide-react';
+import { Menu, UserCircle, Settings, LogOut, Briefcase, Bell } from 'lucide-react';
 import { User } from '../../types';
 import { Screen } from '../../App';
 
@@ -12,9 +11,10 @@ interface HeaderProps {
   onLogout: () => void;
   onNavigate: (screen: Screen) => void;
   onBackToProjects: () => void;
+  pendingUsersCount: number;
 }
 
-const Header: React.FC<HeaderProps> = ({ currentScreen, currentProjectName, toggleSidebar, user, onLogout, onNavigate, onBackToProjects }) => {
+const Header: React.FC<HeaderProps> = ({ currentScreen, currentProjectName, toggleSidebar, user, onLogout, onNavigate, onBackToProjects, pendingUsersCount }) => {
   const [isDropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -42,6 +42,21 @@ const Header: React.FC<HeaderProps> = ({ currentScreen, currentProjectName, togg
         </div>
       </div>
       <div className="flex items-center gap-4">
+        {user.id === 'user-1' && pendingUsersCount > 0 && (
+          <button
+            onClick={() => onNavigate('settings')}
+            className="relative text-gray-600 hover:text-primary p-2 rounded-full hover:bg-gray-100"
+            title={`${pendingUsersCount} utenti in attesa di approvazione`}
+          >
+            <Bell size={22} />
+            <span className="absolute top-1 right-1 flex h-4 w-4">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-white text-xs items-center justify-center">
+                {pendingUsersCount}
+              </span>
+            </span>
+          </button>
+        )}
         <button 
             onClick={onBackToProjects}
             className="hidden sm:flex items-center text-sm px-3 py-2 bg-secondary text-primary font-semibold rounded-lg hover:bg-blue-200 transition-colors"

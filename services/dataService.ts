@@ -1,5 +1,5 @@
 import { MOCK_USERS, MOCK_PROPERTIES, MOCK_TENANTS, MOCK_CONTRACTS, MOCK_DEADLINES, MOCK_MAINTENANCES, MOCK_EXPENSES, MOCK_DOCUMENTS, MOCK_PROJECTS, MOCK_PAYMENTS } from '../constants';
-import { User, Property, Tenant, Contract, Deadline, Maintenance, Expense, Document, DeadlineType, Project, HistoryLog, Payment } from '../types';
+import { User, Property, Tenant, Contract, Deadline, Maintenance, Expense, Document, DeadlineType, Project, HistoryLog, Payment, UserStatus } from '../types';
 
 const CURRENT_DATA_VERSION = 2;
 
@@ -89,9 +89,9 @@ const createLogEntry = (userId: string, description: string): HistoryLog => ({
 // Users
 export const getUsers = (): User[] => initData('users', MOCK_USERS);
 export const getUser = (id: string): User | undefined => getUsers().find(u => u.id === id);
-export const addUser = (userData: Omit<User, 'id'>): User => {
+export const addUser = (userData: Omit<User, 'id' | 'status'>): User => {
     const users = getUsers();
-    const newUser: User = { ...userData, id: generateId('user') };
+    const newUser: User = { ...userData, id: generateId('user'), status: UserStatus.PENDING };
     saveData('users', [...users, newUser]);
     return newUser;
 };
@@ -100,10 +100,15 @@ export const updateUser = (updatedUser: User): void => {
     users = users.map(user => user.id === updatedUser.id ? updatedUser : user);
     saveData('users', users);
 };
+export const approveUser = (userId: string): void => {
+    let users = getUsers();
+    users = users.map(user => user.id === userId ? { ...user, status: UserStatus.ACTIVE } : user);
+    saveData('users', users);
+};
 export const deleteUser = (id: string): void => {
     let users = getUsers();
-    if (users.length <= 1) {
-        console.warn("Cannot delete the last user.");
+    if (users.length <= 1 && users.every(u => u.status === UserStatus.ACTIVE)) {
+        console.warn("Cannot delete the last active user.");
         return;
     }
     users = users.filter(u => u.id !== id);
