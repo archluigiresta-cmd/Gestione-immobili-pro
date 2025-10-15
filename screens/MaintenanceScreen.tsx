@@ -6,7 +6,7 @@ import { PlusCircle, Edit, Trash2, Wrench, Clock, CheckCircle } from 'lucide-rea
 import AddMaintenanceModal from '../components/modals/AddMaintenanceModal';
 import EditMaintenanceModal from '../components/modals/EditMaintenanceModal';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
-import InteractiveTable, { Column } from '../components/ui/InteractiveTable';
+import AccordionItem from '../components/ui/AccordionItem';
 
 interface MaintenanceScreenProps {
   projectId: string;
@@ -62,33 +62,18 @@ const MaintenanceScreen: React.FC<MaintenanceScreenProps> = ({ projectId, user }
     }
   };
 
-  const propertyMap = useMemo(() => new Map(properties.map(p => [p.id, p.name])), [properties]);
-
-  const columns: Column<Maintenance>[] = [
-      { header: 'Descrizione', accessor: 'description', className: 'font-medium text-dark' },
-      { header: 'Immobile', accessor: 'propertyId', render: (row) => propertyMap.get(row.propertyId) || 'N/A' },
-      { header: 'Data Richiesta', accessor: 'requestDate', render: (row) => new Date(row.requestDate).toLocaleDateString('it-IT') },
-      { header: 'Stato', accessor: 'status', render: (row) => {
-          const statusInfo = getStatusInfo(row.status);
-          return (
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusInfo.badge}`}>
-                  {statusInfo.icon && <span className="mr-1.5">{statusInfo.icon}</span>}
-                  {row.status}
-              </span>
-          );
-      }},
-      { header: 'Costo', accessor: 'cost', render: (row) => row.cost ? `€${row.cost.toLocaleString('it-IT')}` : '---', className: 'text-right font-semibold' },
-      { header: 'Azioni', accessor: 'id', render: (row) => (
-          <div className="flex justify-center items-center gap-4">
-              <button onClick={() => setEditingMaintenance(row)} className="text-blue-600 hover:text-blue-800"><Edit size={18} /></button>
-              <button onClick={() => setDeletingMaintenance(row)} className="text-red-600 hover:text-red-800"><Trash2 size={18} /></button>
-          </div>
-      ), className: 'text-center' },
-  ];
+ const groupedMaintenances = useMemo(() => {
+    return maintenances.reduce((acc, maint) => {
+        const key = maint.propertyId;
+        if(!acc[key]) acc[key] = [];
+        acc[key].push(maint);
+        return acc;
+    }, {} as Record<string, Maintenance[]>);
+ }, [maintenances]);
   
   return (
     <>
-      <Card className="p-6">
+      <div className="space-y-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-dark">Registro Manutenzioni</h1>
           <button
@@ -99,8 +84,65 @@ const MaintenanceScreen: React.FC<MaintenanceScreenProps> = ({ projectId, user }
             Nuova Richiesta
           </button>
         </div>
-        <InteractiveTable columns={columns} data={maintenances} />
-      </Card>
+
+        <div className="space-y-4">
+            {properties.filter(p => groupedMaintenances[p.id]).map(property => {
+                const propertyMaint = groupedMaintenances[property.id];
+                 const title = (
+                  <div className="flex items-center gap-3">
+                      <span>{property.name}</span>
+                      <span className="text-sm bg-gray-200 text-gray-700 font-bold px-2.5 py-1 rounded-full">{propertyMaint.length}</span>
+                  </div>
+                );
+                return (
+                    <AccordionItem key={property.id} title={title}>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="p-3 text-sm font-semibold text-gray-600">Descrizione</th>
+                                        <th className="p-3 text-sm font-semibold text-gray-600">Data Richiesta</th>
+                                        <th className="p-3 text-sm font-semibold text-gray-600">Stato</th>
+                                        <th className="p-3 text-sm font-semibold text-gray-600 text-right">Costo</th>
+                                        <th className="p-3 text-sm font-semibold text-gray-600 text-center">Azioni</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {propertyMaint.map(row => {
+                                        const statusInfo = getStatusInfo(row.status);
+                                        return (
+                                            <tr key={row.id} className="border-b last:border-b-0 hover:bg-gray-50">
+                                                <td className="p-3 font-medium text-dark">{row.description}</td>
+                                                <td className="p-3 text-gray-700">{new Date(row.requestDate).toLocaleDateString('it-IT')}</td>
+                                                <td className="p-3">
+                                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusInfo.badge}`}>
+                                                        {statusInfo.icon && <span className="mr-1.5">{statusInfo.icon}</span>}
+                                                        {row.status}
+                                                    </span>
+                                                </td>
+                                                <td className="p-3 text-right font-semibold text-gray-800">{row.cost ? `€${row.cost.toLocaleString('it-IT')}` : '---'}</td>
+                                                <td className="p-3 text-center">
+                                                    <div className="flex justify-center items-center gap-4">
+                                                        <button onClick={() => setEditingMaintenance(row)} className="text-blue-600 hover:text-blue-800"><Edit size={18} /></button>
+                                                        <button onClick={() => setDeletingMaintenance(row)} className="text-red-600 hover:text-red-800"><Trash2 size={18} /></button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </AccordionItem>
+                )
+            })}
+             {Object.keys(groupedMaintenances).length === 0 && (
+                <Card className="p-8 text-center text-gray-500">
+                    Nessuna richiesta di manutenzione trovata.
+                </Card>
+            )}
+        </div>
+      </div>
       
       <AddMaintenanceModal 
         isOpen={isAddModalOpen}

@@ -6,6 +6,7 @@ import { Mail, Phone, Home, PlusCircle, MoreVertical, Edit, Trash2 } from 'lucid
 import AddTenantModal from '../components/modals/AddTenantModal';
 import EditTenantModal from '../components/modals/EditTenantModal';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
+import AccordionItem from '../components/ui/AccordionItem';
 
 const TenantCard: React.FC<{ tenant: Tenant, propertyName: string, onEdit: () => void, onDelete: () => void }> = ({ tenant, propertyName, onEdit, onDelete }) => {
     const [menuOpen, setMenuOpen] = useState(false);
@@ -98,24 +99,29 @@ const TenantsScreen: React.FC<TenantsScreenProps> = ({ projectId, user }) => {
         }
     };
 
-    const enrichedTenants = useMemo(() => {
+    const groupedTenants = useMemo(() => {
         const contractMap = new Map(contracts.map(c => [c.id, c.propertyId]));
         const propertyMap = new Map(properties.map(p => [p.id, p.name]));
 
-        return tenants.map(tenant => {
+        const enriched = tenants.map(tenant => {
             const propertyId = contractMap.get(tenant.contractId);
-            const propertyName = propertyId ? propertyMap.get(propertyId) || 'Nessun immobile associato' : 'Nessun immobile associato';
-            return {
-                ...tenant,
-                propertyName,
-            };
-        }).sort((a,b) => a.propertyName.localeCompare(b.propertyName));
+            const propertyName = propertyId ? propertyMap.get(propertyId) || 'N/A' : 'N/A';
+            return { tenant, propertyId, propertyName };
+        });
+
+        return enriched.reduce((acc, item) => {
+            const key = item.propertyId || 'unassigned';
+            if (!acc[key]) acc[key] = [];
+            acc[key].push({ ...item.tenant, propertyName: item.propertyName });
+            return acc;
+        }, {} as Record<string, (Tenant & { propertyName: string })[]>);
+
     }, [tenants, contracts, properties]);
 
 
     return (
         <>
-        <Card className="p-6">
+        <div className="space-y-6">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold text-dark">Elenco Inquilini</h1>
                 <button
@@ -126,21 +132,38 @@ const TenantsScreen: React.FC<TenantsScreenProps> = ({ projectId, user }) => {
                     Aggiungi Inquilino
                 </button>
             </div>
-             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {enrichedTenants.map(tenant => (
-                    <TenantCard
-                        key={tenant.id}
-                        tenant={tenant}
-                        propertyName={tenant.propertyName}
-                        onEdit={() => setEditingTenant(tenant)}
-                        onDelete={() => setDeletingTenant(tenant)}
-                    />
-                ))}
-                {enrichedTenants.length === 0 && (
-                    <p className="text-gray-500 col-span-full text-center py-8">Nessun inquilino trovato.</p>
+             <div className="space-y-4">
+                {properties.filter(p => groupedTenants[p.id]).map(property => {
+                     const propertyTenants = groupedTenants[property.id];
+                     const title = (
+                        <div className="flex items-center gap-3">
+                            <span>{property.name}</span>
+                            <span className="text-sm bg-gray-200 text-gray-700 font-bold px-2.5 py-1 rounded-full">{propertyTenants.length}</span>
+                        </div>
+                    );
+                    return (
+                        <AccordionItem key={property.id} title={title}>
+                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 p-4">
+                                {propertyTenants.map(tenant => (
+                                     <TenantCard
+                                        key={tenant.id}
+                                        tenant={tenant}
+                                        propertyName={tenant.propertyName}
+                                        onEdit={() => setEditingTenant(tenant)}
+                                        onDelete={() => setDeletingTenant(tenant)}
+                                    />
+                                ))}
+                             </div>
+                        </AccordionItem>
+                    )
+                })}
+                {Object.keys(groupedTenants).length === 0 && (
+                    <Card className="p-8 text-center text-gray-500">
+                        Nessun inquilino trovato.
+                    </Card>
                 )}
             </div>
-        </Card>
+        </div>
 
         <AddTenantModal
             isOpen={isAddModalOpen}

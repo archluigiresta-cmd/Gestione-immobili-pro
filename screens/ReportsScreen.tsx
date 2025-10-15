@@ -1,16 +1,17 @@
-
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import Card from '../components/ui/Card';
 import InteractiveTable, { Column } from '../components/ui/InteractiveTable';
 import ExportButton from '../components/ui/ExportButton';
 import * as dataService from '../services/dataService';
 import { Payment, Expense, Maintenance, Property, PaymentStatus, ExpenseCategory, MaintenanceStatus, Contract, Tenant, Document, CustomField } from '../types';
-import { BarChart, FileSearch, Filter, Settings2, Database, DollarSign, Building, Users, FileText as FileTextIcon, Wrench } from 'lucide-react';
+import { BarChart, FileSearch, Filter, Settings2, Database, DollarSign, Building, Users, FileText as FileTextIcon, Wrench, Library } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import PropertyReportCard, { AggregatedPropertyData } from '../components/reports/PropertyReportCard';
 
-type ReportCategory = 'financial' | 'registry';
-type ReportType = 'payments' | 'expenses' | 'maintenance' | 'properties' | 'contracts' | 'tenants' | 'documents';
+
+type ReportCategory = 'financial' | 'registry' | 'summary';
+type ReportType = 'payments' | 'expenses' | 'maintenance' | 'properties' | 'contracts' | 'tenants' | 'documents' | 'propertySummary';
 
 interface ReportsScreenProps {
   projectId: string;
@@ -27,6 +28,9 @@ const reportTypesConfig = {
         { id: 'contracts', name: 'Contratti', icon: FileTextIcon },
         { id: 'tenants', name: 'Inquilini', icon: Users },
         { id: 'documents', name: 'Documenti', icon: FileTextIcon },
+    ],
+    summary: [
+        { id: 'propertySummary', name: 'Riepilogo per Immobile', icon: Library },
     ]
 };
 
@@ -88,6 +92,7 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
 
   const [reportData, setReportData] = useState<any[]>([]);
   const [isGenerated, setIsGenerated] = useState(false);
+  const [grandTotals, setGrandTotals] = useState({ payments: 0, expenses: 0 });
 
   useEffect(() => {
     setProperties(dataService.getProperties(projectId));
@@ -161,6 +166,7 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
     setStatus('all');
     setReportData([]);
     setIsGenerated(false);
+    setGrandTotals({ payments: 0, expenses: 0 });
   };
   
   const handleSetReportType = (type: ReportType) => {
@@ -181,81 +187,119 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
   };
   
   const handleGenerateReport = () => {
-    let sourceData: any[] = [];
-    
-    const propertyMap = new Map(properties.map(p => [p.id, p.name]));
-    const tenantMap = new Map(tenants.map(t => [t.id, t.name]));
-    const contractMap = new Map(contracts.map(c => [c.id, c]));
+    if (reportType === 'propertySummary') {
+        const targetProperties = propertyId === 'all' ? properties : properties.filter(p => p.id === propertyId);
+        let totalPayments = 0;
+        let totalExpenses = 0;
 
-    // 1. Select and enrich source data
-    switch(reportType) {
-        case 'payments': sourceData = payments.map(p => ({...p, propertyName: propertyMap.get(p.propertyId)})); break;
-        case 'expenses': sourceData = expenses.map(e => ({...e, propertyName: propertyMap.get(e.propertyId)})); break;
-        case 'maintenance': sourceData = maintenances.map(m => ({...m, propertyName: propertyMap.get(m.propertyId)})); break;
-        case 'properties': sourceData = properties; break;
-        case 'contracts': 
-            sourceData = contracts.map(c => ({
-                ...c,
-                propertyName: propertyMap.get(c.propertyId) || 'N/A',
-                tenantName: tenantMap.get(c.tenantId) || 'N/A',
-            }));
-            break;
-        case 'tenants': 
-            sourceData = tenants.map(t => {
-                const contract = [...contractMap.values()].find(c => c.tenantId === t.id);
-                return {
-                    ...t,
-                    propertyName: contract ? propertyMap.get(contract.propertyId) : 'N/A'
-                };
-            });
-            break;
-        case 'documents':
-            sourceData = documents.map(d => ({
-                ...d,
-                propertyName: propertyMap.get(d.propertyId) || 'N/A',
-            }));
-            break;
-    }
-    
-    // 2. Filter data
-    const isRegistryReport = reportTypesConfig.registry.some(r => r.id === reportType);
-    const filtered = sourceData.filter(item => {
-      const itemDateStr = item.date || item.requestDate || item.dueDate || item.uploadDate || item.startDate || item.creationDate;
-      const itemDate = itemDateStr ? new Date(itemDateStr) : null;
-      const start = startDate ? new Date(startDate) : null;
-      const end = endDate ? new Date(endDate) : null;
-      
-      if(end) end.setHours(23, 59, 59, 999);
-      if(start) start.setHours(0,0,0,0);
+        const aggregatedData = targetProperties.map(prop => {
+            const propContracts = contracts.filter(c => c.propertyId === prop.id);
+            const propTenants = tenants.filter(t => propContracts.some(c => c.tenantId === t.id));
+            const propPayments = payments.filter(p => p.propertyId === prop.id);
+            const propExpenses = expenses.filter(e => e.propertyId === prop.id);
+            const propMaintenance = maintenances.filter(m => m.propertyId === prop.id);
+            const propDeadlines = dataService.getDeadlines(projectId).filter(d => d.propertyId === prop.id);
+            const propDocuments = documents.filter(d => d.propertyId === prop.id);
+            
+            const paymentSubtotal = propPayments.reduce((sum, p) => sum + p.amount, 0);
+            const expenseSubtotal = propExpenses.reduce((sum, e) => sum + e.amount, 0) + propMaintenance.reduce((sum, m) => sum + (m.cost || 0), 0);
+            
+            totalPayments += paymentSubtotal;
+            totalExpenses += expenseSubtotal;
 
-      if (!isRegistryReport) {
-          if (!itemDate) return false;
-          if (start && itemDate < start) return false;
-          if (end && itemDate > end) return false;
-      }
-      
-      if (propertyId !== 'all' && item.propertyId !== propertyId) return false;
-      if (!isRegistryReport && status !== 'all' && item.status !== status && item.category !== status) return false;
-      
-      return true;
-    });
-
-    // 3. Flatten data for registry reports to simplify rendering
-    if (isRegistryReport) {
-        const uniqueCustomFieldLabels = [...new Set(filtered.flatMap(item => item.customFields || []).map((cf: CustomField) => cf.label))];
-        
-        const flattenedData = filtered.map(item => {
-            const newItem: any = {...item};
-            uniqueCustomFieldLabels.forEach(label => {
-                const field = (item.customFields || []).find((cf: CustomField) => cf.label === label);
-                newItem[`cf_${label}`] = field ? field.value : undefined;
-            });
-            delete newItem.customFields;
-            return newItem;
+            return {
+                property: prop,
+                contracts: propContracts,
+                tenants: propTenants,
+                payments: propPayments,
+                expenses: propExpenses,
+                maintenances: propMaintenance,
+                deadlines: propDeadlines,
+                documents: propDocuments,
+                paymentSubtotal,
+                expenseSubtotal,
+            };
         });
-        setReportData(flattenedData);
+
+        setReportData(aggregatedData);
+        setGrandTotals({ payments: totalPayments, expenses: totalExpenses });
+
     } else {
-        setReportData(filtered);
+        let sourceData: any[] = [];
+        
+        const propertyMap = new Map(properties.map(p => [p.id, p.name]));
+        const tenantMap = new Map(tenants.map(t => [t.id, t.name]));
+
+        // 1. Select and enrich source data
+        switch(reportType) {
+            case 'payments': sourceData = payments.map(p => ({...p, propertyName: propertyMap.get(p.propertyId)})); break;
+            case 'expenses': sourceData = expenses.map(e => ({...e, propertyName: propertyMap.get(e.propertyId)})); break;
+            case 'maintenance': sourceData = maintenances.map(m => ({...m, propertyName: propertyMap.get(m.propertyId)})); break;
+            case 'properties': sourceData = properties; break;
+            case 'contracts': 
+                sourceData = contracts.map(c => ({
+                    ...c,
+                    propertyName: propertyMap.get(c.propertyId) || 'N/A',
+                    tenantName: tenantMap.get(c.tenantId) || 'N/A',
+                }));
+                break;
+            case 'tenants': 
+                sourceData = tenants.map(t => {
+                    const contract = contracts.find(c => c.tenantId === t.id);
+                    return {
+                        ...t,
+                        propertyName: contract ? propertyMap.get(contract.propertyId) : 'N/A'
+                    };
+                });
+                break;
+            case 'documents':
+                sourceData = documents.map(d => ({
+                    ...d,
+                    propertyName: propertyMap.get(d.propertyId) || 'N/A',
+                }));
+                break;
+        }
+        
+        // 2. Filter data
+        const isRegistryReport = reportTypesConfig.registry.some(r => r.id === reportType);
+        const filtered = sourceData.filter(item => {
+          const itemDateStr = item.date || item.requestDate || item.dueDate || item.uploadDate || item.startDate || item.creationDate;
+          const itemDate = itemDateStr ? new Date(itemDateStr) : null;
+          const start = startDate ? new Date(startDate) : null;
+          const end = endDate ? new Date(endDate) : null;
+          
+          if(end) end.setHours(23, 59, 59, 999);
+          if(start) start.setHours(0,0,0,0);
+
+          if (!isRegistryReport) {
+              if (!itemDate) return false;
+              if (start && itemDate < start) return false;
+              if (end && itemDate > end) return false;
+          }
+          
+          if (propertyId !== 'all' && item.propertyId !== propertyId) return false;
+          if (!isRegistryReport && status !== 'all' && item.status !== status && item.category !== status) return false;
+          
+          return true;
+        });
+
+        // 3. Flatten data for registry reports to simplify rendering
+        if (isRegistryReport) {
+            const uniqueCustomFieldLabels = [...new Set(filtered.flatMap(item => item.customFields || []).map((cf: CustomField) => cf.label))];
+            
+            const flattenedData = filtered.map(item => {
+                const newItem: any = {...item};
+                uniqueCustomFieldLabels.forEach(label => {
+                    const field = (item.customFields || []).find((cf: CustomField) => cf.label === label);
+                    newItem[`cf_${label}`] = field ? field.value : undefined;
+                });
+                delete newItem.customFields;
+                return newItem;
+            });
+            setReportData(flattenedData);
+        } else {
+            setReportData(filtered);
+        }
     }
     setIsGenerated(true);
   };
@@ -270,7 +314,7 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
   };
   
     const { columns, total } = useMemo(() => {
-        if (!isGenerated || !reportType) {
+        if (!isGenerated || !reportType || reportType === 'propertySummary') {
             return { columns: [], total: 0 };
         }
 
@@ -284,7 +328,6 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
         let activeColumns: Column<any>[] = [];
         
         if (reportTypesConfig.registry.some(r => r.id === reportType)) {
-            // For registry reports, rely on InteractiveTable's safeRender, but add a specific date renderer.
             activeColumns = getAvailableColumns
                 .filter(col => selectedColumns.has(col.key))
                 .map(col => ({
@@ -295,7 +338,6 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
                         : undefined,
                 }));
         } else {
-            // Financial reports have fixed columns and explicit renderers
             switch(reportType) {
                 case 'payments':
                     activeColumns = [
@@ -337,12 +379,12 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
   
   
   const handleExportPdf = useCallback(() => {
-    if (reportData.length === 0) {
-      alert("Nessun dato da esportare.");
+    if (reportData.length === 0 || reportType === 'propertySummary') {
+      alert("Nessun dato da esportare o tipo di report non supportato per PDF.");
       return;
     }
     const doc = new jsPDF();
-    const allReportTypes = [...reportTypesConfig.financial, ...reportTypesConfig.registry];
+    const allReportTypes = [...reportTypesConfig.financial, ...reportTypesConfig.registry, ...reportTypesConfig.summary];
     const reportName = allReportTypes.find(r => r.id === reportType)?.name || 'Report';
 
     doc.setFontSize(18);
@@ -366,6 +408,8 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
 
     doc.save(`report_${reportType}.pdf`);
   }, [reportData, columns, reportType]);
+  
+  const isRegistryReport = reportType ? reportTypesConfig.registry.some(r => r.id === reportType) : false;
 
   return (
     <div className="space-y-6">
@@ -376,6 +420,16 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
       <Card className="p-6">
         <h2 className="text-lg font-bold text-dark mb-4">1. Seleziona il tipo di report</h2>
         <div className="space-y-4">
+            <div>
+                <h3 className="text-md font-semibold text-gray-600 mb-2 flex items-center"><Library size={18} className="mr-2" />Report Riepilogativi</h3>
+                 <div className="flex flex-wrap gap-4">
+                    {reportTypesConfig.summary.map(r => (
+                        <button key={r.id} onClick={() => handleSetReportType(r.id as ReportType)} className={`flex items-center px-4 py-2 font-semibold rounded-lg border-2 transition-colors ${reportType === r.id ? 'bg-primary text-white border-primary' : 'bg-white text-gray-700 border-gray-300 hover:border-primary'}`}>
+                            <r.icon size={16} className="mr-2"/>{r.name}
+                        </button>
+                    ))}
+                </div>
+            </div>
             <div>
                 <h3 className="text-md font-semibold text-gray-600 mb-2 flex items-center"><DollarSign size={18} className="mr-2" />Report Finanziari</h3>
                 <div className="flex flex-wrap gap-4">
@@ -401,7 +455,7 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
 
       {reportType && (
         <>
-        {reportTypesConfig.registry.some(r => r.id === reportType) && (
+        {isRegistryReport && (
             <Card className="p-6">
                 <h2 className="text-lg font-bold text-dark mb-4 flex items-center"><Settings2 size={20} className="mr-2"/>2. Seleziona Colonne</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-48 overflow-y-auto pr-2">
@@ -421,10 +475,10 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
         )}
         <Card className="p-6">
           <h2 className="text-lg font-bold text-dark mb-4 flex items-center"><Filter size={20} className="mr-2"/>
-            {reportTypesConfig.registry.some(r => r.id === reportType) ? '3. Applica i filtri' : '2. Applica i filtri'}
+            {isRegistryReport ? '3. Applica i filtri' : '2. Applica i filtri'}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-            {!reportTypesConfig.registry.some(r => r.id === reportType) && (
+            {reportType !== 'propertySummary' && !isRegistryReport && (
                 <>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Da</label>
@@ -443,7 +497,7 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
                 {properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
-            {!reportTypesConfig.registry.some(r => r.id === reportType) && (
+            {reportType !== 'propertySummary' && !isRegistryReport && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700">{reportType === 'expenses' ? 'Categoria' : 'Stato'}</label>
                   <select value={status} onChange={e => setStatus(e.target.value)} className="mt-1 block w-full input">
@@ -458,7 +512,7 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
               <button 
                 onClick={handleGenerateReport} 
                 className="px-6 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
-                disabled={reportTypesConfig.registry.some(r => r.id === reportType) && selectedColumns.size === 0}
+                disabled={isRegistryReport && selectedColumns.size === 0}
               >
                 Genera Report
               </button>
@@ -467,7 +521,26 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
         </>
       )}
 
-      {isGenerated ? (
+      {isGenerated && reportType === 'propertySummary' ? (
+        <div className="space-y-6">
+            {reportData.map((data: AggregatedPropertyData) => (
+                <PropertyReportCard key={data.property.id} data={data} />
+            ))}
+            <Card className="p-6 bg-blue-900 text-white">
+                <h2 className="text-2xl font-bold mb-4">Riepilogo Totali</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-lg">
+                    <div className="bg-blue-800 p-4 rounded-lg">
+                        <p className="font-semibold">Totale Pagamenti (Entrate)</p>
+                        <p className="text-2xl font-bold text-green-300">€{grandTotals.payments.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
+                    </div>
+                    <div className="bg-blue-800 p-4 rounded-lg">
+                        <p className="font-semibold">Totale Spese</p>
+                        <p className="text-2xl font-bold text-red-300">€{grandTotals.expenses.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
+                    </div>
+                </div>
+            </Card>
+        </div>
+      ) : isGenerated ? (
         <Card className="p-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
                 <h2 className="text-xl font-bold text-dark flex items-center"><FileSearch size={22} className="mr-2"/>Risultati del Report</h2>
@@ -500,7 +573,7 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
       ) : (
         reportType && 
         <Card className="p-10 text-center text-gray-500 border-2 border-dashed">
-            <p className="font-semibold">Imposta i filtri {reportTypesConfig.registry.some(r => r.id === reportType) && 'e seleziona le colonne, poi '}clicca su "Genera Report" per visualizzare i dati.</p>
+            <p className="font-semibold">Imposta i filtri {isRegistryReport && 'e seleziona le colonne, poi '}clicca su "Genera Report" per visualizzare i dati.</p>
         </Card>
       )}
     </div>

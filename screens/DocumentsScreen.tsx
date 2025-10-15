@@ -6,7 +6,7 @@ import { PlusCircle, Edit, Trash2, Download, FileText } from 'lucide-react';
 import AddDocumentModal from '../components/modals/AddDocumentModal';
 import EditDocumentModal from '../components/modals/EditDocumentModal';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
-import InteractiveTable, { Column } from '../components/ui/InteractiveTable';
+import AccordionItem from '../components/ui/AccordionItem';
 
 interface DocumentsScreenProps {
   projectId: string;
@@ -49,32 +49,18 @@ const DocumentsScreen: React.FC<DocumentsScreenProps> = ({ projectId, user }) =>
     }
   };
   
-  const propertyMap = useMemo(() => new Map(properties.map(p => [p.id, p.name])), [properties]);
-
-  const columns: Column<Document>[] = [
-      { header: 'Nome Documento', accessor: 'name', render: row => (
-          <div className="flex items-center">
-              <FileText size={18} className="mr-2 text-primary" />
-              <span className="font-medium text-dark">{row.name}</span>
-          </div>
-      )},
-      { header: 'Immobile', accessor: 'propertyId', render: row => propertyMap.get(row.propertyId) || 'N/A' },
-      { header: 'Tipo', accessor: 'type', render: row => (row.type === DocumentType.OTHER && row.typeOther) ? row.typeOther : row.type },
-      { header: 'Data Caricamento', accessor: 'uploadDate', render: row => new Date(row.uploadDate).toLocaleDateString('it-IT') },
-      { header: 'Azioni', accessor: 'id', render: row => (
-          <div className="flex justify-center items-center gap-4">
-              <a href={row.fileData || row.fileUrl} download={row.fileName} target={row.fileUrl ? "_blank" : "_self"} rel="noopener noreferrer" className="text-gray-500 hover:text-primary" title={row.fileName ? `Scarica ${row.fileName}` : 'Apri link esterno'}>
-                  <Download size={18} />
-              </a>
-              <button onClick={() => setEditingDocument(row)} className="text-blue-600 hover:text-blue-800"><Edit size={18} /></button>
-              <button onClick={() => setDeletingDocument(row)} className="text-red-600 hover:text-red-800"><Trash2 size={18} /></button>
-          </div>
-      ), className: 'text-center' },
-  ];
+  const groupedDocuments = useMemo(() => {
+      return documents.reduce((acc, doc) => {
+          const key = doc.propertyId;
+          if(!acc[key]) acc[key] = [];
+          acc[key].push(doc);
+          return acc;
+      }, {} as Record<string, Document[]>)
+  }, [documents]);
 
   return (
     <>
-      <Card className="p-6">
+      <div className="space-y-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-dark">Archivio Documenti</h1>
           <button
@@ -85,8 +71,63 @@ const DocumentsScreen: React.FC<DocumentsScreenProps> = ({ projectId, user }) =>
             Carica Documento
           </button>
         </div>
-        <InteractiveTable columns={columns} data={documents} />
-      </Card>
+        
+        <div className="space-y-4">
+            {properties.filter(p => groupedDocuments[p.id]).map(property => {
+                const propertyDocs = groupedDocuments[property.id];
+                 const title = (
+                  <div className="flex items-center gap-3">
+                      <span>{property.name}</span>
+                      <span className="text-sm bg-gray-200 text-gray-700 font-bold px-2.5 py-1 rounded-full">{propertyDocs.length}</span>
+                  </div>
+                );
+                return (
+                    <AccordionItem key={property.id} title={title}>
+                        <div className="overflow-x-auto">
+                           <table className="w-full text-left">
+                              <thead className="bg-gray-50">
+                                <tr>
+                                  <th className="p-3 text-sm font-semibold text-gray-600">Nome Documento</th>
+                                  <th className="p-3 text-sm font-semibold text-gray-600">Tipo</th>
+                                  <th className="p-3 text-sm font-semibold text-gray-600">Data Caricamento</th>
+                                  <th className="p-3 text-sm font-semibold text-gray-600 text-center">Azioni</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {propertyDocs.map(row => (
+                                    <tr key={row.id} className="border-b last:border-b-0 hover:bg-gray-50">
+                                        <td className="p-3">
+                                            <div className="flex items-center">
+                                                <FileText size={18} className="mr-2 text-primary" />
+                                                <span className="font-medium text-dark">{row.name}</span>
+                                            </div>
+                                        </td>
+                                        <td className="p-3 text-gray-700">{(row.type === DocumentType.OTHER && row.typeOther) ? row.typeOther : row.type}</td>
+                                        <td className="p-3 text-gray-700">{new Date(row.uploadDate).toLocaleDateString('it-IT')}</td>
+                                        <td className="p-3 text-center">
+                                            <div className="flex justify-center items-center gap-4">
+                                                <a href={row.fileData || row.fileUrl} download={row.fileName} target={row.fileUrl ? "_blank" : "_self"} rel="noopener noreferrer" className="text-gray-500 hover:text-primary" title={row.fileName ? `Scarica ${row.fileName}` : 'Apri link esterno'}>
+                                                    <Download size={18} />
+                                                </a>
+                                                <button onClick={() => setEditingDocument(row)} className="text-blue-600 hover:text-blue-800"><Edit size={18} /></button>
+                                                <button onClick={() => setDeletingDocument(row)} className="text-red-600 hover:text-red-800"><Trash2 size={18} /></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                              </tbody>
+                           </table>
+                        </div>
+                    </AccordionItem>
+                )
+            })}
+             {Object.keys(groupedDocuments).length === 0 && (
+                <Card className="p-8 text-center text-gray-500">
+                    Nessun documento trovato.
+                </Card>
+            )}
+        </div>
+      </div>
 
       <AddDocumentModal
         isOpen={isAddModalOpen}

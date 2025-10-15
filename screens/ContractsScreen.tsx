@@ -6,7 +6,7 @@ import { Download, PlusCircle, Edit, Trash2 } from 'lucide-react';
 import AddContractModal from '../components/modals/AddContractModal';
 import EditContractModal from '../components/modals/EditContractModal';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
-import InteractiveTable, { Column } from '../components/ui/InteractiveTable';
+import AccordionItem from '../components/ui/AccordionItem';
 
 interface ContractsScreenProps {
   projectId: string;
@@ -60,40 +60,30 @@ const ContractsScreen: React.FC<ContractsScreenProps> = ({ projectId, user, user
     }
   };
 
-  const enrichedData: EnrichedContract[] = useMemo(() => {
-    const propertyMap = new Map(properties.map(p => [p.id, p.name]));
-    const tenantMap = new Map(tenants.map(t => [t.id, t.name]));
-    return contracts.map(contract => ({
-        ...contract,
-        propertyName: propertyMap.get(contract.propertyId) || 'N/A',
-        tenantName: tenantMap.get(contract.tenantId) || 'N/A',
-    }));
+  const groupedContracts = useMemo(() => {
+      const propertyMap = new Map(properties.map(p => [p.id, p.name]));
+      const tenantMap = new Map(tenants.map(t => [t.id, t.name]));
+
+      const enriched = contracts.map(contract => ({
+          ...contract,
+          propertyName: propertyMap.get(contract.propertyId) || 'N/A',
+          tenantName: tenantMap.get(contract.tenantId) || 'N/A',
+      }));
+
+      return enriched.reduce((acc, contract) => {
+          const key = contract.propertyId;
+          if (!acc[key]) {
+              acc[key] = [];
+          }
+          acc[key].push(contract);
+          return acc;
+      }, {} as Record<string, EnrichedContract[]>);
   }, [contracts, properties, tenants]);
 
-  const propertyMap = useMemo(() => new Map(properties.map(p => [p.id, p.name])), [properties]);
-  
-  const columns: Column<EnrichedContract>[] = [
-      { header: 'Immobile', accessor: 'propertyName' },
-      { header: 'Inquilino', accessor: 'tenantName' },
-      { header: 'Inizio', accessor: 'startDate', render: (row) => new Date(row.startDate).toLocaleDateString('it-IT') },
-      { header: 'Fine', accessor: 'endDate', render: (row) => new Date(row.endDate).toLocaleDateString('it-IT') },
-      { header: 'Canone', accessor: 'rentAmount', render: (row) => `€${row.rentAmount.toLocaleString('it-IT')}`, className: 'font-semibold' },
-      { header: 'Documento', accessor: 'documentUrl', render: (row) => (
-          <a href={row.documentUrl} target="_blank" rel="noopener noreferrer" className="inline-block text-primary hover:text-primary-hover">
-              <Download size={20} />
-          </a>
-      ), className: 'text-center' },
-      { header: 'Azioni', accessor: 'id', render: (row) => (
-          <div className="flex justify-center items-center gap-4">
-              <button onClick={() => setEditingContract(row)} className="text-blue-600 hover:text-blue-800 disabled:text-gray-400" disabled={isViewer}><Edit size={18} /></button>
-              <button onClick={() => setDeletingContract(row)} className="text-red-600 hover:text-red-800 disabled:text-gray-400" disabled={isViewer}><Trash2 size={18} /></button>
-          </div>
-      ), className: 'text-center' },
-  ];
 
   return (
     <>
-    <Card className="p-6">
+    <div className="space-y-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-dark">Gestione Contratti</h1>
         <button
@@ -105,8 +95,64 @@ const ContractsScreen: React.FC<ContractsScreenProps> = ({ projectId, user, user
           Nuovo Contratto
         </button>
       </div>
-      <InteractiveTable columns={columns} data={enrichedData} />
-    </Card>
+
+      <div className="space-y-4">
+        {properties.filter(p => groupedContracts[p.id]).map(property => {
+          const propertyContracts = groupedContracts[property.id];
+          const title = (
+              <div className="flex items-center gap-3">
+                  <span>{property.name}</span>
+                  <span className="text-sm bg-gray-200 text-gray-700 font-bold px-2.5 py-1 rounded-full">{propertyContracts.length}</span>
+              </div>
+          );
+          return (
+            <AccordionItem key={property.id} title={title}>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="p-3 text-sm font-semibold text-gray-600">Inquilino</th>
+                      <th className="p-3 text-sm font-semibold text-gray-600">Inizio</th>
+                      <th className="p-3 text-sm font-semibold text-gray-600">Fine</th>
+                      <th className="p-3 text-sm font-semibold text-gray-600">Canone</th>
+                      <th className="p-3 text-sm font-semibold text-gray-600 text-center">Documento</th>
+                      <th className="p-3 text-sm font-semibold text-gray-600 text-center">Azioni</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {propertyContracts.map(row => (
+                      <tr key={row.id} className="border-b last:border-b-0 hover:bg-gray-50">
+                        <td className="p-3 font-medium text-dark">{row.tenantName}</td>
+                        <td className="p-3 text-gray-700">{new Date(row.startDate).toLocaleDateString('it-IT')}</td>
+                        <td className="p-3 text-gray-700">{new Date(row.endDate).toLocaleDateString('it-IT')}</td>
+                        <td className="p-3 font-semibold text-gray-800">€{row.rentAmount.toLocaleString('it-IT')}</td>
+                        <td className="p-3 text-center">
+                            <a href={row.documentUrl} target="_blank" rel="noopener noreferrer" className="inline-block text-primary hover:text-primary-hover">
+                                <Download size={20} />
+                            </a>
+                        </td>
+                        <td className="p-3 text-center">
+                            <div className="flex justify-center items-center gap-4">
+                                <button onClick={() => setEditingContract(row)} className="text-blue-600 hover:text-blue-800 disabled:text-gray-400" disabled={isViewer}><Edit size={18} /></button>
+                                <button onClick={() => setDeletingContract(row)} className="text-red-600 hover:text-red-800 disabled:text-gray-400" disabled={isViewer}><Trash2 size={18} /></button>
+                            </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </AccordionItem>
+          )
+        })}
+        {Object.keys(groupedContracts).length === 0 && (
+            <Card className="p-8 text-center text-gray-500">
+                Nessun contratto trovato.
+            </Card>
+        )}
+      </div>
+
+    </div>
 
     <AddContractModal 
       isOpen={isAddModalOpen}
@@ -128,7 +174,7 @@ const ContractsScreen: React.FC<ContractsScreenProps> = ({ projectId, user, user
         isOpen={!!deletingContract}
         onClose={() => setDeletingContract(null)}
         onConfirm={handleDeleteContract}
-        message={`Sei sicuro di voler eliminare il contratto per l'immobile "${propertyMap.get(deletingContract.propertyId)}"?`}
+        message={`Sei sicuro di voler eliminare il contratto per l'immobile "${properties.find(p=>p.id === deletingContract.propertyId)?.name}"?`}
       />
     )}
     </>

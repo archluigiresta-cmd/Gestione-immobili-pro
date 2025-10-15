@@ -1,6 +1,7 @@
 
+
 import React, { useState, useEffect, useCallback } from 'react';
-import { LayoutDashboard, Building, FileText, Users, DollarSign, Calendar, Wrench, BarChart3, HelpCircle, Settings, Download, LineChart } from 'lucide-react';
+import { LayoutDashboard, Building, FileText, Users, DollarSign, Calendar, Wrench, BarChart3, HelpCircle, Settings, Download, LineChart, Library } from 'lucide-react';
 import * as dataService from './services/dataService';
 import { User, Project, ProjectMemberRole, UserStatus } from './types';
 
