@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, Project } from '../types';
-// FIX: Corrected import path to point to the correct file location.
 import * as dataService from '../services/dataService';
 import { Briefcase, PlusCircle, ArrowRight, UserCircle, LogOut, Edit, MoreVertical, Trash2 } from 'lucide-react';
 import CreateProjectModal from '../components/modals/CreateProjectModal';

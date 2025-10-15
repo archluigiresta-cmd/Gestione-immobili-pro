@@ -88,16 +88,21 @@ const AiAssistant: React.FC = () => {
             });
             
             let currentResponse = '';
-            setMessages(prev => [...prev, { role: 'model', content: '' }]);
+            let isFirstChunk = true;
 
-            // FIX: Correctly handle streaming response by updating the last message content.
+            // FIX: Correctly handle streaming response by updating the last message content and managing loading state.
             for await (const chunk of responseStream) {
                 currentResponse += chunk.text;
-                setMessages(prev => {
-                    const newMessages = [...prev];
-                    newMessages[newMessages.length - 1] = { ...newMessages[newMessages.length - 1], content: currentResponse };
-                    return newMessages;
-                });
+                if (isFirstChunk) {
+                    setMessages(prev => [...prev, { role: 'model', content: currentResponse }]);
+                    isFirstChunk = false;
+                } else {
+                    setMessages(prev => {
+                        const newMessages = [...prev];
+                        newMessages[newMessages.length - 1] = { ...newMessages[newMessages.length - 1], content: currentResponse };
+                        return newMessages;
+                    });
+                }
             }
 
         } catch (error) {

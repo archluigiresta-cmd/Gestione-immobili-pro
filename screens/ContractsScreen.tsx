@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Card from '../components/ui/Card';
 // FIX: Corrected import path to point to the correct file location.
-import * as dataService from '../src/services/dataService';
+import * as dataService from '../services/dataService';
 import { Contract, ProjectMemberRole, User, Property, Tenant } from '../types';
 import { Download, PlusCircle, Edit, Trash2 } from 'lucide-react';
 import AddContractModal from '../components/modals/AddContractModal';

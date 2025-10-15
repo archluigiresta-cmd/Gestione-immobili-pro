@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import Card from '../components/ui/Card';
 import InteractiveTable, { Column } from '../components/ui/InteractiveTable';
 import ExportButton from '../components/ui/ExportButton';
-// FIX: Corrected import path to point to the correct file location.
 import * as dataService from '../services/dataService';
 import { Payment, Expense, Maintenance, Property, PaymentStatus, ExpenseCategory, MaintenanceStatus, Contract, Tenant, Document, CustomField } from '../types';
 import { BarChart, FileSearch, Filter, Settings2, Database, DollarSign, Building, Users, FileText as FileTextIcon, Wrench, Library } from 'lucide-react';
@@ -72,7 +71,8 @@ const getTextFromCell = (data: React.ReactNode): string => {
 };
 
 
-const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
+// FIX: Changed component definition to explicitly return React.ReactElement to fix type inference issue.
+const ReportsScreen = ({ projectId }: ReportsScreenProps): React.ReactElement => {
   const [reportType, setReportType] = useState<ReportType | null>(null);
   
   // Data stores

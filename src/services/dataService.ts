@@ -16,14 +16,11 @@ export const setDriveFileId = (id: string | null) => {
 const _getAllDataAsObject = (): AppData => {
     const appData: Partial<AppData> = {};
     DATA_KEYS.forEach(key => {
-        // FIX: Cast key to string as localStorage.getItem expects a string.
-        // Although keyof AppData are all strings, TypeScript is being cautious.
         const data = localStorage.getItem(key as string);
         if (data) {
             try {
                 (appData as any)[key] = JSON.parse(data);
             } catch (e) {
-                // FIX: Explicitly convert key to string for use in template literal to avoid runtime errors with symbols.
                 console.error(`Failed to parse data for key ${String(key)}`, e);
             }
         }
@@ -108,12 +105,12 @@ const saveData = <T,>(key: string, data: T[]): void => {
 export const loadDataFromObject = (data: AppData) => {
     DATA_KEYS.forEach(key => {
         if (data[key]) {
-            // FIX: Cast key to string as localStorage.setItem expects a string.
             localStorage.setItem(key as string, JSON.stringify(data[key]));
         }
     });
     console.log("Data loaded into localStorage from Drive.");
 };
+
 
 const generateId = (prefix: string): string => `${prefix}-${new Date().getTime()}-${Math.random().toString(36).substr(2, 9)}`;
 

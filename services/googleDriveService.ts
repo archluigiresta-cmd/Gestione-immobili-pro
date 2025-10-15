@@ -1,9 +1,8 @@
-// src/services/googleDriveService.ts
+// services/googleDriveService.ts
 import { User, UserStatus, AppData } from '../types';
 import { INITIAL_MOCK_DATA } from '../constants';
 
 const DATA_FILE_NAME = 'gest-immo-pro-data.json';
-const DRIVE_FOLDER_NAME = 'Dati App Gestore Immobili PRO';
 
 declare global {
   interface Window {
@@ -106,7 +105,9 @@ export const signIn = (): Promise<User> => {
       }
     };
     
-    tokenClient.requestAccessToken({ prompt: 'consent' });
+    // Using '' will not force a consent screen every time, using 'consent' will.
+    // Let's use an empty prompt for a better UX.
+    tokenClient.requestAccessToken({ prompt: '' });
   });
 };
 
@@ -121,8 +122,8 @@ export const signOut = () => {
 
 const findFile = async (fileName: string): Promise<string | null> => {
     const response = await window.gapi.client.drive.files.list({
-        q: `name='${fileName}' and trashed=false and 'appDataFolder' in parents`,
-        spaces: 'appDataFolder',
+        q: `name='${fileName}' and trashed=false`,
+        spaces: 'drive', // Use 'drive' space to find files created by the app
         fields: 'files(id, name)',
     });
     if (response.result.files && response.result.files.length > 0) {
@@ -143,7 +144,6 @@ const createFile = async (fileName: string, content: AppData): Promise<string> =
     const response = await window.gapi.client.drive.files.create({
         resource: {
             name: fileName,
-            parents: ['appDataFolder']
         },
         media: {
             mimeType: 'application/json',

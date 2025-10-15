@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Property, PropertyType } from '../../types';
 import { X, UploadCloud } from 'lucide-react';
-// FIX: Corrected import path to point to the correct file location.
-import * as dataService from '../../src/services/dataService';
+import * as dataService from '../../services/dataService';
 
 interface AddPropertyModalProps {
   isOpen: boolean;

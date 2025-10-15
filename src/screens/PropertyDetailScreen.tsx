@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Property, Tenant, Contract, Expense, Maintenance, Deadline, Document, ProjectMemberRole, CustomField, CustomFieldType, HistoryLog, User } from '../types';
-// FIX: Corrected import path to point to the correct file location.
 import * as dataService from '../services/dataService';
 import Card from '../components/ui/Card';
 import { ArrowLeft, Building2, Square, BedDouble, FileText, CircleDollarSign, Wrench, Calendar, Users, PlusCircle, Edit, Trash2, Info, History, UserCircle } from 'lucide-react';

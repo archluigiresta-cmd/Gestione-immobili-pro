@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Card from '../components/ui/Card';
 // FIX: Corrected import path to point to the correct file location.
-import * as dataService from '../src/services/dataService';
+import * as dataService from '../services/dataService';
 import { Maintenance, MaintenanceStatus, User, Property } from '../types';
 import { PlusCircle, Edit, Trash2, Wrench, Clock, CheckCircle } from 'lucide-react';
 import AddMaintenanceModal from '../components/modals/AddMaintenanceModal';
