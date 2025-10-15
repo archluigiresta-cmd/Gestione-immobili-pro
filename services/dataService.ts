@@ -133,10 +133,20 @@ export const updateProject = (updatedProject: Project): void => {
     saveData('projects', projects);
 };
 export const deleteProject = (id: string): void => {
+    // Cascade delete: remove all data associated with the project
+    saveData('properties', getAllProperties().filter(p => p.projectId !== id));
+    saveData('tenants', getAllTenants().filter(t => t.projectId !== id));
+    saveData('contracts', getAllContracts().filter(c => c.projectId !== id));
+    saveData('deadlines', getAllDeadlines().filter(d => d.projectId !== id));
+    saveData('maintenances', getAllMaintenances().filter(m => m.projectId !== id));
+    saveData('expenses', getAllExpenses().filter(e => e.projectId !== id));
+    saveData('documents', getAllDocuments().filter(d => d.projectId !== id));
+    saveData('payments', getAllPayments().filter(p => p.projectId !== id));
+    
+    // Finally, delete the project itself
     let projects = getProjects();
     projects = projects.filter(p => p.id !== id);
     saveData('projects', projects);
-    // Note: In a real app, you'd also delete all associated data (properties, etc.)
 };
 
 
