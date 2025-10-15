@@ -9,7 +9,6 @@ import { BarChart, FileSearch, Filter, Settings2, Database, DollarSign, Building
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-
 type ReportCategory = 'financial' | 'registry';
 type ReportType = 'payments' | 'expenses' | 'maintenance' | 'properties' | 'contracts' | 'tenants' | 'documents';
 
@@ -30,6 +29,43 @@ const reportTypesConfig = {
         { id: 'documents', name: 'Documenti', icon: FileTextIcon },
     ]
 };
+
+/**
+ * A "bulletproof" helper function to robustly extract plain text from any cell data for PDF/CSV export.
+ */
+const getTextFromCell = (data: React.ReactNode): string => {
+    if (data === null || data === undefined) return '';
+    if (typeof data === 'boolean') return data ? 'Sì' : 'No';
+    if (typeof data === 'string' || typeof data === 'number') {
+        const valueStr = String(data);
+        // Handle date strings specifically for export
+        if (/^\d{4}-\d{2}-\d{2}/.test(valueStr)) {
+            const date = new Date(valueStr);
+            if (!isNaN(date.getTime())) {
+                return date.toLocaleDateString('it-IT');
+            }
+        }
+        return valueStr;
+    }
+    
+    if (Array.isArray(data)) {
+        return data.map(getTextFromCell).join(' ');
+    }
+    if (React.isValidElement(data)) {
+        const props = data.props as { children?: React.ReactNode };
+        if (props && typeof props === 'object' && 'children' in props) {
+            return getTextFromCell(props.children);
+        }
+    }
+
+    // Fallback for other React nodes that might not have children but can be stringified
+    if (typeof data === 'object') {
+        return ''; // Avoids [object Object]
+    }
+
+    return String(data);
+};
+
 
 const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
   const [reportType, setReportType] = useState<ReportType | null>(null);
@@ -62,58 +98,7 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
     setExpenses(dataService.getExpenses(projectId));
     setMaintenances(dataService.getMaintenances(projectId));
   }, [projectId]);
-
-  useEffect(() => {
-    if (!reportType) return;
-    const isRegistry = reportTypesConfig.registry.some(r => r.id === reportType);
-    if (isRegistry) {
-        let baseColumns: { key: string, label: string }[] = [];
-        switch(reportType) {
-            case 'properties': 
-                baseColumns = [
-                    { key: 'code', label: 'Codice' }, { key: 'name', label: 'Nome' }, { key: 'address', label: 'Indirizzo' },
-                    { key: 'type', label: 'Tipo' }, { key: 'isRented', label: 'Affittato' },
-                ];
-                break;
-            case 'contracts':
-                baseColumns = [
-                    { key: 'propertyName', label: 'Immobile' }, { key: 'tenantName', label: 'Inquilino' },
-                    { key: 'startDate', label: 'Data Inizio' }, { key: 'endDate', label: 'Data Fine' },
-                    { key: 'rentAmount', label: 'Canone Mensile' },
-                ];
-                break;
-            case 'tenants':
-                baseColumns = [
-                    { key: 'name', label: 'Nome' }, { key: 'email', label: 'Email' }, { key: 'phone', label: 'Telefono' },
-                    { key: 'propertyName', label: 'Immobile Affittato' },
-                ];
-                break;
-            case 'documents':
-                baseColumns = [
-                    { key: 'name', label: 'Nome Documento' }, { key: 'type', label: 'Tipo' },
-                    { key: 'uploadDate', label: 'Data Caricamento' }, { key: 'propertyName', label: 'Immobile' },
-                ];
-                break;
-        }
-        setSelectedColumns(new Set(baseColumns.map(c => c.key)));
-    }
-  }, [reportType]);
   
-  const resetFilters = () => {
-    setStartDate('');
-    setEndDate('');
-    setPropertyId('all');
-    setStatus('all');
-    setReportData([]);
-    setIsGenerated(false);
-    setSelectedColumns(new Set());
-  };
-  
-  const handleSetReportType = (type: ReportType) => {
-    setReportType(type);
-    resetFilters();
-  };
-
   const getAvailableColumns = useMemo(() => {
     let baseColumns: { key: string, label: string }[] = [];
     let customFields: CustomField[] = [];
@@ -159,6 +144,30 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
     return [...baseColumns, ...customColumns];
   }, [reportType, properties, contracts, tenants, documents]);
 
+
+  useEffect(() => {
+    if (!reportType) return;
+    const isRegistry = reportTypesConfig.registry.some(r => r.id === reportType);
+    if (isRegistry) {
+        const baseKeys = getAvailableColumns.filter(c => !c.key.startsWith('cf_')).map(c => c.key);
+        setSelectedColumns(new Set(baseKeys));
+    }
+  }, [reportType, getAvailableColumns]);
+  
+  const resetFilters = () => {
+    setStartDate('');
+    setEndDate('');
+    setPropertyId('all');
+    setStatus('all');
+    setReportData([]);
+    setIsGenerated(false);
+  };
+  
+  const handleSetReportType = (type: ReportType) => {
+    setReportType(type);
+    resetFilters();
+  };
+
   const toggleColumn = (key: string) => {
     setSelectedColumns(prev => {
         const newSet = new Set(prev);
@@ -171,76 +180,83 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
     });
   };
   
-  const prepareRegistryData = useCallback((data: any[], type: ReportType) => {
-    const propertyMap = new Map(properties.map(p => [p.id, p]));
-    const tenantMap = new Map(tenants.map(t => [t.id, t]));
+  const handleGenerateReport = () => {
+    let sourceData: any[] = [];
+    
+    const propertyMap = new Map(properties.map(p => [p.id, p.name]));
+    const tenantMap = new Map(tenants.map(t => [t.id, t.name]));
     const contractMap = new Map(contracts.map(c => [c.id, c]));
 
-    return data.map(item => {
-        const flatItem: any = { ...item };
-        
-        // Flatten custom fields into top-level properties
-        if (item.customFields) {
-            item.customFields.forEach((cf: CustomField) => {
-                flatItem[`cf_${cf.label}`] = cf.value;
+    // 1. Select and enrich source data
+    switch(reportType) {
+        case 'payments': sourceData = payments.map(p => ({...p, propertyName: propertyMap.get(p.propertyId)})); break;
+        case 'expenses': sourceData = expenses.map(e => ({...e, propertyName: propertyMap.get(e.propertyId)})); break;
+        case 'maintenance': sourceData = maintenances.map(m => ({...m, propertyName: propertyMap.get(m.propertyId)})); break;
+        case 'properties': sourceData = properties; break;
+        case 'contracts': 
+            sourceData = contracts.map(c => ({
+                ...c,
+                propertyName: propertyMap.get(c.propertyId) || 'N/A',
+                tenantName: tenantMap.get(c.tenantId) || 'N/A',
+            }));
+            break;
+        case 'tenants': 
+            sourceData = tenants.map(t => {
+                const contract = [...contractMap.values()].find(c => c.tenantId === t.id);
+                return {
+                    ...t,
+                    propertyName: contract ? propertyMap.get(contract.propertyId) : 'N/A'
+                };
             });
-        }
-
-        // Add related data
-        if (item.propertyId) {
-            flatItem.propertyName = propertyMap.get(item.propertyId)?.name || 'N/A';
-        }
-        if (type === 'contracts' && item.tenantId) {
-            flatItem.tenantName = tenantMap.get(item.tenantId)?.name || 'N/A';
-        }
-        if (type === 'tenants' && item.contractId) {
-             const contract = contractMap.get(item.contractId);
-             if (contract) {
-                 flatItem.propertyName = propertyMap.get(contract.propertyId)?.name || 'N/A';
-             }
-        }
-        
-        // Remove complex objects to prevent rendering errors
-        delete flatItem.customFields;
-        delete flatItem.history;
-        return flatItem;
-    });
-  }, [properties, tenants, contracts]);
-
-
-  const handleGenerateReport = () => {
-    let data: any[] = [];
-    let isRegistryReport = reportTypesConfig.registry.some(r => r.id === reportType);
-
-    if (reportType === 'payments') data = payments;
-    else if (reportType === 'expenses') data = expenses;
-    else if (reportType === 'maintenance') data = maintenances;
-    else if (reportType === 'properties') data = properties;
-    else if (reportType === 'contracts') data = contracts;
-    else if (reportType === 'tenants') data = tenants;
-    else if (reportType === 'documents') data = documents;
-
-    const filtered = data.filter(item => {
+            break;
+        case 'documents':
+            sourceData = documents.map(d => ({
+                ...d,
+                propertyName: propertyMap.get(d.propertyId) || 'N/A',
+            }));
+            break;
+    }
+    
+    // 2. Filter data
+    const isRegistryReport = reportTypesConfig.registry.some(r => r.id === reportType);
+    const filtered = sourceData.filter(item => {
       const itemDateStr = item.date || item.requestDate || item.dueDate || item.uploadDate || item.startDate || item.creationDate;
-      if (!isRegistryReport && !itemDateStr) return true;
-      
-      const itemDate = new Date(itemDateStr);
+      const itemDate = itemDateStr ? new Date(itemDateStr) : null;
       const start = startDate ? new Date(startDate) : null;
       const end = endDate ? new Date(endDate) : null;
       
       if(end) end.setHours(23, 59, 59, 999);
       if(start) start.setHours(0,0,0,0);
 
-      if (start && itemDate < start) return false;
-      if (end && itemDate > end) return false;
+      if (!isRegistryReport) {
+          if (!itemDate) return false;
+          if (start && itemDate < start) return false;
+          if (end && itemDate > end) return false;
+      }
+      
       if (propertyId !== 'all' && item.propertyId !== propertyId) return false;
       if (!isRegistryReport && status !== 'all' && item.status !== status && item.category !== status) return false;
       
       return true;
     });
 
-    const finalData = isRegistryReport ? prepareRegistryData(filtered, reportType!) : filtered;
-    setReportData(finalData);
+    // 3. Flatten data for registry reports to simplify rendering
+    if (isRegistryReport) {
+        const uniqueCustomFieldLabels = [...new Set(filtered.flatMap(item => item.customFields || []).map((cf: CustomField) => cf.label))];
+        
+        const flattenedData = filtered.map(item => {
+            const newItem: any = {...item};
+            uniqueCustomFieldLabels.forEach(label => {
+                const field = (item.customFields || []).find((cf: CustomField) => cf.label === label);
+                newItem[`cf_${label}`] = field ? field.value : undefined;
+            });
+            delete newItem.customFields;
+            return newItem;
+        });
+        setReportData(flattenedData);
+    } else {
+        setReportData(filtered);
+    }
     setIsGenerated(true);
   };
 
@@ -252,125 +268,74 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
       default: return [];
     }
   };
-
-  const getTextFromCell = useCallback((cellData: any): string => {
-    if (cellData === null || typeof cellData === 'undefined') return '';
-    if (typeof cellData === 'boolean') return cellData ? 'Sì' : 'No';
-    if (cellData instanceof Date && !isNaN(cellData.getTime())) return cellData.toLocaleDateString('it-IT');
-    
-    if (React.isValidElement(cellData)) {
-        const props = cellData.props;
-        if (typeof props === 'object' && props !== null && 'children' in props) {
-          const { children } = props as { children?: React.ReactNode };
-          if (Array.isArray(children)) {
-              return children.map(child => getTextFromCell(child)).join('');
-          }
-          return getTextFromCell(children);
-        }
-        return '';
-    }
-    
-    if (typeof cellData === 'object') {
-      try {
-        return JSON.stringify(cellData);
-      } catch (e) {
-        return '[Oggetto complesso]';
-      }
-    }
-    
-    return String(cellData);
-  }, []);
-
-  const renderRegistryCell = useCallback((data: any, key: string): React.ReactNode => {
-    if (data === null || typeof data === 'undefined') return '';
-    if (React.isValidElement(data)) return data;
-    if (typeof data === 'boolean') return data ? 'Sì' : 'No';
-
-    if (typeof data === 'string' && (key.toLowerCase().includes('date') || key.toLowerCase().includes('start') || key.toLowerCase().includes('end'))) {
-        if (!data) return '';
-        const date = new Date(data);
-        if (!isNaN(date.getTime())) {
-            const utcDate = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
-            return utcDate.toLocaleDateString('it-IT');
-        }
-    }
-    
-    if (data instanceof Date) {
-        return isNaN(data.getTime()) ? 'Data non valida' : data.toLocaleDateString('it-IT');
-    }
-
-    if (typeof data === 'object') {
-        try { return JSON.stringify(data); } catch (e) { return '[Oggetto complesso]'; }
-    }
-    
-    return String(data);
-  }, []);
-
-
-  const { columns, total } = useMemo(() => {
-    let cols: Column<any>[] = [];
-    let tot = 0;
-    
-    const getPropertyName = (id: string) => properties.find(p => p.id === id)?.name || 'N/A';
-    
-    if (reportTypesConfig.registry.some(r => r.id === reportType)) {
-        cols = getAvailableColumns
-            .filter(col => selectedColumns.has(col.key))
-            .map(col => ({
-                header: col.label,
-                accessor: col.key,
-                render: (row: any) => renderRegistryCell(row[col.key], col.key),
-            }));
-    } else {
-       switch (reportType) {
-         case 'payments':
-            cols = [
-            { header: 'Data Scadenza', accessor: 'dueDate', render: (row) => new Date(row.dueDate).toLocaleDateString('it-IT') },
-            { header: 'Immobile', accessor: 'propertyId', render: (row) => getPropertyName(row.propertyId) },
-            { header: 'Stato', accessor: 'status' },
-            { header: 'Importo', accessor: 'amount', render: (row) => `€${row.amount.toLocaleString('it-IT')}`, className: 'text-right font-bold' },
-            ];
-            tot = reportData.reduce((sum, item) => sum + item.amount, 0);
-            break;
-         case 'expenses':
-            cols = [
-            { header: 'Data', accessor: 'date', render: (row) => new Date(row.date).toLocaleDateString('it-IT') },
-            { header: 'Immobile', accessor: 'propertyId', render: (row) => getPropertyName(row.propertyId) },
-            { header: 'Descrizione', accessor: 'description' },
-            { header: 'Categoria', accessor: 'category' },
-            { header: 'Importo', accessor: 'amount', render: (row) => `€${row.amount.toLocaleString('it-IT')}`, className: 'text-right font-bold' },
-            ];
-            tot = reportData.reduce((sum, item) => sum + item.amount, 0);
-            break;
-         case 'maintenance':
-            cols = [
-            { header: 'Data Richiesta', accessor: 'requestDate', render: (row) => new Date(row.requestDate).toLocaleDateString('it-IT') },
-            { header: 'Immobile', accessor: 'propertyId', render: (row) => getPropertyName(row.propertyId) },
-            { header: 'Descrizione', accessor: 'description' },
-            { header: 'Stato', accessor: 'status' },
-            { header: 'Costo', accessor: 'cost', render: (row) => row.cost ? `€${row.cost.toLocaleString('it-IT')}` : '---', className: 'text-right font-bold' },
-            ];
-            tot = reportData.reduce((sum, item) => sum + (item.cost || 0), 0);
-            break;
-        }
-    }
-    return { columns: cols, total: tot };
-  }, [reportType, reportData, properties, selectedColumns, getAvailableColumns, renderRegistryCell]);
   
-  const preparedExportData = useMemo(() => {
-    if (!isGenerated || reportData.length === 0) return [];
-    
-    return reportData.map(row => {
-        const newRow: any = {};
-        columns.forEach(col => {
-            const header = col.header;
-            const cellData = col.render ? col.render(row) : row[col.accessor as any];
-            newRow[header] = getTextFromCell(cellData);
-        });
-        return newRow;
-    });
-  }, [reportData, columns, isGenerated, getTextFromCell]);
+    const { columns, total } = useMemo(() => {
+        if (!isGenerated || !reportType) {
+            return { columns: [], total: 0 };
+        }
 
+        const safeDateRender = (value: any): string => {
+            if (!value || typeof value !== 'string') return '';
+            const date = new Date(value);
+            if (isNaN(date.getTime())) return value;
+            return date.toLocaleDateString('it-IT');
+        };
+
+        let activeColumns: Column<any>[] = [];
+        
+        if (reportTypesConfig.registry.some(r => r.id === reportType)) {
+            // For registry reports, rely on InteractiveTable's safeRender, but add a specific date renderer.
+            activeColumns = getAvailableColumns
+                .filter(col => selectedColumns.has(col.key))
+                .map(col => ({
+                    header: col.label,
+                    accessor: col.key as any,
+                    render: col.key.toLowerCase().includes('date') 
+                        ? (row: any) => safeDateRender(row[col.key]) 
+                        : undefined,
+                }));
+        } else {
+            // Financial reports have fixed columns and explicit renderers
+            switch(reportType) {
+                case 'payments':
+                    activeColumns = [
+                        { header: 'Data Scadenza', accessor: 'dueDate', render: (r) => safeDateRender(r.dueDate)},
+                        { header: 'Immobile', accessor: 'propertyName' },
+                        { header: 'Stato', accessor: 'status' },
+                        { header: 'Importo', accessor: 'amount', render: (r) => `€${r.amount.toLocaleString('it-IT')}`},
+                    ];
+                    break;
+                case 'expenses':
+                    activeColumns = [
+                        { header: 'Data', accessor: 'date', render: (r) => safeDateRender(r.date) },
+                        { header: 'Immobile', accessor: 'propertyName' },
+                        { header: 'Descrizione', accessor: 'description' },
+                        { header: 'Categoria', accessor: 'category' },
+                        { header: 'Importo', accessor: 'amount', render: (r) => `€${r.amount.toLocaleString('it-IT')}` },
+                    ];
+                    break;
+                case 'maintenance':
+                     activeColumns = [
+                        { header: 'Data Richiesta', accessor: 'requestDate', render: (r) => safeDateRender(r.requestDate)},
+                        { header: 'Immobile', accessor: 'propertyName' },
+                        { header: 'Descrizione', accessor: 'description' },
+                        { header: 'Stato', accessor: 'status' },
+                        { header: 'Costo', accessor: 'cost', render: (r) => r.cost ? `€${r.cost.toLocaleString('it-IT')}` : 'N/D'},
+                    ];
+                    break;
+            }
+        }
+
+        let tot = 0;
+        if(reportTypesConfig.financial.some(r => r.id === reportType)) {
+            const key = reportType === 'maintenance' ? 'cost' : 'amount';
+            tot = reportData.reduce((sum, item) => sum + (Number(item?.[key]) || 0), 0);
+        }
+        return { columns: activeColumns, total: tot };
+
+    }, [reportType, reportData, selectedColumns, getAvailableColumns, isGenerated]);
+  
+  
   const handleExportPdf = useCallback(() => {
     if (reportData.length === 0) {
       alert("Nessun dato da esportare.");
@@ -386,19 +351,21 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
     doc.setTextColor(100);
     doc.text(`Generato il: ${new Date().toLocaleDateString('it-IT')}`, 14, 30);
 
+    const body = reportData.map(row => 
+        columns.map(col => {
+            const cellData = col.render ? col.render(row) : row[col.accessor];
+            return getTextFromCell(cellData);
+        })
+    );
+
     autoTable(doc, {
       startY: 35,
       head: [columns.map(c => c.header)],
-      body: reportData.map(row => 
-        columns.map(col => {
-            const cellData = col.render ? col.render(row) : row[col.accessor as any];
-            return getTextFromCell(cellData);
-        })
-      ),
+      body: body,
     });
 
     doc.save(`report_${reportType}.pdf`);
-  }, [reportData, columns, reportType, getTextFromCell]);
+  }, [reportData, columns, reportType]);
 
   return (
     <div className="space-y-6">
@@ -457,14 +424,18 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
             {reportTypesConfig.registry.some(r => r.id === reportType) ? '3. Applica i filtri' : '2. Applica i filtri'}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Da</label>
-              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="mt-1 block w-full input" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">A</label>
-              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="mt-1 block w-full input" />
-            </div>
+            {!reportTypesConfig.registry.some(r => r.id === reportType) && (
+                <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Da</label>
+                  <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="mt-1 block w-full input" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">A</label>
+                  <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="mt-1 block w-full input" />
+                </div>
+                </>
+            )}
             <div>
               <label className="block text-sm font-medium text-gray-700">Immobile</label>
               <select value={propertyId} onChange={e => setPropertyId(e.target.value)} className="mt-1 block w-full input">
@@ -501,7 +472,14 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ projectId }) => {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
                 <h2 className="text-xl font-bold text-dark flex items-center"><FileSearch size={22} className="mr-2"/>Risultati del Report</h2>
                 <div className="flex items-center gap-2">
-                    <ExportButton data={preparedExportData} filename={`report_${reportType}.csv`} />
+                    <ExportButton data={reportData.map(row => {
+                        const newRow: any = {};
+                        columns.forEach(col => {
+                           const cellData = col.render ? col.render(row) : row[col.accessor];
+                           newRow[col.header] = getTextFromCell(cellData);
+                        });
+                        return newRow;
+                    })} filename={`report_${reportType}.csv`} />
                     <button 
                         onClick={handleExportPdf}
                         className="flex items-center px-4 py-2 bg-white text-gray-700 font-semibold rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors shadow-sm"

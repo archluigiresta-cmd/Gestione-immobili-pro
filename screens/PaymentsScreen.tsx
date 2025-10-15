@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
 import { Payment, PaymentStatus, Property, ProjectMemberRole, User, Contract, Tenant } from '../types';
-import { CheckCircle, Clock, AlertCircle, PlusCircle, Edit, Trash2, ChevronDown } from 'lucide-react';
+import { CheckCircle, Clock, AlertCircle, PlusCircle, Edit, Trash2 } from 'lucide-react';
 import InteractiveTable, { Column } from '../components/ui/InteractiveTable';
 import ExportButton from '../components/ui/ExportButton';
 import AddPaymentModal from '../components/modals/AddPaymentModal';
@@ -20,17 +20,11 @@ type EnrichedPayment = Payment & {
     tenantName: string;
 };
 
-const getPropertyColors = (index: number) => {
-    const colors = [
-        'border-green-500', 'border-indigo-500', 'border-purple-500', 'border-pink-500',
-        'border-yellow-500', 'border-red-500', 'border-teal-500', 'border-blue-500'
-    ];
-    return colors[index % colors.length];
-};
-
 const PaymentsScreen: React.FC<PaymentsScreenProps> = ({ projectId, user, userRole }) => {
     const [payments, setPayments] = useState<Payment[]>([]);
     const [properties, setProperties] = useState<Property[]>([]);
+    const [contracts, setContracts] = useState<Contract[]>([]);
+    const [tenants, setTenants] = useState<Tenant[]>([]);
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [editingPayment, setEditingPayment] = useState<EnrichedPayment | null>(null);
     const [deletingPayment, setDeletingPayment] = useState<EnrichedPayment | null>(null);
@@ -38,7 +32,6 @@ const PaymentsScreen: React.FC<PaymentsScreenProps> = ({ projectId, user, userRo
     const [filterProperty, setFilterProperty] = useState<string>('all');
     const [filterStatus, setFilterStatus] = useState<PaymentStatus | 'all'>('all');
     const [searchTerm, setSearchTerm] = useState('');
-    const [openSections, setOpenSections] = useState<Set<string>>(new Set());
     
     const isViewer = userRole === ProjectMemberRole.VIEWER;
 
@@ -49,10 +42,12 @@ const PaymentsScreen: React.FC<PaymentsScreenProps> = ({ projectId, user, userRo
     const loadData = () => {
         setPayments(dataService.getPayments(projectId));
         setProperties(dataService.getProperties(projectId));
+        setContracts(dataService.getContracts(projectId));
+        setTenants(dataService.getTenants(projectId));
     };
     
     const handleAddPayment = (paymentData: Omit<Payment, 'id' | 'history'>) => {
-        dataService.addPayment(paymentData, user.id);
+        dataService.addPayment({ ...paymentData, projectId }, user.id);
         loadData();
         setAddModalOpen(false);
     };
@@ -72,24 +67,19 @@ const PaymentsScreen: React.FC<PaymentsScreenProps> = ({ projectId, user, userRo
     };
 
     const enrichedPayments: EnrichedPayment[] = useMemo(() => {
-        const contracts = dataService.getContracts(projectId);
-        const tenants = dataService.getTenants(projectId);
-
         const propertyMap = new Map(properties.map(p => [p.id, p.name]));
-        const contractMap: Map<string, { tenantId: string; }> = new Map(contracts.map(c => [c.id, { tenantId: c.tenantId }]));
+        const contractMap = new Map(contracts.map(c => [c.id, c.tenantId]));
         const tenantMap = new Map(tenants.map(t => [t.id, t.name]));
 
-        const getTenantNameByContract = (contractId: string) => {
-            const contract = contractMap.get(contractId);
-            return contract ? tenantMap.get(contract.tenantId) || 'N/A' : 'N/A';
-        };
-
-        return payments.map(p => ({
-            ...p,
-            propertyName: propertyMap.get(p.propertyId) || 'N/A',
-            tenantName: getTenantNameByContract(p.contractId),
-        }));
-    }, [payments, properties, projectId]);
+        return payments.map(p => {
+            const tenantId = contractMap.get(p.contractId);
+            return {
+                ...p,
+                propertyName: propertyMap.get(p.propertyId) || 'N/A',
+                tenantName: tenantId ? tenantMap.get(tenantId) || 'N/A' : 'N/A',
+            };
+        });
+    }, [payments, properties, contracts, tenants]);
 
 
     const filteredPayments = useMemo(() => {
@@ -114,6 +104,7 @@ const PaymentsScreen: React.FC<PaymentsScreenProps> = ({ projectId, user, userRo
     
     const columns: Column<EnrichedPayment>[] = [
         { header: 'Inquilino', accessor: 'tenantName' },
+        { header: 'Immobile', accessor: 'propertyName' },
         { header: 'Riferimento', accessor: 'referenceMonth', render: (row) => `${String(row.referenceMonth).padStart(2, '0')}/${row.referenceYear}` },
         { header: 'Data Pagamento', accessor: 'paymentDate', render: (row) => row.paymentDate ? new Date(row.paymentDate).toLocaleDateString('it-IT') : '---' },
         { header: 'Importo', accessor: 'amount', render: (row) => `€${row.amount.toLocaleString('it-IT')}`, className: 'text-right font-bold' },
@@ -150,25 +141,6 @@ const PaymentsScreen: React.FC<PaymentsScreenProps> = ({ projectId, user, userRo
         { label: 'In Attesa', value: PaymentStatus.PENDING },
         { label: 'In Ritardo', value: PaymentStatus.LATE },
     ];
-
-    const toggleSection = (propertyId: string) => {
-      setOpenSections(prev => {
-          const newSet = new Set(prev);
-          if (newSet.has(propertyId)) {
-              newSet.delete(propertyId);
-          } else {
-              newSet.add(propertyId);
-          }
-          return newSet;
-      });
-    };
-
-    const groupedPayments = useMemo(() => {
-      return filteredPayments.reduce<Record<string, EnrichedPayment[]>>((acc, payment) => {
-          (acc[payment.propertyId] = acc[payment.propertyId] || []).push(payment);
-          return acc;
-      }, {});
-    }, [filteredPayments]);
     
     return (
         <>
@@ -228,30 +200,7 @@ const PaymentsScreen: React.FC<PaymentsScreenProps> = ({ projectId, user, userRo
             </div>
         </div>
         
-        <div className="space-y-4">
-          {Object.entries(groupedPayments).map(([propertyId, paymentsForProperty], index) => {
-              const propertyName = properties.find(p => p.id === propertyId)?.name || 'Immobile non trovato';
-              const isOpen = openSections.has(propertyId);
-              return (
-                  <div key={propertyId} className={`rounded-lg overflow-hidden border-l-4 ${getPropertyColors(index)} bg-white shadow-sm`}>
-                      <button onClick={() => toggleSection(propertyId)} className={`w-full flex justify-between items-center p-4 text-left font-bold text-lg ${isOpen ? 'bg-gray-100' : 'bg-gray-50 hover:bg-gray-100'}`}>
-                          <span>{propertyName} <span className="text-sm font-medium text-gray-500">({paymentsForProperty.length} pagamenti)</span></span>
-                          <ChevronDown className={`transform transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                      </button>
-                      {isOpen && (
-                          <div className="p-2 bg-white">
-                              <InteractiveTable columns={columns} data={paymentsForProperty} />
-                          </div>
-                      )}
-                  </div>
-              );
-          })}
-        </div>
-        {filteredPayments.length === 0 && (
-            <div className="text-center p-8 text-gray-500">
-                Nessun pagamento trovato per i filtri selezionati.
-            </div>
-        )}
+        <InteractiveTable columns={columns} data={filteredPayments} />
       </Card>
       <AddPaymentModal
         isOpen={isAddModalOpen}

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
-import { Contract, ProjectMemberRole, User, Property } from '../types';
-import { Download, PlusCircle, Edit, Trash2, ChevronDown } from 'lucide-react';
+import { Contract, ProjectMemberRole, User, Property, Tenant } from '../types';
+import { Download, PlusCircle, Edit, Trash2 } from 'lucide-react';
 import AddContractModal from '../components/modals/AddContractModal';
 import EditContractModal from '../components/modals/EditContractModal';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
@@ -14,21 +14,19 @@ interface ContractsScreenProps {
   userRole: ProjectMemberRole;
 }
 
-const getPropertyColors = (index: number) => {
-    const colors = [
-        'border-blue-500', 'border-green-500', 'border-indigo-500', 'border-purple-500',
-        'border-pink-500', 'border-yellow-500', 'border-red-500', 'border-teal-500'
-    ];
-    return colors[index % colors.length];
+type EnrichedContract = Contract & {
+    propertyName: string;
+    tenantName: string;
 };
+
 
 const ContractsScreen: React.FC<ContractsScreenProps> = ({ projectId, user, userRole }) => {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
+  const [tenants, setTenants] = useState<Tenant[]>([]);
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [editingContract, setEditingContract] = useState<Contract | null>(null);
   const [deletingContract, setDeletingContract] = useState<Contract | null>(null);
-  const [openSections, setOpenSections] = useState<Set<string>>(new Set());
 
   const isViewer = userRole === ProjectMemberRole.VIEWER;
 
@@ -39,10 +37,9 @@ const ContractsScreen: React.FC<ContractsScreenProps> = ({ projectId, user, user
   const loadContracts = () => {
     setContracts(dataService.getContracts(projectId));
     setProperties(dataService.getProperties(projectId));
+    setTenants(dataService.getTenants(projectId));
   };
   
-  const getTenantName = (id: string) => dataService.getTenants(projectId).find(t => t.id === id)?.name || 'N/A';
-
   const handleAddContract = (contractData: Omit<Contract, 'id' | 'documentUrl' | 'projectId' | 'history'>) => {
     dataService.addContract({ ...contractData, projectId }, user.id);
     loadContracts();
@@ -63,27 +60,21 @@ const ContractsScreen: React.FC<ContractsScreenProps> = ({ projectId, user, user
     }
   };
 
-  const toggleSection = (propertyId: string) => {
-    setOpenSections(prev => {
-        const newSet = new Set(prev);
-        if (newSet.has(propertyId)) {
-            newSet.delete(propertyId);
-        } else {
-            newSet.add(propertyId);
-        }
-        return newSet;
-    });
-  };
+  const enrichedData: EnrichedContract[] = useMemo(() => {
+    const propertyMap = new Map(properties.map(p => [p.id, p.name]));
+    const tenantMap = new Map(tenants.map(t => [t.id, t.name]));
+    return contracts.map(contract => ({
+        ...contract,
+        propertyName: propertyMap.get(contract.propertyId) || 'N/A',
+        tenantName: tenantMap.get(contract.tenantId) || 'N/A',
+    }));
+  }, [contracts, properties, tenants]);
 
-  const groupedContracts = useMemo(() => {
-    return contracts.reduce<Record<string, Contract[]>>((acc, contract) => {
-        (acc[contract.propertyId] = acc[contract.propertyId] || []).push(contract);
-        return acc;
-    }, {});
-  }, [contracts]);
+  const propertyMap = useMemo(() => new Map(properties.map(p => [p.id, p.name])), [properties]);
   
-  const columns: Column<Contract>[] = [
-      { header: 'Inquilino', accessor: 'tenantId', render: (row) => getTenantName(row.tenantId) },
+  const columns: Column<EnrichedContract>[] = [
+      { header: 'Immobile', accessor: 'propertyName' },
+      { header: 'Inquilino', accessor: 'tenantName' },
       { header: 'Inizio', accessor: 'startDate', render: (row) => new Date(row.startDate).toLocaleDateString('it-IT') },
       { header: 'Fine', accessor: 'endDate', render: (row) => new Date(row.endDate).toLocaleDateString('it-IT') },
       { header: 'Canone', accessor: 'rentAmount', render: (row) => `€${row.rentAmount.toLocaleString('it-IT')}`, className: 'font-semibold' },
@@ -100,8 +91,6 @@ const ContractsScreen: React.FC<ContractsScreenProps> = ({ projectId, user, user
       ), className: 'text-center' },
   ];
 
-  const propertyMap = useMemo(() => new Map(properties.map(p => [p.id, p.name])), [properties]);
-
   return (
     <>
     <Card className="p-6">
@@ -116,25 +105,7 @@ const ContractsScreen: React.FC<ContractsScreenProps> = ({ projectId, user, user
           Nuovo Contratto
         </button>
       </div>
-      <div className="space-y-4">
-        {Object.entries(groupedContracts).map(([propertyId, contractsForProperty], index) => {
-            const propertyName = propertyMap.get(propertyId) || 'Immobile non trovato';
-            const isOpen = openSections.has(propertyId);
-            return (
-                <div key={propertyId} className={`rounded-lg overflow-hidden border-l-4 ${getPropertyColors(index)} bg-white shadow-sm`}>
-                    <button onClick={() => toggleSection(propertyId)} className={`w-full flex justify-between items-center p-4 text-left font-bold text-lg ${isOpen ? 'bg-gray-100' : 'bg-gray-50 hover:bg-gray-100'}`}>
-                        <span>{propertyName} <span className="text-sm font-medium text-gray-500">({contractsForProperty.length} contratti)</span></span>
-                        <ChevronDown className={`transform transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    {isOpen && (
-                        <div className="p-2 bg-white">
-                            <InteractiveTable columns={columns} data={contractsForProperty} />
-                        </div>
-                    )}
-                </div>
-            );
-        })}
-      </div>
+      <InteractiveTable columns={columns} data={enrichedData} />
     </Card>
 
     <AddContractModal 

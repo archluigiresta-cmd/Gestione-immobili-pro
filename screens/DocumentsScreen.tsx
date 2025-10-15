@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
 import { Document, User, DocumentType, Property } from '../types';
-import { PlusCircle, Edit, Trash2, Download, FileText, ChevronDown } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Download, FileText } from 'lucide-react';
 import AddDocumentModal from '../components/modals/AddDocumentModal';
 import EditDocumentModal from '../components/modals/EditDocumentModal';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
@@ -13,21 +13,12 @@ interface DocumentsScreenProps {
   user: User;
 }
 
-const getPropertyColors = (index: number) => {
-    const colors = [
-        'border-teal-500', 'border-blue-500', 'border-green-500', 'border-indigo-500',
-        'border-purple-500', 'border-pink-500', 'border-yellow-500', 'border-red-500'
-    ];
-    return colors[index % colors.length];
-};
-
 const DocumentsScreen: React.FC<DocumentsScreenProps> = ({ projectId, user }) => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
   const [deletingDocument, setDeletingDocument] = useState<Document | null>(null);
-  const [openSections, setOpenSections] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadDocuments();
@@ -57,25 +48,8 @@ const DocumentsScreen: React.FC<DocumentsScreenProps> = ({ projectId, user }) =>
       setDeletingDocument(null);
     }
   };
-
-  const toggleSection = (propertyId: string) => {
-    setOpenSections(prev => {
-        const newSet = new Set(prev);
-        if (newSet.has(propertyId)) {
-            newSet.delete(propertyId);
-        } else {
-            newSet.add(propertyId);
-        }
-        return newSet;
-    });
-  };
-
-  const groupedDocuments = useMemo(() => {
-    return documents.reduce<Record<string, Document[]>>((acc, doc) => {
-        (acc[doc.propertyId] = acc[doc.propertyId] || []).push(doc);
-        return acc;
-    }, {});
-  }, [documents]);
+  
+  const propertyMap = useMemo(() => new Map(properties.map(p => [p.id, p.name])), [properties]);
 
   const columns: Column<Document>[] = [
       { header: 'Nome Documento', accessor: 'name', render: row => (
@@ -84,6 +58,7 @@ const DocumentsScreen: React.FC<DocumentsScreenProps> = ({ projectId, user }) =>
               <span className="font-medium text-dark">{row.name}</span>
           </div>
       )},
+      { header: 'Immobile', accessor: 'propertyId', render: row => propertyMap.get(row.propertyId) || 'N/A' },
       { header: 'Tipo', accessor: 'type', render: row => (row.type === DocumentType.OTHER && row.typeOther) ? row.typeOther : row.type },
       { header: 'Data Caricamento', accessor: 'uploadDate', render: row => new Date(row.uploadDate).toLocaleDateString('it-IT') },
       { header: 'Azioni', accessor: 'id', render: row => (
@@ -96,8 +71,6 @@ const DocumentsScreen: React.FC<DocumentsScreenProps> = ({ projectId, user }) =>
           </div>
       ), className: 'text-center' },
   ];
-
-  const propertyMap = useMemo(() => new Map(properties.map(p => [p.id, p.name])), [properties]);
 
   return (
     <>
@@ -112,25 +85,7 @@ const DocumentsScreen: React.FC<DocumentsScreenProps> = ({ projectId, user }) =>
             Carica Documento
           </button>
         </div>
-        <div className="space-y-4">
-            {Object.entries(groupedDocuments).map(([propertyId, docsForProperty], index) => {
-              const propertyName = propertyMap.get(propertyId) || 'Immobile non trovato';
-              const isOpen = openSections.has(propertyId);
-              return (
-                  <div key={propertyId} className={`rounded-lg overflow-hidden border-l-4 ${getPropertyColors(index)} bg-white shadow-sm`}>
-                      <button onClick={() => toggleSection(propertyId)} className={`w-full flex justify-between items-center p-4 text-left font-bold text-lg ${isOpen ? 'bg-gray-100' : 'bg-gray-50 hover:bg-gray-100'}`}>
-                          <span>{propertyName} <span className="text-sm font-medium text-gray-500">({docsForProperty.length} documenti)</span></span>
-                          <ChevronDown className={`transform transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                      </button>
-                      {isOpen && (
-                          <div className="p-2 bg-white">
-                              <InteractiveTable columns={columns} data={docsForProperty} />
-                          </div>
-                      )}
-                  </div>
-              );
-            })}
-        </div>
+        <InteractiveTable columns={columns} data={documents} />
       </Card>
 
       <AddDocumentModal

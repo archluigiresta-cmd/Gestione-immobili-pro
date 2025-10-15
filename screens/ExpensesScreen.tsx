@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
 import { Expense, ExpenseCategory, User, UtilityType, TaxType, Property } from '../types';
-import { PlusCircle, Edit, Trash2, ExternalLink, Download, ChevronDown } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, ExternalLink, Download } from 'lucide-react';
 import AddExpenseModal from '../components/modals/AddExpenseModal';
 import EditExpenseModal from '../components/modals/EditExpenseModal';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
@@ -19,14 +18,6 @@ const COLORS = {
   [ExpenseCategory.OTHER]: '#AF19FF',
 };
 
-const getPropertyColors = (index: number) => {
-    const colors = [
-        'border-red-500', 'border-teal-500', 'border-blue-500', 'border-green-500',
-        'border-indigo-500', 'border-purple-500', 'border-pink-500', 'border-yellow-500'
-    ];
-    return colors[index % colors.length];
-};
-
 interface ExpensesScreenProps {
   projectId: string;
   user: User;
@@ -38,7 +29,6 @@ const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ projectId, user }) => {
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
     const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
-    const [openSections, setOpenSections] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         loadExpenses();
@@ -83,49 +73,40 @@ const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ projectId, user }) => {
         value,
     }));
 
-    const toggleSection = (propertyId: string) => {
-      setOpenSections(prev => {
-          const newSet = new Set(prev);
-          if (newSet.has(propertyId)) {
-              newSet.delete(propertyId);
-          } else {
-              newSet.add(propertyId);
-          }
-          return newSet;
-      });
-    };
-
-    const groupedExpenses = useMemo(() => {
-      return expenses.reduce<Record<string, Expense[]>>((acc, item) => {
-          (acc[item.propertyId] = acc[item.propertyId] || []).push(item);
-          return acc;
-      }, {});
-    }, [expenses]);
+    const propertyMap = useMemo(() => new Map(properties.map(p => [p.id, p.name])), [properties]);
 
     const columns: Column<Expense>[] = [
       { header: 'Descrizione', accessor: 'description', render: (row) => {
-          const isUtility = row.category === ExpenseCategory.UTILITIES;
-          const isTax = row.category === ExpenseCategory.TAXES;
+          const isUtility = row.category === ExpenseCategory.UTILITIES && row.utilityProvider;
+          const isTax = row.category === ExpenseCategory.TAXES && row.taxReferenceYear;
+          let subText: string | null = null;
+          if (isUtility) subText = `Gestore: ${row.utilityProvider}`;
+          if (isTax) subText = `Anno: ${row.taxReferenceYear}`;
+          
           return (
-              <div>
-                  <span className="font-medium text-dark">{row.description}</span>
-                  {isUtility && row.utilityProvider && <span className="block text-xs text-blue-700 font-semibold">Gestore: {row.utilityProvider}</span>}
-                  {isTax && row.taxReferenceYear && <span className="block text-xs text-yellow-700 font-semibold">Anno: {row.taxReferenceYear}</span>}
-              </div>
+            <div>
+              <div className="font-medium text-dark">{row.description}</div>
+              {subText && <div className="text-xs text-gray-500">{subText}</div>}
+            </div>
           );
       }},
+      { header: 'Immobile', accessor: 'propertyId', render: (row) => propertyMap.get(row.propertyId) || 'N/A' },
       { header: 'Categoria', accessor: 'category', render: (row) => {
           const displayCategory = (row.category === ExpenseCategory.OTHER && row.categoryOther) ? row.categoryOther : row.category;
           const isUtility = row.category === ExpenseCategory.UTILITIES;
           const utilityDisplayType = (row.utilityType === UtilityType.OTHER && row.utilityTypeOther) ? row.utilityTypeOther : row.utilityType;
           const isTax = row.category === ExpenseCategory.TAXES;
           const taxDisplayType = (row.taxType === TaxType.OTHER && row.taxTypeOther) ? row.taxTypeOther : row.taxType;
+          
+          let subText: string | null = null;
+          if (isUtility && utilityDisplayType) subText = utilityDisplayType;
+          if (isTax && taxDisplayType) subText = taxDisplayType;
+          
           return (
-              <div>
-                  <span className="font-semibold">{displayCategory}</span>
-                  {isUtility && utilityDisplayType && <span className="block text-xs">{utilityDisplayType}</span>}
-                  {isTax && taxDisplayType && <span className="block text-xs">{taxDisplayType}</span>}
-              </div>
+            <div>
+                <div>{displayCategory}</div>
+                {subText && <div className="text-xs text-gray-500">{subText}</div>}
+            </div>
           );
       }},
       { header: 'Data', accessor: 'date', render: (row) => new Date(row.date).toLocaleDateString('it-IT') },
@@ -145,12 +126,11 @@ const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ projectId, user }) => {
       ), className: 'text-center' },
     ];
   
-    const propertyMap = useMemo(() => new Map(properties.map(p => [p.id, p.name])), [properties]);
-
     return (
       <>
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         <div className="lg:col-span-3">
+          <Card className="p-6">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold text-dark">Elenco Spese</h1>
                 <button
@@ -161,25 +141,8 @@ const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ projectId, user }) => {
                     Aggiungi Spesa
                 </button>
             </div>
-            <div className="space-y-4">
-              {Object.entries(groupedExpenses).map(([propertyId, items], index) => {
-                  const propertyName = propertyMap.get(propertyId) || 'Immobile non trovato';
-                  const isOpen = openSections.has(propertyId);
-                  return (
-                      <div key={propertyId} className={`rounded-lg overflow-hidden border-l-4 ${getPropertyColors(index)} bg-white shadow-sm`}>
-                          <button onClick={() => toggleSection(propertyId)} className={`w-full flex justify-between items-center p-4 text-left font-bold text-lg ${isOpen ? 'bg-gray-100' : 'bg-gray-50 hover:bg-gray-100'}`}>
-                              <span>{propertyName} <span className="text-sm font-medium text-gray-500">({items.length} spese)</span></span>
-                              <ChevronDown className={`transform transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                          </button>
-                          {isOpen && (
-                              <div className="p-2 bg-white">
-                                  <InteractiveTable columns={columns} data={items} />
-                              </div>
-                          )}
-                      </div>
-                  );
-              })}
-            </div>
+            <InteractiveTable columns={columns} data={expenses} />
+          </Card>
         </div>
         <Card className="lg:col-span-2 p-6">
             <h2 className="text-xl font-bold text-dark mb-4">Riepilogo per Categoria</h2>

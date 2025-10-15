@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
 import { Maintenance, MaintenanceStatus, User, Property } from '../types';
-import { PlusCircle, Edit, Trash2, Wrench, Clock, CheckCircle, ChevronDown } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Wrench, Clock, CheckCircle } from 'lucide-react';
 import AddMaintenanceModal from '../components/modals/AddMaintenanceModal';
 import EditMaintenanceModal from '../components/modals/EditMaintenanceModal';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
@@ -13,21 +13,12 @@ interface MaintenanceScreenProps {
   user: User;
 }
 
-const getPropertyColors = (index: number) => {
-    const colors = [
-        'border-yellow-500', 'border-red-500', 'border-teal-500', 'border-blue-500',
-        'border-green-500', 'border-indigo-500', 'border-purple-500', 'border-pink-500'
-    ];
-    return colors[index % colors.length];
-};
-
 const MaintenanceScreen: React.FC<MaintenanceScreenProps> = ({ projectId, user }) => {
   const [maintenances, setMaintenances] = useState<Maintenance[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [editingMaintenance, setEditingMaintenance] = useState<Maintenance | null>(null);
   const [deletingMaintenance, setDeletingMaintenance] = useState<Maintenance | null>(null);
-  const [openSections, setOpenSections] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadMaintenances();
@@ -71,27 +62,11 @@ const MaintenanceScreen: React.FC<MaintenanceScreenProps> = ({ projectId, user }
     }
   };
 
-  const toggleSection = (propertyId: string) => {
-    setOpenSections(prev => {
-        const newSet = new Set(prev);
-        if (newSet.has(propertyId)) {
-            newSet.delete(propertyId);
-        } else {
-            newSet.add(propertyId);
-        }
-        return newSet;
-    });
-  };
-
-  const groupedMaintenances = useMemo(() => {
-    return maintenances.reduce<Record<string, Maintenance[]>>((acc, item) => {
-        (acc[item.propertyId] = acc[item.propertyId] || []).push(item);
-        return acc;
-    }, {});
-  }, [maintenances]);
+  const propertyMap = useMemo(() => new Map(properties.map(p => [p.id, p.name])), [properties]);
 
   const columns: Column<Maintenance>[] = [
       { header: 'Descrizione', accessor: 'description', className: 'font-medium text-dark' },
+      { header: 'Immobile', accessor: 'propertyId', render: (row) => propertyMap.get(row.propertyId) || 'N/A' },
       { header: 'Data Richiesta', accessor: 'requestDate', render: (row) => new Date(row.requestDate).toLocaleDateString('it-IT') },
       { header: 'Stato', accessor: 'status', render: (row) => {
           const statusInfo = getStatusInfo(row.status);
@@ -111,8 +86,6 @@ const MaintenanceScreen: React.FC<MaintenanceScreenProps> = ({ projectId, user }
       ), className: 'text-center' },
   ];
   
-  const propertyMap = useMemo(() => new Map(properties.map(p => [p.id, p.name])), [properties]);
-
   return (
     <>
       <Card className="p-6">
@@ -126,25 +99,7 @@ const MaintenanceScreen: React.FC<MaintenanceScreenProps> = ({ projectId, user }
             Nuova Richiesta
           </button>
         </div>
-        <div className="space-y-4">
-            {Object.entries(groupedMaintenances).map(([propertyId, items], index) => {
-              const propertyName = propertyMap.get(propertyId) || 'Immobile non trovato';
-              const isOpen = openSections.has(propertyId);
-              return (
-                  <div key={propertyId} className={`rounded-lg overflow-hidden border-l-4 ${getPropertyColors(index)} bg-white shadow-sm`}>
-                      <button onClick={() => toggleSection(propertyId)} className={`w-full flex justify-between items-center p-4 text-left font-bold text-lg ${isOpen ? 'bg-gray-100' : 'bg-gray-50 hover:bg-gray-100'}`}>
-                          <span>{propertyName} <span className="text-sm font-medium text-gray-500">({items.length} richieste)</span></span>
-                          <ChevronDown className={`transform transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                      </button>
-                      {isOpen && (
-                          <div className="p-2 bg-white">
-                              <InteractiveTable columns={columns} data={items} />
-                          </div>
-                      )}
-                  </div>
-              );
-            })}
-        </div>
+        <InteractiveTable columns={columns} data={maintenances} />
       </Card>
       
       <AddMaintenanceModal 

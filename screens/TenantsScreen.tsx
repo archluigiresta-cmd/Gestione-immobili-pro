@@ -2,18 +2,10 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
 import { Tenant, User, Property, Contract } from '../types';
-import { Mail, Phone, Home, PlusCircle, MoreVertical, Edit, Trash2, ChevronDown } from 'lucide-react';
+import { Mail, Phone, Home, PlusCircle, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import AddTenantModal from '../components/modals/AddTenantModal';
 import EditTenantModal from '../components/modals/EditTenantModal';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
-
-const getPropertyColors = (index: number) => {
-    const colors = [
-        'border-indigo-500', 'border-purple-500', 'border-pink-500', 'border-yellow-500',
-        'border-red-500', 'border-teal-500', 'border-blue-500', 'border-green-500'
-    ];
-    return colors[index % colors.length];
-};
 
 const TenantCard: React.FC<{ tenant: Tenant, propertyName: string, onEdit: () => void, onDelete: () => void }> = ({ tenant, propertyName, onEdit, onDelete }) => {
     const [menuOpen, setMenuOpen] = useState(false);
@@ -75,7 +67,6 @@ const TenantsScreen: React.FC<TenantsScreenProps> = ({ projectId, user }) => {
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
     const [deletingTenant, setDeletingTenant] = useState<Tenant | null>(null);
-    const [openSections, setOpenSections] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         loadData();
@@ -107,40 +98,18 @@ const TenantsScreen: React.FC<TenantsScreenProps> = ({ projectId, user }) => {
         }
     };
 
-    const toggleSection = (propertyId: string) => {
-        setOpenSections(prev => {
-            const newSet = new Set(prev);
-            if (newSet.has(propertyId)) {
-                newSet.delete(propertyId);
-            } else {
-                newSet.add(propertyId);
-            }
-            return newSet;
-        });
-    };
+    const enrichedTenants = useMemo(() => {
+        const contractMap = new Map(contracts.map(c => [c.id, c.propertyId]));
+        const propertyMap = new Map(properties.map(p => [p.id, p.name]));
 
-    const groupedTenants = useMemo(() => {
-        const contractMap = new Map(contracts.map(c => [c.id, c]));
-        const propertyMap = new Map(properties.map(p => [p.id, p]));
-
-        const groups: Record<string, { property: Property | null; tenants: Tenant[] }> = {};
-
-        for (const tenant of tenants) {
-            const contract = contractMap.get(tenant.contractId);
-            const property = contract ? propertyMap.get(contract.propertyId) : null;
-            const propertyId = property ? property.id : 'unassigned';
-
-            if (!groups[propertyId]) {
-                groups[propertyId] = { property, tenants: [] };
-            }
-            groups[propertyId].tenants.push(tenant);
-        }
-        
-        return Object.values(groups).sort((a, b) => {
-            if (!a.property) return 1;
-            if (!b.property) return -1;
-            return a.property.name.localeCompare(b.property.name);
-        });
+        return tenants.map(tenant => {
+            const propertyId = contractMap.get(tenant.contractId);
+            const propertyName = propertyId ? propertyMap.get(propertyId) || 'Nessun immobile associato' : 'Nessun immobile associato';
+            return {
+                ...tenant,
+                propertyName,
+            };
+        }).sort((a,b) => a.propertyName.localeCompare(b.propertyName));
     }, [tenants, contracts, properties]);
 
 
@@ -157,37 +126,19 @@ const TenantsScreen: React.FC<TenantsScreenProps> = ({ projectId, user }) => {
                     Aggiungi Inquilino
                 </button>
             </div>
-             <div className="space-y-4">
-                {groupedTenants.map((group, index) => {
-                    const propertyId = group.property ? group.property.id : 'unassigned';
-                    const propertyName = group.property ? group.property.name : 'Inquilini non assegnati';
-                    const isOpen = openSections.has(propertyId);
-                    
-                    return (
-                        <div key={propertyId} className={`rounded-lg overflow-hidden border-l-4 ${getPropertyColors(index)} bg-white shadow-sm`}>
-                            <button onClick={() => toggleSection(propertyId)} className={`w-full flex justify-between items-center p-4 text-left font-bold text-lg ${isOpen ? 'bg-gray-100' : 'bg-gray-50 hover:bg-gray-100'}`}>
-                                <span>{propertyName} <span className="text-sm font-medium text-gray-500">({group.tenants.length} inquilini)</span></span>
-                                <ChevronDown className={`transform transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                            </button>
-                            {isOpen && (
-                                <div className="p-4 bg-white grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                                    {group.tenants.map(tenant => (
-                                        <TenantCard
-                                            key={tenant.id}
-                                            tenant={tenant}
-                                            propertyName={group.property?.name || 'Nessun immobile associato'}
-                                            onEdit={() => setEditingTenant(tenant)}
-                                            onDelete={() => setDeletingTenant(tenant)}
-                                        />
-                                    ))}
-                                    {group.tenants.length === 0 && (
-                                        <p className="text-gray-500 col-span-full text-center">Nessun inquilino trovato per questo immobile.</p>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    )
-                })}
+             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {enrichedTenants.map(tenant => (
+                    <TenantCard
+                        key={tenant.id}
+                        tenant={tenant}
+                        propertyName={tenant.propertyName}
+                        onEdit={() => setEditingTenant(tenant)}
+                        onDelete={() => setDeletingTenant(tenant)}
+                    />
+                ))}
+                {enrichedTenants.length === 0 && (
+                    <p className="text-gray-500 col-span-full text-center py-8">Nessun inquilino trovato.</p>
+                )}
             </div>
         </Card>
 

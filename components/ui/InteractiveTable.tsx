@@ -1,3 +1,5 @@
+
+
 import React, { useState, useMemo } from 'react';
 import { ArrowUpDown } from 'lucide-react';
 
@@ -16,52 +18,37 @@ interface InteractiveTableProps<T> {
 type SortDirection = 'asc' | 'desc';
 
 /**
- * A robust, type-safe renderer for table cell data.
- * It handles various data types to prevent React rendering errors.
- * - Renders valid React elements directly.
- * - Formats valid Date objects.
- * - Converts booleans to 'Sì'/'No'.
- * - Safely stringifies other objects as a fallback.
- * - Returns primitives (string, number) as is.
- * - Returns an empty string for null/undefined.
+ * A "bulletproof" helper function to robustly render any value.
+ * It safely handles primitives, dates, valid React elements, and arrays of renderable content.
+ * It prevents crashes by returning an empty string for any un-renderable type (like plain objects).
  */
-const renderCellData = (data: any): React.ReactNode => {
-    // Order of checks is important
-    if (data === null || typeof data === 'undefined') {
+const safeRender = (value: any): React.ReactNode => {
+    if (value === null || value === undefined) {
         return '';
     }
-    // If it's a valid React element, render it directly.
-    if (React.isValidElement(data)) {
-        return data;
+    if (React.isValidElement(value)) {
+        return value;
     }
-    if (data instanceof Date) {
-        // Check for invalid dates
-        if (isNaN(data.getTime())) {
-            return 'Data non valida';
-        }
-        return data.toLocaleDateString('it-IT');
+    if (Array.isArray(value)) {
+        // If it's an array, map over it and safely render each item.
+        return value.map((item, index) => <React.Fragment key={index}>{safeRender(item)}</React.Fragment>);
     }
-    if (typeof data === 'boolean') {
-        return data ? 'Sì' : 'No';
+    if (typeof value === 'string' || typeof value === 'number') {
+        return value;
     }
-    // Return primitives directly for performance
-    if (typeof data === 'string' || typeof data === 'number') {
-        return data;
+    if (typeof value === 'boolean') {
+        return value ? 'Sì' : 'No';
     }
-    // For any other kind of object, stringify it to be safe.
-    // This prevents the "Objects are not valid as a React child" error.
-    if (typeof data === 'object') {
-       try {
-         // Attempt to stringify, but have a fallback for circular refs etc.
-         return JSON.stringify(data);
-       } catch (e) {
-         return '[Oggetto complesso]';
-       }
+    if (value instanceof Date) {
+        return isNaN(value.getTime()) ? '' : value.toLocaleDateString('it-IT');
     }
-    
-    // Final, final fallback for anything else
-    return String(data);
+    if (typeof value === 'object') {
+        console.warn('InteractiveTable safeRender prevented an invalid object from rendering.', value);
+        return '';
+    }
+    return String(value);
 };
+
 
 const InteractiveTable = <T extends { id?: string | number }>({ columns, data }: InteractiveTableProps<T>) => {
   const [sortColumn, setSortColumn] = useState<keyof T | null>(null);
@@ -82,32 +69,43 @@ const InteractiveTable = <T extends { id?: string | number }>({ columns, data }:
     return [...data].sort((a, b) => {
       const aValue = a[sortColumn];
       const bValue = b[sortColumn];
+      const direction = sortDirection === 'asc' ? 1 : -1;
 
-      if (aValue === null || aValue === undefined) return 1;
-      if (bValue === null || bValue === undefined) return -1;
+      // Rule 1: Always sort null/undefined values to the end.
+      if (aValue == null && bValue == null) return 0;
+      if (aValue == null) return 1;
+      if (bValue == null) return -1;
       
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortDirection === 'asc' 
-          ? aValue.localeCompare(bValue) 
-          : bValue.localeCompare(aValue);
-      }
-      
-      if (typeof aValue === 'number' && typeof bValue === 'number') {
-        return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
-      }
-      
-      // Fallback for dates or other types
-      const valA = new Date(aValue as any).getTime();
-      const valB = new Date(bValue as any).getTime();
+      const aType = typeof aValue;
+      const bType = typeof bValue;
 
-      if (!isNaN(valA) && !isNaN(valB)) {
-          return sortDirection === 'asc' ? valA - valB : valB - valA;
+      // Rule 2: Handle numbers and booleans specifically.
+      if (aType === 'number' && bType === 'number') {
+        // FIX: Cast values to number for arithmetic operation.
+        // TypeScript doesn't narrow the type of generic properties (`T[keyof T]`) within this conditional block.
+        return ((aValue as number) - (bValue as number)) * direction;
+      }
+      if (aType === 'boolean' && bType === 'boolean') {
+        return (Number(aValue) - Number(bValue)) * direction;
+      }
+
+      // Rule 3: For everything else, convert to string.
+      const strA = String(aValue);
+      const strB = String(bValue);
+
+      // Rule 4: If they look like standard dates, compare them as dates.
+      // This prevents misinterpreting numbers or other strings as dates.
+      const isDateString = (s: string) => /^\d{4}-\d{2}-\d{2}/.test(s);
+      if (isDateString(strA) && isDateString(strB)) {
+        const dateA = new Date(strA);
+        const dateB = new Date(strB);
+        if (!isNaN(dateA.getTime()) && !isNaN(dateB.getTime())) {
+          return (dateA.getTime() - dateB.getTime()) * direction;
+        }
       }
       
-      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-      
-      return 0;
+      // Rule 5: Fallback to robust, locale-aware string comparison for all other cases.
+      return strA.localeCompare(strB, 'it', { numeric: true, sensitivity: 'base' }) * direction;
     });
   }, [data, sortColumn, sortDirection]);
 
@@ -129,11 +127,14 @@ const InteractiveTable = <T extends { id?: string | number }>({ columns, data }:
         <tbody>
           {sortedData.map((row, rowIndex) => (
             <tr key={row.id ?? `row-${rowIndex}`} className="border-b hover:bg-gray-50">
-              {columns.map(col => (
-                <td key={String(col.accessor)} className={`p-3 text-gray-700 ${col.className || ''}`}>
-                  {col.render ? col.render(row) : renderCellData(row[col.accessor])}
-                </td>
-              ))}
+              {columns.map(col => {
+                const cellContent = col.render ? col.render(row) : row[col.accessor];
+                return (
+                    <td key={String(col.accessor)} className={`p-3 text-gray-700 ${col.className || ''}`}>
+                        {safeRender(cellContent)}
+                    </td>
+                );
+              })}
             </tr>
           ))}
         </tbody>
