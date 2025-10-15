@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import Card from '../components/ui/Card';
 import InteractiveTable, { Column } from '../components/ui/InteractiveTable';
@@ -61,6 +62,8 @@ const getTextFromCell = (data: React.ReactNode): string => {
         if (props && typeof props === 'object' && 'children' in props) {
             return getTextFromCell(props.children);
         }
+// FIX: Added a return statement to handle React elements without children, ensuring the function always returns a string.
+        return '';
     }
 
     // Fallback for other React nodes that might not have children but can be stringified

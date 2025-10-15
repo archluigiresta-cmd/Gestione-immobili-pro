@@ -74,21 +74,23 @@ const AiAssistant: React.FC = () => {
         setIsLoading(true);
 
         try {
+            // Initialize Gemini AI only when needed
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
 
             const systemInstruction = "Sei un assistente virtuale esperto per l'applicazione 'Gestore Immobili PRO'. Il tuo scopo è aiutare gli utenti a capire e utilizzare al meglio l'app. L'applicazione serve a gestire proprietà immobiliari. Le sue sezioni principali sono: Dashboard (riepilogo), Immobili (elenco proprietà), Inquilini, Contratti, Pagamenti, Scadenze, Manutenzioni, Spese, Documenti, Report e Analisi Finanziaria. Rispondi in modo chiaro, conciso e amichevole. Utilizza la formattazione markdown (come grassetto o elenchi puntati) per migliorare la leggibilità. Basa le tue risposte sulla conoscenza fornita riguardo le funzionalità dell'app.";
             
             const responseStream = await ai.models.generateContentStream({
                 model: 'gemini-2.5-flash',
-                contents: input,
+                contents: [{ role: "user", parts: [{ text: input }] }],
                  config: {
-                    systemInstruction: systemInstruction,
+                    systemInstruction: { role: "system", parts: [{ text: systemInstruction }] },
                  },
             });
             
             let currentResponse = '';
             let isFirstChunk = true;
 
+            // FIX: Correctly handle streaming response by updating the last message content and managing loading state.
             for await (const chunk of responseStream) {
                 currentResponse += chunk.text;
                 if (isFirstChunk) {
@@ -127,7 +129,7 @@ const AiAssistant: React.FC = () => {
                          {msg.role === 'user' && <div className="bg-gray-200 p-2 rounded-full text-dark"><User size={18}/></div>}
                     </div>
                 ))}
-                 {isLoading && messages[messages.length - 1]?.role !== 'model' && (
+                 {isLoading && (
                      <div className="flex items-start gap-3">
                          <div className="bg-primary p-2 rounded-full text-white"><Bot size={18}/></div>
                          <div className="max-w-md rounded-lg p-3 bg-gray-100 text-dark flex items-center gap-2">

@@ -60,6 +60,8 @@ const getTextFromCell = (data: React.ReactNode): string => {
         if (props && typeof props === 'object' && 'children' in props) {
             return getTextFromCell(props.children);
         }
+// FIX: Added a return statement to handle React elements without children, ensuring the function always returns a string.
+        return '';
     }
 
     // Fallback for other React nodes that might not have children but can be stringified
@@ -71,7 +73,6 @@ const getTextFromCell = (data: React.ReactNode): string => {
 };
 
 
-// FIX: Changed component definition to explicitly return React.ReactElement to fix type inference issue.
 const ReportsScreen = ({ projectId }: ReportsScreenProps): React.ReactElement => {
   const [reportType, setReportType] = useState<ReportType | null>(null);
   
