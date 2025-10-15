@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Card from '../components/ui/Card';
-import * as dataService from '../services/dataService';
+// FIX: Corrected import path to point to the correct file location.
+import * as dataService from '../src/services/dataService';
 import { Deadline, DeadlineType, User, Property } from '../types';
 import { PlusCircle, Edit, Trash2, CheckCircle, List, CalendarDays } from 'lucide-react';
 import AddDeadlineModal from '../components/modals/AddDeadlineModal';

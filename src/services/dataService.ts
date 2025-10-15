@@ -1,21 +1,60 @@
 import { MOCK_USERS, MOCK_PROPERTIES, MOCK_TENANTS, MOCK_CONTRACTS, MOCK_DEADLINES, MOCK_MAINTENANCES, MOCK_EXPENSES, MOCK_DOCUMENTS, MOCK_PROJECTS, MOCK_PAYMENTS } from '../constants';
-import { User, Property, Tenant, Contract, Deadline, Maintenance, Expense, Document, DeadlineType, Project, HistoryLog, Payment, UserStatus } from '../types';
+import { User, Property, Tenant, Contract, Deadline, Maintenance, Expense, Document, DeadlineType, Project, HistoryLog, Payment, UserStatus, AppData } from '../types';
+import { saveDataToDrive } from './googleDriveService';
 
 const CURRENT_DATA_VERSION = 2;
+
+const DATA_KEYS: (keyof AppData)[] = ['users', 'projects', 'properties', 'tenants', 'contracts', 'deadlines', 'maintenances', 'expenses', 'documents', 'payments', 'dataVersion'];
+
+let driveFileId: string | null = null;
+let debounceTimer: number | null = null;
+
+export const setDriveFileId = (id: string | null) => {
+    driveFileId = id;
+};
+
+const _getAllDataAsObject = (): AppData => {
+    const appData: Partial<AppData> = {};
+    DATA_KEYS.forEach(key => {
+        const data = localStorage.getItem(key);
+        if (data) {
+            try {
+                (appData as any)[key] = JSON.parse(data);
+            } catch (e) {
+                console.error(`Failed to parse data for key ${key}`, e);
+            }
+        }
+    });
+    return appData as AppData;
+};
+
+const debouncedSaveToDrive = () => {
+    if (debounceTimer) {
+        clearTimeout(debounceTimer);
+    }
+    debounceTimer = window.setTimeout(() => {
+        if (driveFileId) {
+            console.log('Debounced save executing...');
+            const allData = _getAllDataAsObject();
+            saveDataToDrive(driveFileId, allData)
+              .then(() => console.log('Successfully saved to Google Drive.'))
+              .catch(err => console.error('Failed to save to Google Drive:', err));
+        }
+    }, 2000); // 2-second delay
+};
 
 export const migrateData = () => {
     const storedVersionStr = localStorage.getItem('dataVersion');
     let storedVersion = storedVersionStr ? parseInt(storedVersionStr, 10) : 1;
 
     if (storedVersion >= CURRENT_DATA_VERSION) {
-        return; // No migration needed
+        return;
     }
 
     console.log(`Migrating data from version ${storedVersion} to ${CURRENT_DATA_VERSION}`);
 
     switch (storedVersion) {
         case 1:
-            // Migration from v1 to v2: Add creationDate to all properties
             try {
                 const properties = getAllProperties();
                 const migratedProperties = properties.map(p => {
@@ -28,15 +67,7 @@ export const migrateData = () => {
                 console.log('Successfully migrated properties to v2.');
             } catch (error) {
                 console.error('Error during v1 to v2 migration:', error);
-                // In a real app, you might want to handle this more gracefully,
-                // e.g., by notifying the user or attempting a backup.
             }
-            // falls through to the next case if there are more migrations
-        
-        // case 2:
-            // Future migration from v2 to v3 would go here.
-            // ...
-            // break;
     }
 
     localStorage.setItem('dataVersion', String(CURRENT_DATA_VERSION));
@@ -48,33 +79,36 @@ const initData = <T,>(key: string, mockData: T[]): T[] => {
     try {
         const storedData = localStorage.getItem(key);
         if (storedData) {
-            let parsedData = JSON.parse(storedData);
-
-            // Special check for projects to ensure the demo project exists for the demo user
-            if (key === 'projects') {
-                const demoProjectExists = parsedData.some((p: Project) => p.id === 'proj-1');
-                const demoProject = MOCK_PROJECTS.find(p => p.id === 'proj-1');
-                if (!demoProjectExists && demoProject) {
-                    parsedData.push(demoProject);
-                    saveData(key, parsedData); // Save the corrected list back to localStorage
-                }
-            }
-            return parsedData;
+            return JSON.parse(storedData);
         }
     } catch (error) {
         console.error(`Error reading ${key} from localStorage`, error);
     }
     localStorage.setItem(key, JSON.stringify(mockData));
-    localStorage.setItem('dataVersion', String(CURRENT_DATA_VERSION)); // Set version for new users
+    if (key === 'users') { // Set version only once
+        localStorage.setItem('dataVersion', String(CURRENT_DATA_VERSION));
+    }
     return mockData;
 };
 
 const saveData = <T,>(key: string, data: T[]): void => {
     try {
         localStorage.setItem(key, JSON.stringify(data));
+        if (driveFileId) {
+            debouncedSaveToDrive();
+        }
     } catch (error) {
         console.error(`Error saving ${key} to localStorage`, error);
     }
+};
+
+export const loadDataFromObject = (data: AppData) => {
+    DATA_KEYS.forEach(key => {
+        if (data[key]) {
+            localStorage.setItem(key, JSON.stringify(data[key]));
+        }
+    });
+    console.log("Data loaded into localStorage from Drive.");
 };
 
 const generateId = (prefix: string): string => `${prefix}-${new Date().getTime()}-${Math.random().toString(36).substr(2, 9)}`;

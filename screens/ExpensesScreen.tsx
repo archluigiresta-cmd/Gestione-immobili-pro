@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import Card from '../components/ui/Card';
-import * as dataService from '../services/dataService';
+// FIX: Corrected import path to point to the correct file location.
+import * as dataService from '../src/services/dataService';
 import { Expense, ExpenseCategory, User, UtilityType, TaxType, Property } from '../types';
 import { PlusCircle, Edit, Trash2, ExternalLink, Download, DollarSign } from 'lucide-react';
 import AddExpenseModal from '../components/modals/AddExpenseModal';

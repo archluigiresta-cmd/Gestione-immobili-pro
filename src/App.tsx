@@ -1,31 +1,28 @@
-
-
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { LayoutDashboard, Building, FileText, Users, DollarSign, Calendar, Wrench, BarChart3, HelpCircle, Settings, Download, LineChart, Library } from 'lucide-react';
-// FIX: Adjusted import paths to be relative to the 'src' directory, assuming source files are at the project root.
-import * as dataService from '../services/dataService';
-import { User, Project, ProjectMemberRole, UserStatus } from '../types';
+import * as dataService from './services/dataService';
+import * as googleDriveService from './services/googleDriveService';
+import { User, Project, ProjectMemberRole, UserStatus, AppData } from './types';
 
-import Sidebar from '../components/layout/Sidebar';
-import Header from '../components/layout/Header';
-import SplashScreen from '../screens/SplashScreen';
-import LoginScreen from '../screens/LoginScreen';
-import ProjectSelectionScreen from '../screens/ProjectSelectionScreen';
-import DashboardScreen from '../screens/DashboardScreen';
-import PropertiesScreen from '../screens/PropertiesScreen';
-import PropertyDetailScreen from '../screens/PropertyDetailScreen';
-import ContractsScreen from '../screens/ContractsScreen';
-import TenantsScreen from '../screens/TenantsScreen';
-import PaymentsScreen from '../screens/PaymentsScreen';
-import DeadlinesScreen from '../screens/DeadlinesScreen';
-import MaintenanceScreen from '../screens/MaintenanceScreen';
-import ExpensesScreen from '../screens/ExpensesScreen';
-import DocumentsScreen from '../screens/DocumentsScreen';
-import ReportsScreen from '../screens/ReportsScreen';
-import FinancialAnalysisScreen from '../screens/FinancialAnalysisScreen';
-import SettingsScreen from '../screens/SettingsScreen';
-import HelpScreen from '../screens/HelpScreen';
+import Sidebar from './components/layout/Sidebar';
+import Header from './components/layout/Header';
+import SplashScreen from './screens/SplashScreen';
+import LoginScreen from './screens/LoginScreen';
+import ProjectSelectionScreen from './screens/ProjectSelectionScreen';
+import DashboardScreen from './screens/DashboardScreen';
+import PropertiesScreen from './screens/PropertiesScreen';
+import PropertyDetailScreen from './screens/PropertyDetailScreen';
+import ContractsScreen from './screens/ContractsScreen';
+import TenantsScreen from './screens/TenantsScreen';
+import PaymentsScreen from './screens/PaymentsScreen';
+import DeadlinesScreen from './screens/DeadlinesScreen';
+import MaintenanceScreen from './screens/MaintenanceScreen';
+import ExpensesScreen from './screens/ExpensesScreen';
+import DocumentsScreen from './screens/DocumentsScreen';
+import ReportsScreen from './screens/ReportsScreen';
+import FinancialAnalysisScreen from './screens/FinancialAnalysisScreen';
+import SettingsScreen from './screens/SettingsScreen';
+import HelpScreen from './screens/HelpScreen';
 
 export type Screen = 'dashboard' | 'properties' | 'propertyDetail' | 'contracts' | 'tenants' | 'payments' | 'deadlines' | 'maintenance' | 'expenses' | 'documents' | 'reports' | 'financialAnalysis' | 'settings' | 'help' | 'install';
 
@@ -51,6 +48,7 @@ export const secondaryNavigationItems = [
 
 function App() {
   const [loading, setLoading] = useState(true);
+  const [isGoogleApiReady, setGoogleApiReady] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [activeScreen, setActiveScreen] = useState<Screen>('dashboard');
@@ -59,28 +57,15 @@ function App() {
   const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
+  const [driveFileId, setDriveFileId] = useState<string | null>(null);
+
 
   useEffect(() => {
-    dataService.migrateData();
-    setUsers(dataService.getUsers());
-    const lastUserId = localStorage.getItem('lastUserId');
-    if (lastUserId) {
-      const user = dataService.getUser(lastUserId);
-      if (user && user.status === UserStatus.ACTIVE) {
-        setCurrentUser(user);
-        const lastProjectId = localStorage.getItem('lastProjectId');
-        if (lastProjectId) {
-          const project = dataService.getProjectsForUser(user.id).find(p => p.id === lastProjectId);
-          if (project) {
-            setCurrentProject(project);
-          }
-        }
-      }
-    }
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
+    googleDriveService.init((isReady) => {
+      setGoogleApiReady(isReady);
+      setLoading(false); 
+    });
+    
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredInstallPrompt(e);
@@ -93,38 +78,40 @@ function App() {
   const handleInstall = async () => {
     if (!deferredInstallPrompt) return;
     deferredInstallPrompt.prompt();
-    const { outcome } = await deferredInstallPrompt.userChoice;
-    if (outcome === 'accepted') {
-      console.log('User accepted the A2HS prompt');
-      setIsInstallable(false);
-    } else {
-      console.log('User dismissed the A2HS prompt');
-    }
+    await deferredInstallPrompt.userChoice;
     setDeferredInstallPrompt(null);
+    setIsInstallable(false);
   };
   
-  const handleLogin = (userId: string): string | boolean => {
-    const user = dataService.getUser(userId);
-    if (!user) return false;
-    
-    if (user.status === UserStatus.PENDING) {
-      return 'pending';
-    }
-    
-    if (user.status === UserStatus.ACTIVE) {
+  const handleLogin = async () => {
+    if (!isGoogleApiReady) return;
+    setLoading(true);
+    try {
+      const user = await googleDriveService.signIn();
+      const { fileId, data } = await googleDriveService.findOrCreateDataFile();
+      
+      dataService.loadDataFromObject(data);
+      dataService.setDriveFileId(fileId);
+      
+      setDriveFileId(fileId);
       setCurrentUser(user);
-      localStorage.setItem('lastUserId', userId);
-      return true;
+      setUsers(dataService.getUsers());
+      
+      const lastProjectId = localStorage.getItem('lastProjectId');
+      if (lastProjectId) {
+        const project = dataService.getProjectsForUser(user.id).find(p => p.id === lastProjectId);
+        if (project) {
+          setCurrentProject(project);
+        }
+      }
+    } catch (error) {
+        console.error("Google Sign-In or data loading failed", error);
+        alert("Accesso con Google o caricamento dati non riuscito. Controlla la console.");
+    } finally {
+        setLoading(false);
     }
-    
-    return false;
   };
 
-  const handleRegister = (userData: Omit<User, 'id' | 'status'>) => {
-    dataService.addUser(userData);
-    setUsers(dataService.getUsers());
-  };
-  
   const handleSelectProject = (project: Project) => {
     setCurrentProject(project);
     localStorage.setItem('lastProjectId', project.id);
@@ -143,9 +130,11 @@ function App() {
   };
   
   const handleLogout = () => {
+    googleDriveService.signOut();
+    dataService.setDriveFileId(null);
     setCurrentUser(null);
     setCurrentProject(null);
-    localStorage.removeItem('lastUserId');
+    setDriveFileId(null);
     localStorage.removeItem('lastProjectId');
   };
   
@@ -163,23 +152,19 @@ function App() {
     setActiveScreen(screen);
   };
 
-  const refreshUsers = useCallback(() => {
-    setUsers(dataService.getUsers());
-  }, []);
-
+  const refreshUsers = useCallback(() => setUsers(dataService.getUsers()), []);
   const handleUpdateProfile = (updatedUser: User) => {
-    dataService.updateUser(updatedUser);
-    setCurrentUser(updatedUser);
-    refreshUsers();
+      dataService.updateUser(updatedUser);
+      setCurrentUser(updatedUser);
+      refreshUsers();
   };
-  
   const handleUpdateProject = (updatedProject: Project) => {
       dataService.updateProject(updatedProject);
       setCurrentProject(updatedProject);
   };
 
   if (loading) return <SplashScreen />;
-  if (!currentUser) return <LoginScreen onLogin={handleLogin} onRegister={handleRegister} />;
+  if (!currentUser) return <LoginScreen onLogin={handleLogin} isApiReady={isGoogleApiReady} />;
   if (!currentProject) return <ProjectSelectionScreen user={currentUser} onSelectProject={handleSelectProject} onCreateProject={handleCreateProject} onLogout={handleLogout} onUpdateProfile={handleUpdateProfile} />;
 
   const userRole = currentProject.members.find(m => m.userId === currentUser.id)?.role || ProjectMemberRole.VIEWER;

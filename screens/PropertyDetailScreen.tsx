@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Property, Tenant, Contract, Expense, Maintenance, Deadline, Document, ProjectMemberRole, CustomField, CustomFieldType, HistoryLog, User } from '../types';
-import * as dataService from '../services/dataService';
+// FIX: Corrected import path to point to the correct file location.
+import * as dataService from '../src/services/dataService';
 import Card from '../components/ui/Card';
 import { ArrowLeft, Building2, Square, BedDouble, FileText, CircleDollarSign, Wrench, Calendar, Users, PlusCircle, Edit, Trash2, Info, History, UserCircle } from 'lucide-react';
 import AddCustomFieldModal from '../components/modals/AddCustomFieldModal';
@@ -155,7 +156,7 @@ const PropertyDetailScreen: React.FC<PropertyDetailScreenProps> = ({ propertyId,
   const handleAddCustomField = (fieldData: Omit<CustomField, 'id'>) => {
       if(!property) return;
       const newField: CustomField = { ...fieldData, id: generateId('cf') };
-      const updatedProperty = { ...property, customFields: [...property.customFields, newField] };
+      const updatedProperty = { ...property, customFields: [...(property.customFields || []), newField] };
       dataService.updateProperty(updatedProperty, user.id);
       loadPropertyData();
       setAddCfModalOpen(false);
@@ -163,7 +164,7 @@ const PropertyDetailScreen: React.FC<PropertyDetailScreenProps> = ({ propertyId,
   
   const handleUpdateCustomField = (updatedField: CustomField) => {
       if(!property) return;
-      const updatedFields = property.customFields.map(f => f.id === updatedField.id ? updatedField : f);
+      const updatedFields = (property.customFields || []).map(f => f.id === updatedField.id ? updatedField : f);
       const updatedProperty = { ...property, customFields: updatedFields };
       dataService.updateProperty(updatedProperty, user.id);
       loadPropertyData();
@@ -172,7 +173,7 @@ const PropertyDetailScreen: React.FC<PropertyDetailScreenProps> = ({ propertyId,
   
   const handleDeleteCustomField = () => {
       if(!property || !deletingCf) return;
-      const updatedFields = property.customFields.filter(f => f.id !== deletingCf.id);
+      const updatedFields = (property.customFields || []).filter(f => f.id !== deletingCf.id);
       const updatedProperty = { ...property, customFields: updatedFields };
       dataService.updateProperty(updatedProperty, user.id);
       loadPropertyData();
@@ -233,6 +234,8 @@ const PropertyDetailScreen: React.FC<PropertyDetailScreenProps> = ({ propertyId,
     ...(tenant?.history || []),
   ];
 
+  const customFields = property.customFields || [];
+
   return (
     <div className="space-y-6">
       <button onClick={onBack} className="flex items-center text-primary hover:underline font-semibold">
@@ -267,7 +270,7 @@ const PropertyDetailScreen: React.FC<PropertyDetailScreenProps> = ({ propertyId,
                     </button>
                 </div>
                 <div className="space-y-3">
-                    {property.customFields.length > 0 ? property.customFields.map(field => (
+                    {customFields.length > 0 ? customFields.map(field => (
                         <div key={field.id} className="flex justify-between items-center p-2 bg-gray-50 rounded-md">
                            <div>
                              <p className="text-sm font-semibold text-gray-800">{field.label}</p>

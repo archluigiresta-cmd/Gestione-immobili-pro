@@ -1,4 +1,4 @@
-import { Property, PropertyType, Tenant, Contract, Payment, PaymentStatus, User, Deadline, DeadlineType, Maintenance, MaintenanceStatus, Expense, ExpenseCategory, Document, DocumentType, Project, ProjectMemberRole, CustomFieldType, UtilityType, TaxType, UserStatus } from './types';
+import { Property, PropertyType, Tenant, Contract, Payment, PaymentStatus, User, Deadline, DeadlineType, Maintenance, MaintenanceStatus, Expense, ExpenseCategory, Document, DocumentType, Project, ProjectMemberRole, CustomFieldType, UtilityType, TaxType, UserStatus, AppData } from './types';
 
 export const MOCK_USERS: User[] = [
   { id: 'user-1', name: 'Luigi Resta', email: 'arch.luigiresta@gmail.com', status: UserStatus.ACTIVE },
@@ -166,3 +166,16 @@ export const MOCK_PAYMENTS: Payment[] = [
   { id: 'pay-3', projectId: 'proj-1', contractId: 'contract-1', propertyId: 'prop-1', amount: 3000, dueDate: `${currentYear}-${String(currentMonth-1).padStart(2, '0')}-05`, paymentDate: `${currentYear}-${String(currentMonth-1).padStart(2, '0')}-01`, referenceMonth: currentMonth-1, referenceYear: currentYear, status: PaymentStatus.PAID, history: [] },
   { id: 'pay-4', projectId: 'proj-1', contractId: 'contract-2', propertyId: 'prop-2', amount: 1200, dueDate: `${currentYear}-${String(currentMonth-1).padStart(2, '0')}-05`, paymentDate: null, referenceMonth: currentMonth-1, referenceYear: currentYear, status: PaymentStatus.LATE, history: [] },
 ];
+
+export const INITIAL_MOCK_DATA: AppData = {
+  users: MOCK_USERS,
+  projects: MOCK_PROJECTS,
+  properties: MOCK_PROPERTIES,
+  tenants: MOCK_TENANTS,
+  contracts: MOCK_CONTRACTS,
+  deadlines: MOCK_DEADLINES,
+  maintenances: MOCK_MAINTENANCES,
+  expenses: MOCK_EXPENSES,
+  documents: MOCK_DOCUMENTS,
+  payments: MOCK_PAYMENTS,
+};

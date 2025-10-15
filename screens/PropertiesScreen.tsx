@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
-import * as dataService from '../services/dataService';
+// FIX: Corrected import path to point to the correct file location.
+import * as dataService from '../src/services/dataService';
 import { Property, ProjectMemberRole, User, PropertyType } from '../types';
 import { PlusCircle, Edit, Trash2, Eye, MapPin } from 'lucide-react';
 import AddPropertyModal from '../components/modals/AddPropertyModal';
 import EditPropertyModal from '../components/modals/EditPropertyModal';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
-import { Screen } from '../App';
+// FIX: Corrected import path to point to the correct file location.
+import { Screen } from '../src/App';
 
 interface PropertiesScreenProps {
   onNavigate: (screen: Screen, propertyId?: string) => void;

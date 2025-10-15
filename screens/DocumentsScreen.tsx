@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Card from '../components/ui/Card';
-import * as dataService from '../services/dataService';
+// FIX: Corrected import path to point to the correct file location.
+import * as dataService from '../src/services/dataService';
 import { Document, User, DocumentType, Property } from '../types';
 import { PlusCircle, Edit, Trash2, Download, FileText } from 'lucide-react';
 import AddDocumentModal from '../components/modals/AddDocumentModal';

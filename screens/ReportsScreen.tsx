@@ -2,7 +2,8 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import Card from '../components/ui/Card';
 import InteractiveTable, { Column } from '../components/ui/InteractiveTable';
 import ExportButton from '../components/ui/ExportButton';
-import * as dataService from '../services/dataService';
+// FIX: Corrected import path to point to the correct file location.
+import * as dataService from '../src/services/dataService';
 import { Payment, Expense, Maintenance, Property, PaymentStatus, ExpenseCategory, MaintenanceStatus, Contract, Tenant, Document, CustomField } from '../types';
 import { BarChart, FileSearch, Filter, Settings2, Database, DollarSign, Building, Users, FileText as FileTextIcon, Wrench, Library } from 'lucide-react';
 import jsPDF from 'jspdf';

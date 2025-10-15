@@ -90,11 +90,12 @@ const AiAssistant: React.FC = () => {
             let currentResponse = '';
             setMessages(prev => [...prev, { role: 'model', content: '' }]);
 
+            // FIX: Correctly handle streaming response by updating the last message content.
             for await (const chunk of responseStream) {
                 currentResponse += chunk.text;
                 setMessages(prev => {
                     const newMessages = [...prev];
-                    newMessages[newMessages.length - 1].content = currentResponse;
+                    newMessages[newMessages.length - 1] = { ...newMessages[newMessages.length - 1], content: currentResponse };
                     return newMessages;
                 });
             }

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import Card from '../components/ui/Card';
-import * as dataService from '../services/dataService';
+// FIX: Corrected import path to point to the correct file location.
+import * as dataService from '../src/services/dataService';
 import { Payment, PaymentStatus, Property, ProjectMemberRole, User, Contract, Tenant } from '../types';
 import { CheckCircle, Clock, AlertCircle, PlusCircle, Edit, Trash2, DollarSign } from 'lucide-react';
 import AccordionItem from '../components/ui/AccordionItem';

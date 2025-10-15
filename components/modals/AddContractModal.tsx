@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Contract, Property, Tenant, CustomField, CustomFieldType } from '../../types';
 import { X, PlusCircle, Trash2 } from 'lucide-react';
-import * as dataService from '../../services/dataService';
+// FIX: Corrected import path to point to the correct file location.
+import * as dataService from '../../src/services/dataService';
 
 interface AddContractModalProps {
   isOpen: boolean;
@@ -119,55 +120,3 @@ const AddContractModal: React.FC<AddContractModalProps> = ({ isOpen, onClose, on
                     placeholder="Nome Campo"
                     value={field.label}
                     onChange={(e) => handleCustomFieldChange(index, 'label', e.target.value)}
-                    className="col-span-4 input"
-                  />
-                  <select
-                    value={field.type}
-                    onChange={(e) => handleCustomFieldChange(index, 'type', e.target.value)}
-                    className="col-span-3 input"
-                  >
-                    <option value={CustomFieldType.TEXT}>Testo</option>
-                    <option value={CustomFieldType.BOOLEAN}>Sì/No</option>
-                  </select>
-                  <div className="col-span-4">
-                    {field.type === CustomFieldType.TEXT ? (
-                      <input
-                        type="text"
-                        placeholder="Valore"
-                        value={field.value as string}
-                        onChange={(e) => handleCustomFieldChange(index, 'value', e.target.value)}
-                        className="w-full input"
-                      />
-                    ) : (
-                      <select
-                        value={String(field.value)}
-                        onChange={(e) => handleCustomFieldChange(index, 'value', e.target.value === 'true')}
-                        className="w-full input"
-                      >
-                        <option value="true">Sì</option>
-                        <option value="false">No</option>
-                      </select>
-                    )}
-                  </div>
-                  <button type="button" onClick={() => handleRemoveCustomField(index)} className="col-span-1 text-red-500 hover:text-red-700">
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-              ))}
-            </div>
-            <button type="button" onClick={handleAddCustomField} className="mt-3 flex items-center text-sm text-primary font-semibold hover:underline">
-              <PlusCircle size={16} className="mr-2" /> Aggiungi Campo
-            </button>
-          </div>
-
-          <div className="flex justify-end pt-4">
-            <button type="button" onClick={onClose} className="mr-2 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Annulla</button>
-            <button type="submit" className="px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm">Aggiungi Contratto</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-export default AddContractModal;

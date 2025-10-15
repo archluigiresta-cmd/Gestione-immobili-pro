@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { DollarSign, Building, AlertTriangle, CheckCircle, Clock, Settings, Wrench } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import Card from '../components/ui/Card';
-import * as dataService from '../services/dataService';
+// FIX: Corrected import path to point to the correct file location.
+import * as dataService from '../src/services/dataService';
 import { Deadline, Property, Expense, Maintenance, MaintenanceStatus, ExpenseCategory } from '../types';
-import { Screen } from '../App';
+// FIX: Corrected import path to point to the correct file location.
+import { Screen } from '../src/App';
 import CustomizeDashboardModal from '../components/modals/CustomizeDashboardModal';
 
 interface StatCardProps {

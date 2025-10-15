@@ -231,3 +231,17 @@ export interface Payment {
   status: PaymentStatus;
   history: HistoryLog[];
 }
+
+export interface AppData {
+  users: User[];
+  projects: Project[];
+  properties: Property[];
+  tenants: Tenant[];
+  contracts: Contract[];
+  deadlines: Deadline[];
+  maintenances: Maintenance[];
+  expenses: Expense[];
+  documents: Document[];
+  payments: Payment[];
+  dataVersion?: number;
+}

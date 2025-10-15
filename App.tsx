@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { LayoutDashboard, Building, FileText, Users, DollarSign, Calendar, Wrench, BarChart3, HelpCircle, Settings, Download, LineChart, Library } from 'lucide-react';
 import * as dataService from './services/dataService';
@@ -27,6 +25,25 @@ import HelpScreen from './screens/HelpScreen';
 
 export type Screen = 'dashboard' | 'properties' | 'propertyDetail' | 'contracts' | 'tenants' | 'payments' | 'deadlines' | 'maintenance' | 'expenses' | 'documents' | 'reports' | 'financialAnalysis' | 'settings' | 'help' | 'install';
 
+// Dummy implementation for now
+// A real implementation will be added in the next steps
+const googleDriveService = {
+  init: (callback: (isReady: boolean) => void) => { 
+      // Simulate API loading
+      setTimeout(() => callback(true), 1500);
+  },
+  signIn: () => {
+    // Simulate a successful sign-in
+    const mockUser: User = { id: 'user-1', name: 'Luigi Resta (from Google)', email: 'arch.luigiresta@gmail.com', status: UserStatus.ACTIVE };
+    return Promise.resolve(mockUser);
+  },
+  signOut: () => {
+    // Simulate sign-out
+    return Promise.resolve();
+  }
+};
+
+
 export const navigationItems = [
   { screen: 'dashboard' as Screen, name: 'Dashboard', icon: LayoutDashboard },
   { screen: 'properties' as Screen, name: 'Immobili', icon: Building },
@@ -49,6 +66,7 @@ export const secondaryNavigationItems = [
 
 function App() {
   const [loading, setLoading] = useState(true);
+  const [isGoogleApiReady, setGoogleApiReady] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [activeScreen, setActiveScreen] = useState<Screen>('dashboard');
@@ -56,29 +74,16 @@ function App() {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<User[]>([]); // This will be sourced from Drive file later
 
   useEffect(() => {
-    dataService.migrateData();
-    setUsers(dataService.getUsers());
-    const lastUserId = localStorage.getItem('lastUserId');
-    if (lastUserId) {
-      const user = dataService.getUser(lastUserId);
-      if (user && user.status === UserStatus.ACTIVE) {
-        setCurrentUser(user);
-        const lastProjectId = localStorage.getItem('lastProjectId');
-        if (lastProjectId) {
-          const project = dataService.getProjectsForUser(user.id).find(p => p.id === lastProjectId);
-          if (project) {
-            setCurrentProject(project);
-          }
-        }
-      }
-    }
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
+    // Initialize Google services
+    googleDriveService.init((isReady) => {
+      setGoogleApiReady(isReady);
+      setLoading(false); // Stop initial loading splash screen
+    });
+    
+    // PWA install prompt handler
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredInstallPrompt(e);
@@ -91,38 +96,35 @@ function App() {
   const handleInstall = async () => {
     if (!deferredInstallPrompt) return;
     deferredInstallPrompt.prompt();
-    const { outcome } = await deferredInstallPrompt.userChoice;
-    if (outcome === 'accepted') {
-      console.log('User accepted the A2HS prompt');
-      setIsInstallable(false);
-    } else {
-      console.log('User dismissed the A2HS prompt');
-    }
+    await deferredInstallPrompt.userChoice;
     setDeferredInstallPrompt(null);
+    setIsInstallable(false);
   };
   
-  const handleLogin = (userId: string): string | boolean => {
-    const user = dataService.getUser(userId);
-    if (!user) return false;
-    
-    if (user.status === UserStatus.PENDING) {
-      return 'pending';
-    }
-    
-    if (user.status === UserStatus.ACTIVE) {
+  const handleLogin = async () => {
+    if (!isGoogleApiReady) return;
+    try {
+      const user = await googleDriveService.signIn();
+      // In a real scenario, we would now fetch the data file from Drive.
+      // For now, we'll use local mock data but set the user from Google.
       setCurrentUser(user);
-      localStorage.setItem('lastUserId', userId);
-      return true;
+      
+      // We will replace this with data from the drive file.
+      setUsers(dataService.getUsers());
+      // For now, we will still check for the last project in local storage
+      const lastProjectId = localStorage.getItem('lastProjectId');
+      if (lastProjectId) {
+        const project = dataService.getProjectsForUser(user.id).find(p => p.id === lastProjectId);
+        if (project) {
+          setCurrentProject(project);
+        }
+      }
+    } catch (error) {
+        console.error("Google Sign-In failed", error);
+        // Here you could show an error message to the user
     }
-    
-    return false;
   };
 
-  const handleRegister = (userData: Omit<User, 'id' | 'status'>) => {
-    dataService.addUser(userData);
-    setUsers(dataService.getUsers());
-  };
-  
   const handleSelectProject = (project: Project) => {
     setCurrentProject(project);
     localStorage.setItem('lastProjectId', project.id);
@@ -140,11 +142,11 @@ function App() {
     handleSelectProject(newProject);
   };
   
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await googleDriveService.signOut();
     setCurrentUser(null);
     setCurrentProject(null);
-    localStorage.removeItem('lastUserId');
-    localStorage.removeItem('lastProjectId');
+    localStorage.removeItem('lastProjectId'); // Keep local data, but clear session
   };
   
   const handleBackToProjects = () => {
@@ -161,23 +163,20 @@ function App() {
     setActiveScreen(screen);
   };
 
-  const refreshUsers = useCallback(() => {
-    setUsers(dataService.getUsers());
-  }, []);
-
+  // These functions will be adapted to write to Google Drive later
+  const refreshUsers = useCallback(() => setUsers(dataService.getUsers()), []);
   const handleUpdateProfile = (updatedUser: User) => {
-    dataService.updateUser(updatedUser);
-    setCurrentUser(updatedUser);
-    refreshUsers();
+      dataService.updateUser(updatedUser);
+      setCurrentUser(updatedUser);
+      refreshUsers();
   };
-  
   const handleUpdateProject = (updatedProject: Project) => {
       dataService.updateProject(updatedProject);
       setCurrentProject(updatedProject);
   };
 
   if (loading) return <SplashScreen />;
-  if (!currentUser) return <LoginScreen onLogin={handleLogin} onRegister={handleRegister} />;
+  if (!currentUser) return <LoginScreen onLogin={handleLogin} isApiReady={isGoogleApiReady} />;
   if (!currentProject) return <ProjectSelectionScreen user={currentUser} onSelectProject={handleSelectProject} onCreateProject={handleCreateProject} onLogout={handleLogout} onUpdateProfile={handleUpdateProfile} />;
 
   const userRole = currentProject.members.find(m => m.userId === currentUser.id)?.role || ProjectMemberRole.VIEWER;
