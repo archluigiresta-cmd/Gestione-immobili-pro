@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, Project } from '../types';
 import * as dataService from '../services/dataService';
-import { Briefcase, PlusCircle, ArrowRight, UserCircle, LogOut, Edit, MoreVertical, Trash2 } from 'lucide-react';
+import { Briefcase, PlusCircle, ArrowRight, UserCircle, LogOut, Edit, MoreVertical, Trash2, Users } from 'lucide-react';
 import CreateProjectModal from '../components/modals/CreateProjectModal';
 import EditProfileModal from '../components/modals/EditProfileModal';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
@@ -12,6 +12,7 @@ interface ProjectSelectionScreenProps {
   onCreateProject: (projectName: string) => void;
   onLogout: () => void;
   onUpdateProfile: (updatedUser: User) => void;
+  onSwitchUser: () => void;
 }
 
 const ProjectCard: React.FC<{ 
@@ -69,7 +70,7 @@ const ProjectCard: React.FC<{
     );
 };
 
-const ProjectSelectionScreen: React.FC<ProjectSelectionScreenProps> = ({ user, onSelectProject, onCreateProject, onLogout, onUpdateProfile }) => {
+const ProjectSelectionScreen: React.FC<ProjectSelectionScreenProps> = ({ user, onSelectProject, onCreateProject, onLogout, onUpdateProfile, onSwitchUser }) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isProfileModalOpen, setProfileModalOpen] = useState(false);
@@ -85,7 +86,6 @@ const ProjectSelectionScreen: React.FC<ProjectSelectionScreenProps> = ({ user, o
   
   const handleCreate = (projectName: string) => {
     onCreateProject(projectName);
-    // After creating, the main app logic handles selecting it. We just need to refresh our list.
     loadProjects(); 
     setCreateModalOpen(false);
   }
@@ -93,7 +93,7 @@ const ProjectSelectionScreen: React.FC<ProjectSelectionScreenProps> = ({ user, o
   const handleDeleteProject = () => {
     if (deletingProject) {
         dataService.deleteProject(deletingProject.id);
-        loadProjects(); // Refresh the list after deletion
+        loadProjects();
         setDeletingProject(null);
     }
   };
@@ -118,9 +118,14 @@ const ProjectSelectionScreen: React.FC<ProjectSelectionScreenProps> = ({ user, o
                     </button>
                 </div>
             </div>
-            <button onClick={onLogout} className="flex items-center text-sm text-red-600 font-semibold p-2 rounded-lg hover:bg-red-50">
-                <LogOut size={16} className="mr-1.5"/> Esci
-            </button>
+             <div className="flex flex-col items-end gap-2">
+                <button onClick={onLogout} className="flex items-center text-sm text-red-600 font-semibold p-2 rounded-lg hover:bg-red-50">
+                    <LogOut size={16} className="mr-1.5"/> Esci da Google
+                </button>
+                 <button onClick={onSwitchUser} className="flex items-center text-sm text-gray-600 font-semibold p-2 rounded-lg hover:bg-gray-100">
+                    <Users size={16} className="mr-1.5"/> Cambia Utente
+                </button>
+            </div>
         </div>
         
         <div className="text-center border-t pt-6">

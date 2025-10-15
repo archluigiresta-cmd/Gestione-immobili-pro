@@ -106,7 +106,8 @@ export const signIn = (): Promise<User> => {
       }
     };
     
-    tokenClient.requestAccessToken({ prompt: 'consent' });
+    // Use prompt: '' for silent sign-in on subsequent visits
+    tokenClient.requestAccessToken({ prompt: '' });
   });
 };
 
@@ -121,8 +122,8 @@ export const signOut = () => {
 
 const findFile = async (fileName: string): Promise<string | null> => {
     const response = await window.gapi.client.drive.files.list({
-        q: `name='${fileName}' and trashed=false and 'appDataFolder' in parents`,
-        spaces: 'appDataFolder',
+        q: `name='${fileName}' and trashed=false`,
+        spaces: 'drive', // Search in the user's main drive
         fields: 'files(id, name)',
     });
     if (response.result.files && response.result.files.length > 0) {
@@ -143,7 +144,7 @@ const createFile = async (fileName: string, content: AppData): Promise<string> =
     const response = await window.gapi.client.drive.files.create({
         resource: {
             name: fileName,
-            parents: ['appDataFolder']
+            // No parent specified, creates in root "My Drive"
         },
         media: {
             mimeType: 'application/json',

@@ -8,7 +8,10 @@ import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
 import SplashScreen from './screens/SplashScreen';
 import LoginScreen from './screens/LoginScreen';
+import UserSelectionScreen from './screens/UserSelectionScreen';
 import ProjectSelectionScreen from './screens/ProjectSelectionScreen';
+import PasswordModal from './components/modals/PasswordModal';
+
 import DashboardScreen from './screens/DashboardScreen';
 import PropertiesScreen from './screens/PropertiesScreen';
 import PropertyDetailScreen from './screens/PropertyDetailScreen';
@@ -49,15 +52,21 @@ export const secondaryNavigationItems = [
 function App() {
   const [loading, setLoading] = useState(true);
   const [isGoogleApiReady, setGoogleApiReady] = useState(false);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  
+  const [googleUser, setGoogleUser] = useState<User | null>(null); // User from Google Sign-In
+  const [selectedUser, setSelectedUser] = useState<User | null>(null); // User profile selected to operate with
+
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [activeScreen, setActiveScreen] = useState<Screen>('dashboard');
   const [propertyDetailId, setPropertyDetailId] = useState<string | null>(null);
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
-  const [users, setUsers] = useState<User[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
   const [driveFileId, setDriveFileId] = useState<string | null>(null);
+
+  const [isPasswordModalOpen, setPasswordModalOpen] = useState(false);
+  const [userToAuthenticate, setUserToAuthenticate] = useState<User | null>(null);
 
 
   useEffect(() => {
@@ -94,22 +103,38 @@ function App() {
       dataService.setDriveFileId(fileId);
       
       setDriveFileId(fileId);
-      setCurrentUser(user);
-      setUsers(dataService.getUsers());
+      setGoogleUser(user);
+      setAllUsers(dataService.getUsers());
       
-      const lastProjectId = localStorage.getItem('lastProjectId');
-      if (lastProjectId) {
-        const project = dataService.getProjectsForUser(user.id).find(p => p.id === lastProjectId);
-        if (project) {
-          setCurrentProject(project);
-        }
-      }
     } catch (error) {
         console.error("Google Sign-In or data loading failed", error);
         alert("Accesso con Google o caricamento dati non riuscito. Controlla la console.");
     } finally {
         setLoading(false);
     }
+  };
+
+  const loginAsUser = (user: User) => {
+    setSelectedUser(user);
+    setPasswordModalOpen(false);
+    setUserToAuthenticate(null);
+  };
+
+  const handleUserSelection = (user: User) => {
+    if (user.password) {
+      setUserToAuthenticate(user);
+      setPasswordModalOpen(true);
+    } else {
+      loginAsUser(user);
+    }
+  };
+
+  const handlePasswordConfirm = (password: string) => {
+    if (userToAuthenticate && userToAuthenticate.password === password) {
+      loginAsUser(userToAuthenticate);
+      return true;
+    }
+    return false;
   };
 
   const handleSelectProject = (project: Project) => {
@@ -119,11 +144,11 @@ function App() {
   };
 
   const handleCreateProject = (projectName: string) => {
-    if (!currentUser) return;
+    if (!selectedUser) return;
     const newProjectData = {
       name: projectName,
-      ownerId: currentUser.id,
-      members: [{ userId: currentUser.id, role: ProjectMemberRole.OWNER }]
+      ownerId: selectedUser.id,
+      members: [{ userId: selectedUser.id, role: ProjectMemberRole.OWNER }]
     };
     const newProject = dataService.addProject(newProjectData);
     handleSelectProject(newProject);
@@ -132,11 +157,18 @@ function App() {
   const handleLogout = () => {
     googleDriveService.signOut();
     dataService.setDriveFileId(null);
-    setCurrentUser(null);
+    setGoogleUser(null);
+    setSelectedUser(null);
     setCurrentProject(null);
     setDriveFileId(null);
     localStorage.removeItem('lastProjectId');
   };
+
+  const handleSwitchUser = () => {
+    setSelectedUser(null);
+    setCurrentProject(null);
+    localStorage.removeItem('lastProjectId');
+  }
   
   const handleBackToProjects = () => {
     setCurrentProject(null);
@@ -152,10 +184,10 @@ function App() {
     setActiveScreen(screen);
   };
 
-  const refreshUsers = useCallback(() => setUsers(dataService.getUsers()), []);
+  const refreshUsers = useCallback(() => setAllUsers(dataService.getUsers()), []);
   const handleUpdateProfile = (updatedUser: User) => {
       dataService.updateUser(updatedUser);
-      setCurrentUser(updatedUser);
+      setSelectedUser(updatedUser);
       refreshUsers();
   };
   const handleUpdateProject = (updatedProject: Project) => {
@@ -164,58 +196,66 @@ function App() {
   };
 
   if (loading) return <SplashScreen />;
-  if (!currentUser) return <LoginScreen onLogin={handleLogin} isApiReady={isGoogleApiReady} />;
-  if (!currentProject) return <ProjectSelectionScreen user={currentUser} onSelectProject={handleSelectProject} onCreateProject={handleCreateProject} onLogout={handleLogout} onUpdateProfile={handleUpdateProfile} />;
+  if (!googleUser) return <LoginScreen onLogin={handleLogin} isApiReady={isGoogleApiReady} />;
+  if (!selectedUser) return <UserSelectionScreen users={allUsers} onSelectUser={handleUserSelection} onLogout={handleLogout} />;
+  if (!currentProject) return <ProjectSelectionScreen user={selectedUser} onSelectProject={handleSelectProject} onCreateProject={handleCreateProject} onLogout={handleLogout} onUpdateProfile={handleUpdateProfile} onSwitchUser={handleSwitchUser} />;
 
-  const userRole = currentProject.members.find(m => m.userId === currentUser.id)?.role || ProjectMemberRole.VIEWER;
-  const pendingUsersCount = users.filter(u => u.status === UserStatus.PENDING).length;
+  const userRole = currentProject.members.find(m => m.userId === selectedUser.id)?.role || ProjectMemberRole.VIEWER;
+  const pendingUsersCount = allUsers.filter(u => u.status === UserStatus.PENDING).length;
 
   const renderScreen = () => {
     switch (activeScreen) {
       case 'dashboard': return <DashboardScreen onNavigate={handleNavigate} projectId={currentProject.id} />;
-      case 'properties': return <PropertiesScreen onNavigate={handleNavigate} projectId={currentProject.id} user={currentUser} userRole={userRole} />;
-      case 'propertyDetail': return propertyDetailId ? <PropertyDetailScreen propertyId={propertyDetailId} projectId={currentProject.id} user={currentUser} userRole={userRole} onBack={() => handleNavigate('properties')} onNavigate={handleNavigate}/> : <PropertiesScreen onNavigate={handleNavigate} projectId={currentProject.id} user={currentUser} userRole={userRole} />;
-      case 'contracts': return <ContractsScreen projectId={currentProject.id} user={currentUser} userRole={userRole} />;
-      case 'tenants': return <TenantsScreen projectId={currentProject.id} user={currentUser} />;
-      case 'payments': return <PaymentsScreen projectId={currentProject.id} user={currentUser} userRole={userRole} />;
-      case 'deadlines': return <DeadlinesScreen projectId={currentProject.id} user={currentUser} />;
-      case 'maintenance': return <MaintenanceScreen projectId={currentProject.id} user={currentUser} />;
-      case 'expenses': return <ExpensesScreen projectId={currentProject.id} user={currentUser} />;
-      case 'documents': return <DocumentsScreen projectId={currentProject.id} user={currentUser} />;
+      case 'properties': return <PropertiesScreen onNavigate={handleNavigate} projectId={currentProject.id} user={selectedUser} userRole={userRole} />;
+      case 'propertyDetail': return propertyDetailId ? <PropertyDetailScreen propertyId={propertyDetailId} projectId={currentProject.id} user={selectedUser} userRole={userRole} onBack={() => handleNavigate('properties')} onNavigate={handleNavigate}/> : <PropertiesScreen onNavigate={handleNavigate} projectId={currentProject.id} user={selectedUser} userRole={userRole} />;
+      case 'contracts': return <ContractsScreen projectId={currentProject.id} user={selectedUser} userRole={userRole} />;
+      case 'tenants': return <TenantsScreen projectId={currentProject.id} user={selectedUser} />;
+      case 'payments': return <PaymentsScreen projectId={currentProject.id} user={selectedUser} userRole={userRole} />;
+      case 'deadlines': return <DeadlinesScreen projectId={currentProject.id} user={selectedUser} />;
+      case 'maintenance': return <MaintenanceScreen projectId={currentProject.id} user={selectedUser} />;
+      case 'expenses': return <ExpensesScreen projectId={currentProject.id} user={selectedUser} />;
+      case 'documents': return <DocumentsScreen projectId={currentProject.id} user={selectedUser} />;
       case 'reports': return <ReportsScreen projectId={currentProject.id} />;
       case 'financialAnalysis': return <FinancialAnalysisScreen projectId={currentProject.id} />;
-      case 'settings': return <SettingsScreen user={currentUser} project={currentProject} userRole={userRole} onUpdateProfile={handleUpdateProfile} onUpdateProject={handleUpdateProject} onAddUser={(data) => { dataService.addUser(data); refreshUsers(); }} onDeleteUser={(id) => { dataService.deleteUser(id); refreshUsers(); }} onApproveUser={(id) => { dataService.approveUser(id); refreshUsers(); }} />;
+      case 'settings': return <SettingsScreen user={selectedUser} project={currentProject} userRole={userRole} onUpdateProfile={handleUpdateProfile} onUpdateProject={handleUpdateProject} onAddUser={(data) => { dataService.addUser(data); refreshUsers(); }} onDeleteUser={(id) => { dataService.deleteUser(id); refreshUsers(); }} onApproveUser={(id) => { dataService.approveUser(id); refreshUsers(); }} />;
       case 'help': return <HelpScreen />;
       default: return <DashboardScreen onNavigate={handleNavigate} projectId={currentProject.id} />;
     }
   };
 
   return (
-    <div className="flex h-screen bg-light">
-      <Sidebar 
-        activeScreen={activeScreen} 
-        setActiveScreen={setActiveScreen}
-        isSidebarOpen={isSidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-        onInstall={handleInstall}
-        isInstallable={isInstallable}
-      />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header 
-          currentScreen={navigationItems.find(item => item.screen === activeScreen)?.name || secondaryNavigationItems.find(item => item.screen === activeScreen)?.name || 'Dashboard'} 
-          currentProjectName={currentProject.name}
-          toggleSidebar={() => setSidebarOpen(!isSidebarOpen)} 
-          user={currentUser}
-          onLogout={handleLogout}
-          onNavigate={handleNavigate}
-          onBackToProjects={handleBackToProjects}
-          pendingUsersCount={pendingUsersCount}
+    <>
+      <div className="flex h-screen bg-light">
+        <Sidebar 
+          activeScreen={activeScreen} 
+          setActiveScreen={setActiveScreen}
+          isSidebarOpen={isSidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+          onInstall={handleInstall}
+          isInstallable={isInstallable}
         />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-light p-6">
-          {renderScreen()}
-        </main>
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Header 
+            currentScreen={navigationItems.find(item => item.screen === activeScreen)?.name || secondaryNavigationItems.find(item => item.screen === activeScreen)?.name || 'Dashboard'} 
+            currentProjectName={currentProject.name}
+            toggleSidebar={() => setSidebarOpen(!isSidebarOpen)} 
+            user={selectedUser}
+            onLogout={handleLogout}
+            onNavigate={handleNavigate}
+            onBackToProjects={handleBackToProjects}
+            pendingUsersCount={pendingUsersCount}
+          />
+          <main className="flex-1 overflow-x-hidden overflow-y-auto bg-light p-6">
+            {renderScreen()}
+          </main>
+        </div>
       </div>
-    </div>
+      <PasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setPasswordModalOpen(false)}
+        onConfirm={handlePasswordConfirm}
+      />
+    </>
   );
 }
 

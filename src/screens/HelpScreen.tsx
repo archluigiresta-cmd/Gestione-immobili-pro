@@ -74,7 +74,6 @@ const AiAssistant: React.FC = () => {
         setIsLoading(true);
 
         try {
-            // Initialize Gemini AI only when needed
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
 
             const systemInstruction = "Sei un assistente virtuale esperto per l'applicazione 'Gestore Immobili PRO'. Il tuo scopo è aiutare gli utenti a capire e utilizzare al meglio l'app. L'applicazione serve a gestire proprietà immobiliari. Le sue sezioni principali sono: Dashboard (riepilogo), Immobili (elenco proprietà), Inquilini, Contratti, Pagamenti, Scadenze, Manutenzioni, Spese, Documenti, Report e Analisi Finanziaria. Rispondi in modo chiaro, conciso e amichevole. Utilizza la formattazione markdown (come grassetto o elenchi puntati) per migliorare la leggibilità. Basa le tue risposte sulla conoscenza fornita riguardo le funzionalità dell'app.";
@@ -83,26 +82,20 @@ const AiAssistant: React.FC = () => {
                 model: 'gemini-2.5-flash',
                 contents: [{ role: "user", parts: [{ text: input }] }],
                  config: {
-                    systemInstruction: { role: "system", parts: [{ text: systemInstruction }] },
+                    systemInstruction: systemInstruction,
                  },
             });
             
             let currentResponse = '';
-            let isFirstChunk = true;
+            setMessages(prev => [...prev, { role: 'model', content: '' }]); // Add an empty model message
 
-            // FIX: Correctly handle streaming response by updating the last message content and managing loading state.
             for await (const chunk of responseStream) {
                 currentResponse += chunk.text;
-                if (isFirstChunk) {
-                    setMessages(prev => [...prev, { role: 'model', content: currentResponse }]);
-                    isFirstChunk = false;
-                } else {
-                    setMessages(prev => {
-                        const newMessages = [...prev];
-                        newMessages[newMessages.length - 1] = { ...newMessages[newMessages.length - 1], content: currentResponse };
-                        return newMessages;
-                    });
-                }
+                setMessages(prev => {
+                    const newMessages = [...prev];
+                    newMessages[newMessages.length - 1].content = currentResponse;
+                    return newMessages;
+                });
             }
 
         } catch (error) {

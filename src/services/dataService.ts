@@ -126,7 +126,12 @@ export const getUsers = (): User[] => initData('users', MOCK_USERS);
 export const getUser = (id: string): User | undefined => getUsers().find(u => u.id === id);
 export const addUser = (userData: Omit<User, 'id' | 'status'>): User => {
     const users = getUsers();
-    const newUser: User = { ...userData, id: generateId('user'), status: UserStatus.PENDING };
+    const newUser: User = { 
+        ...userData, 
+        id: generateId('user'), 
+        status: UserStatus.PENDING,
+        ...(userData.password && { password: userData.password })
+    };
     saveData('users', [...users, newUser]);
     return newUser;
 };

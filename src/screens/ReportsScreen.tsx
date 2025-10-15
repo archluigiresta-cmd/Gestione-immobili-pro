@@ -60,7 +60,6 @@ const getTextFromCell = (data: React.ReactNode): string => {
         if (props && typeof props === 'object' && 'children' in props) {
             return getTextFromCell(props.children);
         }
-// FIX: Added a return statement to handle React elements without children, ensuring the function always returns a string.
         return '';
     }
 
