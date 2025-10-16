@@ -68,7 +68,7 @@ const PropertiesScreen: React.FC<PropertiesScreenProps> = ({ onNavigate, project
     setProperties(dataService.getProperties(projectId));
   };
 
-  const handleAddProperty = (propertyData: Omit<Property, 'id' | 'projectId' | 'customFields' | 'history'>) => {
+  const handleAddProperty = (propertyData: Omit<Property, 'id' | 'projectId' | 'customFields' | 'history' | 'creationDate'>) => {
     const newProperty = dataService.addProperty({ ...propertyData, projectId }, user.id);
     loadProperties();
     setAddModalOpen(false);

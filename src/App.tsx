@@ -289,6 +289,7 @@ const App: React.FC = () => {
     // Fallback Render
     return (
         <>
+            {/* This fallback UI should be minimal as it's an edge case */}
             <SplashScreen />
             {isRegisterModalOpen && <RegisterModal isOpen={isRegisterModalOpen} onClose={() => setRegisterModalOpen(false)} onRegister={(u) => { dataService.addUser(u); alert('Registrazione inviata. Attendi approvazione.'); setRegisterModalOpen(false); }} />}
             {userForPassword && <PasswordModal isOpen={!!userForPassword} onClose={() => {setUserForPassword(null); setAppState('selectUser')}} onConfirm={handlePasswordConfirm} />}
