@@ -1,8 +1,9 @@
+
 import { Property, PropertyType, Tenant, Contract, Payment, PaymentStatus, User, Deadline, DeadlineType, Maintenance, MaintenanceStatus, Expense, ExpenseCategory, Document, DocumentType, Project, ProjectMemberRole, CustomFieldType, UtilityType, TaxType, UserStatus, AppData } from './types';
 
 export const MOCK_USERS: User[] = [
   { id: 'user-1', name: 'Luigi Resta', email: 'arch.luigiresta@gmail.com', status: UserStatus.ACTIVE },
-  { id: 'user-2', name: 'Collaboratore Demo', email: 'collaboratore@email.com', status: UserStatus.ACTIVE },
+  { id: 'user-2', name: 'Collaboratore Demo', email: 'collaboratore@email.com', status: UserStatus.ACTIVE, password: 'demo123' },
 ];
 
 export const MOCK_PROJECTS: Project[] = [

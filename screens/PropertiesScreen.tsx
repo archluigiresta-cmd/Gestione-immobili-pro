@@ -1,9 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
 import { Property, ProjectMemberRole, User, PropertyType } from '../types';
 import { PlusCircle, Edit, Trash2, Eye, MapPin } from 'lucide-react';
-// FIX: Corrected import path for Screen type.
 import { Screen } from '../App';
 import AddPropertyModal from '../components/modals/AddPropertyModal';
 import EditPropertyModal from '../components/modals/EditPropertyModal';
@@ -69,7 +69,7 @@ const PropertiesScreen: React.FC<PropertiesScreenProps> = ({ onNavigate, project
     setProperties(dataService.getProperties(projectId));
   };
 
-  const handleAddProperty = (propertyData: Omit<Property, 'id' | 'projectId' | 'customFields' | 'history'>) => {
+  const handleAddProperty = (propertyData: Omit<Property, 'id' | 'projectId' | 'customFields' | 'history' | 'creationDate'>) => {
     const newProperty = dataService.addProperty({ ...propertyData, projectId }, user.id);
     loadProperties();
     setAddModalOpen(false);

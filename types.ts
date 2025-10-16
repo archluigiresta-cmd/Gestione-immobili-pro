@@ -1,3 +1,4 @@
+
 export interface HistoryLog {
   id: string;
   timestamp: string; // ISO date string
@@ -15,6 +16,7 @@ export interface User {
   name: string;
   email: string;
   status: UserStatus;
+  password?: string;
 }
 
 export enum ProjectMemberRole {

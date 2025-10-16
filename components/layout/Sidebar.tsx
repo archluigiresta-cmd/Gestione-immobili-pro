@@ -1,7 +1,5 @@
 
-
 import React from 'react';
-// FIX: Corrected import path for Screen type and navigation items.
 import { navigationItems, secondaryNavigationItems, Screen } from '../../App';
 import { X } from 'lucide-react';
 

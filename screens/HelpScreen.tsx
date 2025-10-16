@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, LifeBuoy, Bot, User, Send, LoaderCircle } from 'lucide-react';
 import Card from '../components/ui/Card';
@@ -81,27 +82,29 @@ const AiAssistant: React.FC = () => {
             
             const responseStream = await ai.models.generateContentStream({
                 model: 'gemini-2.5-flash',
-                contents: input,
+                contents: [{ role: 'user', parts: [{text: input}]}],
                  config: {
-                    systemInstruction: systemInstruction,
+                    systemInstruction: { parts: [{text: systemInstruction}]},
                  },
             });
             
             let currentResponse = '';
             let isFirstChunk = true;
 
-            // FIX: Correctly handle streaming response by updating the last message content and managing loading state.
             for await (const chunk of responseStream) {
-                currentResponse += chunk.text;
-                if (isFirstChunk) {
-                    setMessages(prev => [...prev, { role: 'model', content: currentResponse }]);
-                    isFirstChunk = false;
-                } else {
-                    setMessages(prev => {
-                        const newMessages = [...prev];
-                        newMessages[newMessages.length - 1] = { ...newMessages[newMessages.length - 1], content: currentResponse };
-                        return newMessages;
-                    });
+                const chunkText = chunk.text;
+                if (chunkText) {
+                    currentResponse += chunkText;
+                    if (isFirstChunk) {
+                        setMessages(prev => [...prev, { role: 'model', content: currentResponse }]);
+                        isFirstChunk = false;
+                    } else {
+                        setMessages(prev => {
+                            const newMessages = [...prev];
+                            newMessages[newMessages.length - 1] = { ...newMessages[newMessages.length - 1], content: currentResponse };
+                            return newMessages;
+                        });
+                    }
                 }
             }
 
