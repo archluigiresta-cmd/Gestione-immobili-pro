@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import {
     LayoutDashboard, Building, Users, FileText, Banknote, CalendarClock, Wrench, Receipt, FolderArchive, AreaChart, PieChart,
@@ -96,6 +95,12 @@ const App: React.FC = () => {
             window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
         };
     }, []);
+    
+    useEffect(() => {
+        if (appState === 'loading' && isApiReady) {
+            setAppState('login');
+        }
+    }, [appState, isApiReady]);
 
     const handleLogin = async () => {
         try {
@@ -225,17 +230,17 @@ const App: React.FC = () => {
         }
     };
     
-    if (appState === 'loading' && !isApiReady) return <SplashScreen />;
-    if (appState === 'loading' && isApiReady) setAppState('login');
+    if (appState === 'loading') return <SplashScreen />;
 
     if (appState === 'login') return <LoginScreen onLogin={handleLogin} isApiReady={isApiReady} />;
     
     if (appState === 'selectUser') {
         const users = dataService.getUsers().filter(u => u.status === UserStatus.ACTIVE);
-        return <UserSelectionScreen users={users} onSelectUser={handleSelectUser} onLogout={() => setAppState('login')} />;
+        return <UserSelectionScreen users={users} onSelectUser={handleSelectUser} onLogout={handleLogout} />;
     }
 
     if (!user) {
+         // This case should ideally not be reached if logic is correct, but as a fallback:
          return <LoginScreen onLogin={handleLogin} isApiReady={isApiReady} />;
     }
     
@@ -281,6 +286,7 @@ const App: React.FC = () => {
         );
     }
     
+    // Fallback Render
     return (
         <>
             <SplashScreen />

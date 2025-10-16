@@ -17,8 +17,8 @@ const UserSelectionScreen: React.FC<UserSelectionScreenProps> = ({ users, onSele
                 <h1 className="text-2xl font-bold text-dark">Seleziona un Profilo</h1>
                 <p className="mt-1 text-gray-500">Scegli con quale utente vuoi accedere.</p>
             </div>
-            <button onClick={onLogout} className="flex items-center text-sm text-red-600 font-semibold p-2 rounded-lg hover:bg-red-50">
-                <LogOut size={16} className="mr-1.5"/> Esci da Google
+            <button onClick={onLogout} className="flex items-center text-sm text-gray-600 font-semibold p-2 rounded-lg hover:bg-gray-100">
+                <LogOut size={16} className="mr-1.5"/> Accedi con un altro Account
             </button>
         </div>
         
