@@ -6,7 +6,7 @@ import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
 import { Deadline, Property, Expense, Maintenance, MaintenanceStatus, ExpenseCategory } from '../types';
 // FIX: Corrected import path to point to App.tsx inside the src directory.
-import { Screen } from '../src/App';
+import { Screen } from '../App';
 import CustomizeDashboardModal from '../components/modals/CustomizeDashboardModal';
 
 interface StatCardProps {

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import {
     LayoutDashboard, Building, Users, FileText, Banknote, CalendarClock, Wrench, Receipt, FolderArchive, AreaChart, PieChart,
@@ -29,6 +30,7 @@ import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
 import RegisterModal from './components/modals/RegisterModal';
 import PasswordModal from './components/modals/PasswordModal';
+
 
 // Import services and types
 import * as dataService from './services/dataService';
@@ -257,6 +259,7 @@ const App: React.FC = () => {
     if (appState === 'main' && selectedProject) {
         const currentScreenItem = [...navigationItems, ...secondaryNavigationItems].find(item => item.screen === activeScreen);
         return (
+            <>
             <div className="flex h-screen bg-light">
                 <Sidebar 
                     activeScreen={activeScreen} 
@@ -282,13 +285,14 @@ const App: React.FC = () => {
                     </main>
                 </div>
             </div>
+             {userForPassword && <PasswordModal isOpen={!!userForPassword} onClose={() => {setUserForPassword(null); setAppState('selectUser')}} onConfirm={handlePasswordConfirm} />}
+            </>
         );
     }
     
     // Fallback Render
     return (
         <>
-            {/* This fallback UI should be minimal as it's an edge case */}
             <SplashScreen />
             {isRegisterModalOpen && <RegisterModal isOpen={isRegisterModalOpen} onClose={() => setRegisterModalOpen(false)} onRegister={(u) => { dataService.addUser(u); alert('Registrazione inviata. Attendi approvazione.'); setRegisterModalOpen(false); }} />}
             {userForPassword && <PasswordModal isOpen={!!userForPassword} onClose={() => {setUserForPassword(null); setAppState('selectUser')}} onConfirm={handlePasswordConfirm} />}

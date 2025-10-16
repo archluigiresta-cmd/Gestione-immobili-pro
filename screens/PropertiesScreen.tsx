@@ -5,7 +5,7 @@ import * as dataService from '../services/dataService';
 import { Property, ProjectMemberRole, User, PropertyType } from '../types';
 import { PlusCircle, Edit, Trash2, Eye, MapPin } from 'lucide-react';
 // FIX: Corrected import path to point to App.tsx inside the src directory.
-import { Screen } from '../src/App';
+import { Screen } from '../App';
 import AddPropertyModal from '../components/modals/AddPropertyModal';
 import EditPropertyModal from '../components/modals/EditPropertyModal';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';

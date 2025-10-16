@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect } from 'react';
 import { Maintenance, MaintenanceStatus, Property } from '../../types';
 import { X } from 'lucide-react';
@@ -22,6 +24,7 @@ const EditMaintenanceModal: React.FC<EditMaintenanceModalProps> = ({ isOpen, onC
 
   useEffect(() => {
     if (isOpen) {
+      // FIX: Pass projectId to getProperties
       setProperties(dataService.getProperties(projectId));
     }
   }, [isOpen, projectId]);

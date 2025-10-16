@@ -1,7 +1,7 @@
 
 import React from 'react';
 // FIX: Corrected import path to point to App.tsx inside the src directory.
-import { navigationItems, secondaryNavigationItems, Screen } from '../../src/App';
+import { navigationItems, secondaryNavigationItems, Screen } from '../../App';
 import { X } from 'lucide-react';
 
 interface SidebarProps {
