@@ -73,7 +73,7 @@ const AiAssistant: React.FC = () => {
         setInput('');
         setIsLoading(true);
         
-        let modelMessage: Message = { role: 'model', content: '' };
+        const modelMessage: Message = { role: 'model', content: '' };
         setMessages(prev => [...prev, modelMessage]);
 
         try {
@@ -86,7 +86,7 @@ const AiAssistant: React.FC = () => {
                 model: 'gemini-2.5-flash',
                 contents: [{ role: 'user', parts: [{text: input}]}],
                  config: {
-                    systemInstruction: { parts: [{ text: systemInstruction }] },
+                    systemInstruction: systemInstruction,
                  },
             });
             

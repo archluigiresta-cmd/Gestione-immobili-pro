@@ -5,7 +5,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
 import { Deadline, Property, Expense, Maintenance, MaintenanceStatus, ExpenseCategory } from '../types';
-import { Screen } from '../App';
+// FIX: Corrected import path to point to App.tsx inside the src directory.
+import { Screen } from '../src/App';
 import CustomizeDashboardModal from '../components/modals/CustomizeDashboardModal';
 
 interface StatCardProps {

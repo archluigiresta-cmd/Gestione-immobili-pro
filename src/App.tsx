@@ -116,7 +116,7 @@ const App: React.FC = () => {
             }
         } catch (error) {
             console.error("Login failed", error);
-            if((error as any).result?.error === 'popup_closed_by_user') {
+            if((error as any).result?.error === 'popup_closed_by_user' || (error as any).error === 'popup_closed_by_user') {
                 setAppState('selectUser');
             }
         }
@@ -134,8 +134,12 @@ const App: React.FC = () => {
         if (selectedUser.password) {
             setUserForPassword(selectedUser);
         } else {
-            setUser(selectedUser);
-            setAppState('selectProject');
+             if (selectedUser.email === 'arch.luigiresta@gmail.com') {
+                setAppState('login'); // Force Google Login for the main user
+             } else {
+                setUser(selectedUser);
+                setAppState('selectProject');
+             }
         }
     };
     
@@ -231,14 +235,7 @@ const App: React.FC = () => {
         return <UserSelectionScreen users={users} onSelectUser={handleSelectUser} onLogout={() => setAppState('login')} />;
     }
 
-// FIX: Removed state update during render to fix TS error and avoid React warnings.
-    // The previous `if (appState !== 'login')` check was causing a TS error because
-    // at this point in the logic, `appState` cannot be 'login', making the comparison invalid.
-    // This block now acts as a simple safety net to show the login screen if the user object is unexpectedly null.
     if (!user) {
-         // This is a safety net. If we are in an invalid state where user is null,
-         // but appState suggests we should have a user (e.g. 'selectProject' or 'main'),
-         // we render LoginScreen. The app state will be corrected upon successful login.
          return <LoginScreen onLogin={handleLogin} isApiReady={isApiReady} />;
     }
     
