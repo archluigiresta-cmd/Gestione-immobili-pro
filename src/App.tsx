@@ -231,8 +231,14 @@ const App: React.FC = () => {
         return <UserSelectionScreen users={users} onSelectUser={handleSelectUser} onLogout={() => setAppState('login')} />;
     }
 
+// FIX: Removed state update during render to fix TS error and avoid React warnings.
+    // The previous `if (appState !== 'login')` check was causing a TS error because
+    // at this point in the logic, `appState` cannot be 'login', making the comparison invalid.
+    // This block now acts as a simple safety net to show the login screen if the user object is unexpectedly null.
     if (!user) {
-         if (appState !== 'login') setAppState('login'); // safety net
+         // This is a safety net. If we are in an invalid state where user is null,
+         // but appState suggests we should have a user (e.g. 'selectProject' or 'main'),
+         // we render LoginScreen. The app state will be corrected upon successful login.
          return <LoginScreen onLogin={handleLogin} isApiReady={isApiReady} />;
     }
     

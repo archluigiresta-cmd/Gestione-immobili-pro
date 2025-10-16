@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, LifeBuoy, Bot, User, Send, LoaderCircle } from 'lucide-react';
 import Card from '../components/ui/Card';
@@ -73,6 +72,9 @@ const AiAssistant: React.FC = () => {
         setMessages(prev => [...prev, userMessage]);
         setInput('');
         setIsLoading(true);
+        
+        let modelMessage: Message = { role: 'model', content: '' };
+        setMessages(prev => [...prev, modelMessage]);
 
         try {
             // Initialize Gemini AI only when needed
@@ -84,33 +86,31 @@ const AiAssistant: React.FC = () => {
                 model: 'gemini-2.5-flash',
                 contents: [{ role: 'user', parts: [{text: input}]}],
                  config: {
-                    systemInstruction: { parts: [{text: systemInstruction}]},
+                    systemInstruction: systemInstruction,
                  },
             });
             
             let currentResponse = '';
-            let isFirstChunk = true;
 
             for await (const chunk of responseStream) {
                 const chunkText = chunk.text;
                 if (chunkText) {
                     currentResponse += chunkText;
-                    if (isFirstChunk) {
-                        setMessages(prev => [...prev, { role: 'model', content: currentResponse }]);
-                        isFirstChunk = false;
-                    } else {
-                        setMessages(prev => {
-                            const newMessages = [...prev];
-                            newMessages[newMessages.length - 1] = { ...newMessages[newMessages.length - 1], content: currentResponse };
-                            return newMessages;
-                        });
-                    }
+                    setMessages(prev => {
+                        const newMessages = [...prev];
+                        newMessages[newMessages.length - 1] = { ...newMessages[newMessages.length - 1], content: currentResponse };
+                        return newMessages;
+                    });
                 }
             }
 
         } catch (error) {
             console.error("Error calling Gemini API:", error);
-            setMessages(prev => [...prev, { role: 'model', content: "Spiacente, si è verificato un errore. Riprova più tardi." }]);
+            setMessages(prev => {
+                const newMessages = [...prev];
+                newMessages[newMessages.length - 1] = { ...newMessages[newMessages.length - 1], content: "Spiacente, si è verificato un errore. Riprova più tardi." };
+                return newMessages;
+            });
         } finally {
             setIsLoading(false);
         }
@@ -132,7 +132,7 @@ const AiAssistant: React.FC = () => {
                          {msg.role === 'user' && <div className="bg-gray-200 p-2 rounded-full text-dark"><User size={18}/></div>}
                     </div>
                 ))}
-                 {isLoading && messages[messages.length - 1]?.role !== 'model' && (
+                 {isLoading && messages[messages.length - 1]?.content === '' && (
                      <div className="flex items-start gap-3">
                          <div className="bg-primary p-2 rounded-full text-white"><Bot size={18}/></div>
                          <div className="max-w-md rounded-lg p-3 bg-gray-100 text-dark flex items-center gap-2">
