@@ -121,9 +121,8 @@ const App: React.FC = () => {
             }
         } catch (error) {
             console.error("Login failed", error);
-            if((error as any).result?.error === 'popup_closed_by_user' || (error as any).error === 'popup_closed_by_user') {
-                setAppState('selectUser');
-            }
+            // Any login failure should fall back to the local user selection screen.
+            setAppState('selectUser');
         }
     };
     

@@ -9,7 +9,8 @@ export default defineConfig({
     'process.env.API_KEY': JSON.stringify(process.env.VITE_API_KEY),
   },
   build: {
-    outDir: 'dist'
+    outDir: 'dist',
+    chunkSizeWarningLimit: 1000,
   },
   server: {
     port: 3000
