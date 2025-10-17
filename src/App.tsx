@@ -30,7 +30,6 @@ import PasswordModal from './components/modals/PasswordModal';
 // Import services and types
 import * as dataService from './services/dataService';
 import * as googleDriveService from './services/googleDriveService';
-// FIX: Import navigation items and Screen type from types.ts to break circular dependency
 import { User, Project, ProjectMemberRole, UserStatus, navigationItems, secondaryNavigationItems, Screen } from './types';
 
 // PWA install type
@@ -41,7 +40,7 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 const App: React.FC = () => {
-    const [appState, setAppState] = useState<'loading' | 'login' | 'selectUser' | 'selectProject' | 'main'>('loading');
+    const [appState, setAppState] = useState<'login' | 'selectUser' | 'selectProject' | 'main'>('login');
     const [user, setUser] = useState<User | null>(null);
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [activeScreen, setActiveScreen] = useState<Screen>('dashboard');
@@ -70,12 +69,6 @@ const App: React.FC = () => {
             window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
         };
     }, []);
-    
-    useEffect(() => {
-        if (appState === 'loading' && isApiReady) {
-            setAppState('login');
-        }
-    }, [appState, isApiReady]);
 
     const handleLogin = async () => {
         try {
@@ -205,8 +198,10 @@ const App: React.FC = () => {
         }
     };
     
-    if (appState === 'loading') return <SplashScreen />;
-
+    if (!isApiReady) {
+        return <SplashScreen />;
+    }
+    
     if (appState === 'login') return <LoginScreen onLogin={handleLogin} isApiReady={isApiReady} onShowLocalUsers={() => setAppState('selectUser')} />;
     
     if (appState === 'selectUser') {
@@ -215,7 +210,6 @@ const App: React.FC = () => {
     }
 
     if (!user) {
-         // This case should ideally not be reached if logic is correct, but as a fallback:
          return <LoginScreen onLogin={handleLogin} isApiReady={isApiReady} onShowLocalUsers={() => setAppState('selectUser')} />;
     }
     

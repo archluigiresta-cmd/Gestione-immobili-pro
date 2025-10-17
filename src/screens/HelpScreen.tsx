@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, LifeBuoy, Bot, User, Send, LoaderCircle } from 'lucide-react';
 import Card from '../components/ui/Card';
-import { GoogleGenAI, Content } from "@google/genai";
+import { GoogleGenAI, Chat } from "@google/genai";
 
 const faqData = [
     {
@@ -55,6 +55,19 @@ const AiAssistant: React.FC = () => {
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const chatRef = useRef<Chat | null>(null);
+
+    useEffect(() => {
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+        const systemInstruction = "Sei un assistente virtuale esperto per l'applicazione 'Gestore Immobili PRO'. Il tuo scopo è aiutare gli utenti a capire e utilizzare al meglio l'app. L'applicazione serve a gestire proprietà immobiliari. Le sue sezioni principali sono: Dashboard (riepilogo), Immobili (elenco proprietà), Inquilini, Contratti, Pagamenti, Scadenze, Manutenzioni, Spese, Documenti, Report e Analisi Finanziaria. Rispondi in modo chiaro, conciso e amichevole. Utilizza la formattazione markdown (come grassetto o elenchi puntati) per migliorare la leggibilità. Basa le tue risposte sulla conoscenza fornita riguardo le funzionalità dell'app.";
+        
+        chatRef.current = ai.chats.create({
+            model: 'gemini-2.5-flash',
+            config: {
+                systemInstruction: systemInstruction,
+            }
+        });
+    }, []);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -66,34 +79,17 @@ const AiAssistant: React.FC = () => {
 
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!input.trim() || isLoading) return;
+        if (!input.trim() || isLoading || !chatRef.current) return;
 
         const userMessage: Message = { role: 'user', content: input };
         const currentInput = input;
         
-        const history: Content[] = messages.map(msg => ({
-            role: msg.role,
-            parts: [{ text: msg.content }]
-        }));
-
         setMessages(prev => [...prev, userMessage, { role: 'model', content: '' }]);
         setInput('');
         setIsLoading(true);
 
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-            const systemInstruction = "Sei un assistente virtuale esperto per l'applicazione 'Gestore Immobili PRO'. Il tuo scopo è aiutare gli utenti a capire e utilizzare al meglio l'app. L'applicazione serve a gestire proprietà immobiliari. Le sue sezioni principali sono: Dashboard (riepilogo), Immobili (elenco proprietà), Inquilini, Contratti, Pagamenti, Scadenze, Manutenzioni, Spese, Documenti, Report e Analisi Finanziaria. Rispondi in modo chiaro, conciso e amichevole. Utilizza la formattazione markdown (come grassetto o elenchi puntati) per migliorare la leggibilità. Basa le tue risposte sulla conoscenza fornita riguardo le funzionalità dell'app.";
-            
-            const fullContents: Content[] = [
-                ...history,
-                { role: 'user', parts: [{ text: currentInput }] }
-            ];
-
-            const responseStream = await ai.models.generateContentStream({
-                model: 'gemini-2.5-flash',
-                contents: fullContents,
-                config: { systemInstruction },
-            });
+            const responseStream = await chatRef.current.sendMessageStream({ message: currentInput });
             
             let currentResponse = '';
             for await (const chunk of responseStream) {
@@ -102,7 +98,10 @@ const AiAssistant: React.FC = () => {
                     currentResponse += chunkText;
                     setMessages(prev => {
                         const newMessages = [...prev];
-                        newMessages[newMessages.length - 1] = { role: 'model', content: currentResponse };
+                        newMessages[newMessages.length - 1] = { 
+                            ...newMessages[newMessages.length - 1], 
+                            content: currentResponse 
+                        };
                         return newMessages;
                     });
                 }
@@ -113,7 +112,7 @@ const AiAssistant: React.FC = () => {
             setMessages(prev => {
                 const newMessages = [...prev];
                 if (newMessages.length > 0) {
-                   newMessages[newMessages.length - 1] = { ...newMessages[newMessages.length - 1], content: "Spiacente, si è verificato un errore. Riprova più tardi." };
+                   newMessages[newMessages.length - 1].content = "Spiacente, si è verificato un errore. Riprova più tardi.";
                 }
                 return newMessages;
             });
@@ -129,29 +128,45 @@ const AiAssistant: React.FC = () => {
                 <h2 className="text-xl font-bold text-dark">Assistente AI</h2>
             </div>
             <div className="flex-1 p-4 overflow-y-auto space-y-4">
-                {messages.map((msg, index) => (
-                    <div key={index} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
-                        {msg.role === 'model' && msg.content && <div className="bg-primary p-2 rounded-full text-white"><Bot size={18}/></div>}
-                        
-                        {msg.content && (
-                             <div className={`max-w-md rounded-lg p-3 ${msg.role === 'user' ? 'bg-primary text-white' : 'bg-gray-100 text-dark'}`}>
-                                <p className="whitespace-pre-wrap">{msg.content}</p>
-                             </div>
-                        )}
+                {messages.map((msg, index) => {
+                    if (msg.role === 'user') {
+                        return (
+                            <div key={index} className="flex items-start gap-3 justify-end">
+                                <div className="max-w-md rounded-lg p-3 bg-primary text-white">
+                                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                                </div>
+                                <div className="bg-gray-200 p-2 rounded-full text-dark"><User size={18}/></div>
+                            </div>
+                        );
+                    }
 
-                        {msg.role === 'user' && <div className="bg-gray-200 p-2 rounded-full text-dark"><User size={18}/></div>}
-                    </div>
-                ))}
-                
-                {isLoading && (
-                     <div className="flex items-start gap-3">
-                         <div className="bg-primary p-2 rounded-full text-white"><Bot size={18}/></div>
-                         <div className="max-w-md rounded-lg p-3 bg-gray-100 text-dark flex items-center gap-2">
-                            <span className="font-semibold">L'assistente sta scrivendo</span>
-                             <LoaderCircle size={16} className="animate-spin" />
-                         </div>
-                     </div>
-                 )}
+                    if (msg.role === 'model') {
+                        const isTyping = isLoading && index === messages.length - 1 && !msg.content;
+                        if (isTyping) {
+                            return (
+                                <div key={index} className="flex items-start gap-3">
+                                    <div className="bg-primary p-2 rounded-full text-white"><Bot size={18}/></div>
+                                    <div className="max-w-md rounded-lg p-3 bg-gray-100 text-dark flex items-center gap-2">
+                                        <span className="font-semibold">L'assistente sta scrivendo</span>
+                                        <LoaderCircle size={16} className="animate-spin" />
+                                    </div>
+                                </div>
+                            );
+                        }
+
+                        if (msg.content) {
+                            return (
+                                <div key={index} className="flex items-start gap-3">
+                                    <div className="bg-primary p-2 rounded-full text-white"><Bot size={18}/></div>
+                                    <div className="max-w-md rounded-lg p-3 bg-gray-100 text-dark">
+                                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                                    </div>
+                                </div>
+                            );
+                        }
+                    }
+                    return null;
+                })}
                 <div ref={messagesEndRef} />
             </div>
             <div className="p-4 border-t">

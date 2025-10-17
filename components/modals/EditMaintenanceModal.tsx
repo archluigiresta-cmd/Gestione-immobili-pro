@@ -24,7 +24,7 @@ const EditMaintenanceModal: React.FC<EditMaintenanceModalProps> = ({ isOpen, onC
 
   useEffect(() => {
     if (isOpen) {
-      // FIX: Pass projectId to getProperties
+      // FIX: Pass projectId to getProperties to fetch data for the correct project.
       setProperties(dataService.getProperties(projectId));
     }
   }, [isOpen, projectId]);
