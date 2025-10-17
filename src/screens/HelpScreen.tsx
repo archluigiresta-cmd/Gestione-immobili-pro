@@ -71,13 +71,13 @@ const AiAssistant: React.FC = () => {
         const userMessage: Message = { role: 'user', content: input };
         const currentInput = input;
         
-        // Prepare history based on current state before updating UI
-        const history = messages.map(msg => ({
+        // Prepare history for API call from current state
+        const history: Content[] = messages.map(msg => ({
             role: msg.role,
             parts: [{ text: msg.content }]
-        })) as Content[];
+        }));
 
-        // Update UI immediately with user message and a placeholder for the model
+        // Update UI immediately
         setMessages(prev => [...prev, userMessage, { role: 'model', content: '' }]);
         setInput('');
         setIsLoading(true);
@@ -93,10 +93,8 @@ const AiAssistant: React.FC = () => {
 
             const responseStream = await ai.models.generateContentStream({
                 model: 'gemini-2.5-flash',
-                contents: fullContents,
-                config: {
-                    systemInstruction: systemInstruction,
-                },
+                contents: fullContents, // Send the complete history + new message
+                config: { systemInstruction },
             });
             
             let currentResponse = '';
@@ -106,7 +104,7 @@ const AiAssistant: React.FC = () => {
                     currentResponse += chunkText;
                     setMessages(prev => {
                         const newMessages = [...prev];
-                        newMessages[newMessages.length - 1] = { ...newMessages[newMessages.length - 1], content: currentResponse };
+                        newMessages[newMessages.length - 1] = { role: 'model', content: currentResponse };
                         return newMessages;
                     });
                 }

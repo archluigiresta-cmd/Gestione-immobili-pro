@@ -90,7 +90,7 @@ const EditMaintenanceModal: React.FC<EditMaintenanceModalProps> = ({ isOpen, onC
              {formData.status === MaintenanceStatus.COMPLETED && (
                  <div>
                     <label className="block text-sm font-medium text-gray-700">Data Completamento</label>
-                    <input type="date" name="completionDate" value={formData.completionDate || ''} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" />
+                    <input type="date" name="completionDate" value={formData.completionDate || ''} onChange={handleChange} className="mt-1 block w-full input" />
                  </div>
              )}
           <div className="flex justify-end pt-4">
