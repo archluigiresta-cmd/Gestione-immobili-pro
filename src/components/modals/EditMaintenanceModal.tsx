@@ -43,6 +43,8 @@ const EditMaintenanceModal: React.FC<EditMaintenanceModalProps> = ({ isOpen, onC
     const dataToSave = { ...formData };
     if (dataToSave.status !== MaintenanceStatus.COMPLETED) {
         dataToSave.completionDate = undefined;
+    } else if (dataToSave.status === MaintenanceStatus.COMPLETED && !dataToSave.completionDate) {
+        dataToSave.completionDate = new Date().toISOString().split('T')[0];
     }
     onSave(dataToSave);
   };

@@ -72,6 +72,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onSave }) 
               type="password" 
               value={password} 
               onChange={e => setPassword(e.target.value)} 
+              placeholder="Lascia vuoto per accesso senza password"
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" 
             />
           </div>

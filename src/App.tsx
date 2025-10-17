@@ -95,13 +95,15 @@ const App: React.FC = () => {
                  setAppState('selectProject');
             }
         } catch (error) {
-            console.error("Login failed", error);
-            // On failure/cancellation, stay on the login screen
+            console.error("Login failed or cancelled", error);
+            // On failure/cancellation, stay on the login screen where the user has other choices.
         }
     };
     
     const handleLogout = () => {
-        googleDriveService.signOut();
+        if (user?.email) { // Only sign out of Google if it's a Google user
+          googleDriveService.signOut();
+        }
         setUser(null);
         setSelectedProject(null);
         dataService.setDriveFileId(null);
@@ -224,7 +226,7 @@ const App: React.FC = () => {
             onCreateProject={handleCreateProject}
             onLogout={handleLogout}
             onUpdateProfile={handleUpdateProfile}
-            onSwitchUser={() => setAppState('selectUser')}
+            onSwitchUser={() => { setUser(null); setAppState('selectUser'); }}
         />
     }
 

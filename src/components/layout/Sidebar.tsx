@@ -1,5 +1,4 @@
 import React from 'react';
-// FIX: Changed import path to break circular dependency.
 import { navigationItems, secondaryNavigationItems, Screen } from '../../types';
 import { X } from 'lucide-react';
 
@@ -13,7 +12,6 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ activeScreen, setActiveScreen, isSidebarOpen, setSidebarOpen, onInstall, isInstallable }) => {
-  // FIX: Widened the type of `item` to accept elements from both navigation arrays, resolving type errors.
   const NavItem = ({ item }: { item: (typeof navigationItems)[number] | (typeof secondaryNavigationItems)[number] }) => {
     const isInstallButton = item.screen === 'install';
     const isDisabled = isInstallButton && !isInstallable;

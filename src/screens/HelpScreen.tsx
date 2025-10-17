@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, LifeBuoy, Bot, User, Send, LoaderCircle } from 'lucide-react';
 import Card from '../components/ui/Card';
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Content } from "@google/genai";
 
 const faqData = [
     {
@@ -69,38 +69,44 @@ const AiAssistant: React.FC = () => {
         if (!input.trim() || isLoading) return;
 
         const userMessage: Message = { role: 'user', content: input };
-        const conversationHistory = [...messages, userMessage];
+        const currentInput = input;
+        
+        // Prepare history based on current state before updating UI
+        const history = messages.map(msg => ({
+            role: msg.role,
+            parts: [{ text: msg.content }]
+        })) as Content[];
 
+        // Update UI immediately with user message and a placeholder for the model
         setMessages(prev => [...prev, userMessage, { role: 'model', content: '' }]);
         setInput('');
         setIsLoading(true);
 
         try {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-
             const systemInstruction = "Sei un assistente virtuale esperto per l'applicazione 'Gestore Immobili PRO'. Il tuo scopo è aiutare gli utenti a capire e utilizzare al meglio l'app. L'applicazione serve a gestire proprietà immobiliari. Le sue sezioni principali sono: Dashboard (riepilogo), Immobili (elenco proprietà), Inquilini, Contratti, Pagamenti, Scadenze, Manutenzioni, Spese, Documenti, Report e Analisi Finanziaria. Rispondi in modo chiaro, conciso e amichevole. Utilizza la formattazione markdown (come grassetto o elenchi puntati) per migliorare la leggibilità. Basa le tue risposte sulla conoscenza fornita riguardo le funzionalità dell'app.";
             
-            const contents = conversationHistory.map(msg => ({
-                role: msg.role === 'user' ? 'user' : 'model',
-                parts: [{ text: msg.content }]
-            }));
+            const fullContents: Content[] = [
+                ...history,
+                { role: 'user', parts: [{ text: currentInput }] }
+            ];
 
             const responseStream = await ai.models.generateContentStream({
                 model: 'gemini-2.5-flash',
-                contents: contents,
+                contents: fullContents,
                 config: {
                     systemInstruction: systemInstruction,
                 },
             });
             
-            let fullResponse = '';
+            let currentResponse = '';
             for await (const chunk of responseStream) {
                 const chunkText = chunk.text;
                 if (chunkText) {
-                    fullResponse += chunkText;
+                    currentResponse += chunkText;
                     setMessages(prev => {
                         const newMessages = [...prev];
-                        newMessages[newMessages.length - 1] = { ...newMessages[newMessages.length - 1], content: fullResponse };
+                        newMessages[newMessages.length - 1] = { ...newMessages[newMessages.length - 1], content: currentResponse };
                         return newMessages;
                     });
                 }
@@ -110,7 +116,9 @@ const AiAssistant: React.FC = () => {
             console.error("Error calling Gemini API:", error);
             setMessages(prev => {
                 const newMessages = [...prev];
-                newMessages[newMessages.length - 1] = { ...newMessages[newMessages.length - 1], content: "Spiacente, si è verificato un errore. Riprova più tardi." };
+                if (newMessages.length > 0) {
+                   newMessages[newMessages.length - 1] = { ...newMessages[newMessages.length - 1], content: "Spiacente, si è verificato un errore. Riprova più tardi." };
+                }
                 return newMessages;
             });
         } finally {
@@ -127,22 +135,23 @@ const AiAssistant: React.FC = () => {
             <div className="flex-1 p-4 overflow-y-auto space-y-4">
                 {messages.map((msg, index) => (
                     <div key={index} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
-                        {msg.role === 'model' && <div className="bg-primary p-2 rounded-full text-white"><Bot size={18}/></div>}
-                        <div className={`max-w-md rounded-lg p-3 ${msg.role === 'user' ? 'bg-primary text-white' : 'bg-gray-100 text-dark'}`}>
-                             {msg.content ? <p className="whitespace-pre-wrap">{msg.content}</p> : (isLoading && index === messages.length -1) ? null : <p>...</p>}
-                        </div>
+                        {msg.role === 'model' && msg.content && <div className="bg-primary p-2 rounded-full text-white"><Bot size={18}/></div>}
+                        
+                        {/* Render placeholder only when loading and content is empty */}
+                        {msg.role === 'model' && isLoading && msg.content === '' ? (
+                             <div className="max-w-md rounded-lg p-3 bg-gray-100 text-dark flex items-center gap-2">
+                                <span className="font-semibold">L'assistente sta scrivendo</span>
+                                <LoaderCircle size={16} className="animate-spin" />
+                             </div>
+                        ) : msg.content ? (
+                             <div className={`max-w-md rounded-lg p-3 ${msg.role === 'user' ? 'bg-primary text-white' : 'bg-gray-100 text-dark'}`}>
+                                <p className="whitespace-pre-wrap">{msg.content}</p>
+                             </div>
+                        ) : null}
+
                          {msg.role === 'user' && <div className="bg-gray-200 p-2 rounded-full text-dark"><User size={18}/></div>}
                     </div>
                 ))}
-                 {isLoading && messages[messages.length - 1]?.content === '' && (
-                     <div className="flex items-start gap-3">
-                         <div className="bg-primary p-2 rounded-full text-white"><Bot size={18}/></div>
-                         <div className="max-w-md rounded-lg p-3 bg-gray-100 text-dark flex items-center gap-2">
-                            <span className="font-semibold">L'assistente sta scrivendo</span>
-                             <LoaderCircle size={16} className="animate-spin" />
-                         </div>
-                     </div>
-                 )}
                 <div ref={messagesEndRef} />
             </div>
             <div className="p-4 border-t">
