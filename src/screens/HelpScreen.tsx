@@ -71,13 +71,11 @@ const AiAssistant: React.FC = () => {
         const userMessage: Message = { role: 'user', content: input };
         const currentInput = input;
         
-        // Prepare history for API call from current state
         const history: Content[] = messages.map(msg => ({
             role: msg.role,
             parts: [{ text: msg.content }]
         }));
 
-        // Update UI immediately
         setMessages(prev => [...prev, userMessage, { role: 'model', content: '' }]);
         setInput('');
         setIsLoading(true);
@@ -93,7 +91,7 @@ const AiAssistant: React.FC = () => {
 
             const responseStream = await ai.models.generateContentStream({
                 model: 'gemini-2.5-flash',
-                contents: fullContents, // Send the complete history + new message
+                contents: fullContents,
                 config: { systemInstruction },
             });
             
@@ -135,7 +133,6 @@ const AiAssistant: React.FC = () => {
                     <div key={index} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
                         {msg.role === 'model' && msg.content && <div className="bg-primary p-2 rounded-full text-white"><Bot size={18}/></div>}
                         
-                        {/* Render placeholder only when loading and content is empty */}
                         {msg.role === 'model' && isLoading && msg.content === '' ? (
                              <div className="max-w-md rounded-lg p-3 bg-gray-100 text-dark flex items-center gap-2">
                                 <span className="font-semibold">L'assistente sta scrivendo</span>
