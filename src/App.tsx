@@ -1,9 +1,4 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import {
-    LayoutDashboard, Building, Users, FileText, Banknote, CalendarClock, Wrench, Receipt, FolderArchive, AreaChart, PieChart,
-    Settings, LifeBuoy, DownloadCloud
-} from 'lucide-react';
 
 // Import screens
 import DashboardScreen from './screens/DashboardScreen';
@@ -35,30 +30,8 @@ import PasswordModal from './components/modals/PasswordModal';
 // Import services and types
 import * as dataService from './services/dataService';
 import * as googleDriveService from './services/googleDriveService';
-import { User, Project, ProjectMemberRole, UserStatus } from './types';
-
-// Screen types and navigation items
-export const navigationItems = [
-    { screen: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
-    { screen: 'properties', name: 'Immobili', icon: Building },
-    { screen: 'tenants', name: 'Inquilini', icon: Users },
-    { screen: 'contracts', name: 'Contratti', icon: FileText },
-    { screen: 'payments', name: 'Pagamenti', icon: Banknote },
-    { screen: 'deadlines', name: 'Scadenze', icon: CalendarClock },
-    { screen: 'maintenance', name: 'Manutenzioni', icon: Wrench },
-    { screen: 'expenses', name: 'Spese', icon: Receipt },
-    { screen: 'documents', name: 'Documenti', icon: FolderArchive },
-    { screen: 'reports', name: 'Report', icon: AreaChart },
-    { screen: 'financialAnalysis', name: 'Analisi Finanziaria', icon: PieChart },
-];
-
-export const secondaryNavigationItems = [
-    { screen: 'settings', name: 'Impostazioni', icon: Settings },
-    { screen: 'help', name: 'Aiuto & Supporto', icon: LifeBuoy },
-    { screen: 'install', name: 'Installa App', icon: DownloadCloud },
-];
-
-export type Screen = typeof navigationItems[number]['screen'] | typeof secondaryNavigationItems[number]['screen'] | 'propertyDetail';
+// FIX: Import navigation items and Screen type from types.ts to break circular dependency
+import { User, Project, ProjectMemberRole, UserStatus, navigationItems, secondaryNavigationItems, Screen } from './types';
 
 // PWA install type
 interface BeforeInstallPromptEvent extends Event {
@@ -123,8 +96,7 @@ const App: React.FC = () => {
             }
         } catch (error) {
             console.error("Login failed", error);
-            // Any login failure should fall back to the local user selection screen.
-            setAppState('selectUser');
+            // On failure/cancellation, stay on the login screen
         }
     };
     
@@ -233,7 +205,7 @@ const App: React.FC = () => {
     
     if (appState === 'loading') return <SplashScreen />;
 
-    if (appState === 'login') return <LoginScreen onLogin={handleLogin} isApiReady={isApiReady} />;
+    if (appState === 'login') return <LoginScreen onLogin={handleLogin} isApiReady={isApiReady} onShowLocalUsers={() => setAppState('selectUser')} />;
     
     if (appState === 'selectUser') {
         const users = dataService.getUsers().filter(u => u.status === UserStatus.ACTIVE);
@@ -242,7 +214,7 @@ const App: React.FC = () => {
 
     if (!user) {
          // This case should ideally not be reached if logic is correct, but as a fallback:
-         return <LoginScreen onLogin={handleLogin} isApiReady={isApiReady} />;
+         return <LoginScreen onLogin={handleLogin} isApiReady={isApiReady} onShowLocalUsers={() => setAppState('selectUser')} />;
     }
     
     if (appState === 'selectProject') {

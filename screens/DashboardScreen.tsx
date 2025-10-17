@@ -1,12 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { DollarSign, Building, AlertTriangle, CheckCircle, Clock, Settings, Wrench } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
-import { Deadline, Property, Expense, Maintenance, MaintenanceStatus, ExpenseCategory } from '../types';
-// FIX: Corrected import path to point to App.tsx inside the src directory.
-import { Screen } from '../App';
+import { Deadline, Property, Expense, Maintenance, MaintenanceStatus, ExpenseCategory, Screen } from '../types';
 import CustomizeDashboardModal from '../components/modals/CustomizeDashboardModal';
 
 interface StatCardProps {

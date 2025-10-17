@@ -1,9 +1,8 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu, UserCircle, Settings, LogOut, Briefcase, Bell } from 'lucide-react';
 import { User } from '../../types';
-// FIX: Corrected import path to point to App.tsx inside the src directory.
-import { Screen } from '../../App';
+// FIX: Changed import path to break circular dependency.
+import { Screen } from '../../types';
 
 interface HeaderProps {
   currentScreen: string;

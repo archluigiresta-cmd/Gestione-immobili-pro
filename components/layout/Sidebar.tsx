@@ -1,7 +1,6 @@
-
 import React from 'react';
-// FIX: Corrected import path to point to App.tsx inside the src directory.
-import { navigationItems, secondaryNavigationItems, Screen } from '../../App';
+// FIX: Changed import path to break circular dependency.
+import { navigationItems, secondaryNavigationItems, Screen } from '../../types';
 import { X } from 'lucide-react';
 
 interface SidebarProps {
@@ -23,7 +22,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeScreen, setActiveScreen, isSide
       if (isInstallButton) {
         onInstall();
       } else {
-        setActiveScreen(item.screen);
+        setActiveScreen(item.screen as Screen);
       }
       setSidebarOpen(false);
     };

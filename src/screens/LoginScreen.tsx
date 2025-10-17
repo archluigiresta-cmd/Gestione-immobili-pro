@@ -1,9 +1,10 @@
 import React from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, UserCircle } from 'lucide-react';
 
 interface LoginScreenProps {
     onLogin: () => void;
     isApiReady: boolean;
+    onShowLocalUsers: () => void;
 }
 
 const GoogleIcon = () => (
@@ -16,10 +17,10 @@ const GoogleIcon = () => (
 );
 
 
-const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isApiReady }) => {
+const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isApiReady, onShowLocalUsers }) => {
     return (
         <div className="flex items-center justify-center min-h-screen bg-light">
-            <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-2xl shadow-2xl text-center">
+            <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-2xl shadow-2xl text-center">
                 <h1 className="text-3xl font-bold text-primary">Gest-Immo PRO</h1>
                 <p className="mt-2 text-gray-600">
                     Accedi con il tuo account Google per sincronizzare i dati su tutti i tuoi dispositivi.
@@ -40,6 +41,23 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isApiReady }) => {
                             Inizializzazione del servizio di autenticazione...
                         </p>
                     )}
+                </div>
+
+                <div className="relative flex items-center">
+                    <div className="flex-grow border-t border-gray-200"></div>
+                    <span className="flex-shrink mx-4 text-sm text-gray-400">oppure</span>
+                    <div className="flex-grow border-t border-gray-200"></div>
+                </div>
+
+                <div>
+                    <button
+                        onClick={onShowLocalUsers}
+                        className="w-full flex items-center justify-center p-4 text-left bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400"
+                    >
+                        <UserCircle size={24} className="mr-3 text-gray-600"/>
+                        <span className="font-semibold text-gray-700 flex-1">Accedi con un profilo locale</span>
+                        <ArrowRight size={20} className="text-gray-400" />
+                    </button>
                 </div>
 
                 <div className="pt-6">
