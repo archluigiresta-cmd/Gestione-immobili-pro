@@ -125,6 +125,16 @@ const App: React.FC = () => {
         }
         return false;
     };
+    
+    const handleRegister = (userData: Omit<User, 'id' | 'status'>) => {
+        dataService.addUser(userData);
+        setRegisterModalOpen(false);
+        alert("Richiesta di registrazione inviata. Un amministratore dovrà approvare il tuo account.");
+    };
+
+    const handleBackToLogin = () => {
+        setAppState('login');
+    }
 
     const handleSelectProject = (project: Project) => {
         setSelectedProject(project);
@@ -206,7 +216,19 @@ const App: React.FC = () => {
     
     if (appState === 'selectUser') {
         const users = dataService.getUsers().filter(u => u.status === UserStatus.ACTIVE);
-        return <UserSelectionScreen users={users} onSelectUser={handleSelectUser} onLogout={handleLogout} />;
+        return <>
+            <UserSelectionScreen 
+                users={users} 
+                onSelectUser={handleSelectUser} 
+                onBackToLogin={handleBackToLogin}
+                onRegister={() => setRegisterModalOpen(true)}
+            />
+            <RegisterModal 
+                isOpen={isRegisterModalOpen}
+                onClose={() => setRegisterModalOpen(false)}
+                onRegister={handleRegister}
+            />
+        </>;
     }
 
     if (!user) {
