@@ -258,6 +258,7 @@ const App: React.FC = () => {
         );
     }
 
+    // Fallback in case of an unexpected state
     return <LoginScreen onLogin={handleLogin} isApiReady={isApiReady} onShowLocalUsers={() => setAppState('selectUser')} />;
 };
 
