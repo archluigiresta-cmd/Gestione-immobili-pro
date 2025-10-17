@@ -257,15 +257,9 @@ const App: React.FC = () => {
             </>
         );
     }
-    
-    // Fallback Render
-    return (
-        <>
-            <SplashScreen />
-            {isRegisterModalOpen && <RegisterModal isOpen={isRegisterModalOpen} onClose={() => setRegisterModalOpen(false)} onRegister={(u) => { dataService.addUser(u); alert('Registrazione inviata. Attendi approvazione.'); setRegisterModalOpen(false); }} />}
-            {userForPassword && <PasswordModal isOpen={!!userForPassword} onClose={() => {setUserForPassword(null); setAppState('selectUser')}} onConfirm={handlePasswordConfirm} />}
-        </>
-    );
+
+    // Fallback in case of an unexpected state
+    return <LoginScreen onLogin={handleLogin} isApiReady={isApiReady} onShowLocalUsers={() => setAppState('selectUser')} />;
 };
 
 export default App;

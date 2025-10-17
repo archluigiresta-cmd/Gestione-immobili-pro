@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { navigationItems, secondaryNavigationItems, Screen } from '../../types';
 import { X } from 'lucide-react';
@@ -13,7 +12,6 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ activeScreen, setActiveScreen, isSidebarOpen, setSidebarOpen, onInstall, isInstallable }) => {
-  // FIX: Changed component definition to React.FC to correctly handle props like 'key' from .map()
   const NavItem: React.FC<{ item: (typeof navigationItems)[number] | (typeof secondaryNavigationItems)[number] }> = ({ item }) => {
     const isInstallButton = item.screen === 'install';
     const isDisabled = isInstallButton && !isInstallable;
