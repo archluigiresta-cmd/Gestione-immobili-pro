@@ -1,3 +1,33 @@
+
+import {
+    LayoutDashboard, Building, Users, FileText, Banknote, CalendarClock, Wrench, Receipt, FolderArchive, AreaChart, PieChart,
+    Settings, LifeBuoy, DownloadCloud
+} from 'lucide-react';
+
+// FIX: Moved navigation items and Screen type from App.tsx to break a circular dependency.
+export const navigationItems = [
+    { screen: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
+    { screen: 'properties', name: 'Immobili', icon: Building },
+    { screen: 'tenants', name: 'Inquilini', icon: Users },
+    { screen: 'contracts', name: 'Contratti', icon: FileText },
+    { screen: 'payments', name: 'Pagamenti', icon: Banknote },
+    { screen: 'deadlines', name: 'Scadenze', icon: CalendarClock },
+    { screen: 'maintenance', name: 'Manutenzioni', icon: Wrench },
+    { screen: 'expenses', name: 'Spese', icon: Receipt },
+    { screen: 'documents', name: 'Documenti', icon: FolderArchive },
+    { screen: 'reports', name: 'Report', icon: AreaChart },
+    { screen: 'financialAnalysis', name: 'Analisi Finanziaria', icon: PieChart },
+] as const;
+
+export const secondaryNavigationItems = [
+    { screen: 'settings', name: 'Impostazioni', icon: Settings },
+    { screen: 'help', name: 'Aiuto & Supporto', icon: LifeBuoy },
+    { screen: 'install', name: 'Installa App', icon: DownloadCloud },
+] as const;
+
+export type Screen = (typeof navigationItems)[number]['screen'] | (typeof secondaryNavigationItems)[number]['screen'] | 'propertyDetail';
+
+
 export interface HistoryLog {
   id: string;
   timestamp: string; // ISO date string

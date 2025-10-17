@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect } from 'react';
 import { Maintenance, MaintenanceStatus, Property } from '../../types';
 import { X } from 'lucide-react';
@@ -84,6 +85,12 @@ const EditMaintenanceModal: React.FC<EditMaintenanceModalProps> = ({ isOpen, onC
               <label className="block text-sm font-medium text-gray-700">Costo (€)</label>
               <input type="number" name="cost" value={formData.cost ?? ''} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" />
             </div>
+             {formData.status === MaintenanceStatus.COMPLETED && (
+                 <div>
+                    <label className="block text-sm font-medium text-gray-700">Data Completamento</label>
+                    <input type="date" name="completionDate" value={formData.completionDate || ''} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" />
+                 </div>
+             )}
           <div className="flex justify-end pt-4">
             <button type="button" onClick={onClose} className="mr-2 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Annulla</button>
             <button type="submit" className="px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm">Salva Modifiche</button>

@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, LifeBuoy, Bot, User, Send, LoaderCircle } from 'lucide-react';
 import Card from '../components/ui/Card';
@@ -69,12 +70,11 @@ const AiAssistant: React.FC = () => {
         if (!input.trim() || isLoading) return;
 
         const userMessage: Message = { role: 'user', content: input };
-        setMessages(prev => [...prev, userMessage]);
+        const newMessages: Message[] = [...messages, userMessage];
+        
+        setMessages(newMessages);
         setInput('');
         setIsLoading(true);
-        
-        const modelMessage: Message = { role: 'model', content: '' };
-        setMessages(prev => [...prev, modelMessage]);
 
         try {
             // Initialize Gemini AI only when needed
@@ -82,24 +82,31 @@ const AiAssistant: React.FC = () => {
 
             const systemInstruction = "Sei un assistente virtuale esperto per l'applicazione 'Gestore Immobili PRO'. Il tuo scopo è aiutare gli utenti a capire e utilizzare al meglio l'app. L'applicazione serve a gestire proprietà immobiliari. Le sue sezioni principali sono: Dashboard (riepilogo), Immobili (elenco proprietà), Inquilini, Contratti, Pagamenti, Scadenze, Manutenzioni, Spese, Documenti, Report e Analisi Finanziaria. Rispondi in modo chiaro, conciso e amichevole. Utilizza la formattazione markdown (come grassetto o elenchi puntati) per migliorare la leggibilità. Basa le tue risposte sulla conoscenza fornita riguardo le funzionalità dell'app.";
             
+            const contents = newMessages.map(msg => ({
+                role: msg.role,
+                parts: [{ text: msg.content }]
+            }));
+
             const responseStream = await ai.models.generateContentStream({
                 model: 'gemini-2.5-flash',
-                contents: [{ role: 'user', parts: [{text: input}]}],
+                contents: contents,
                  config: {
                     systemInstruction: systemInstruction,
                  },
             });
             
             let currentResponse = '';
+            // Add an empty model message to stream into
+            setMessages(prev => [...prev, { role: 'model', content: '' }]);
 
             for await (const chunk of responseStream) {
                 const chunkText = chunk.text;
                 if (chunkText) {
                     currentResponse += chunkText;
                     setMessages(prev => {
-                        const newMessages = [...prev];
-                        newMessages[newMessages.length - 1] = { ...newMessages[newMessages.length - 1], content: currentResponse };
-                        return newMessages;
+                        const updatedMessages = [...prev];
+                        updatedMessages[updatedMessages.length - 1] = { ...updatedMessages[updatedMessages.length - 1], content: currentResponse };
+                        return updatedMessages;
                     });
                 }
             }
@@ -108,7 +115,13 @@ const AiAssistant: React.FC = () => {
             console.error("Error calling Gemini API:", error);
             setMessages(prev => {
                 const newMessages = [...prev];
-                newMessages[newMessages.length - 1] = { ...newMessages[newMessages.length - 1], content: "Spiacente, si è verificato un errore. Riprova più tardi." };
+                const lastMessage = newMessages[newMessages.length - 1];
+                // Check if last message is an empty model message before updating
+                if(lastMessage && lastMessage.role === 'model' && lastMessage.content === '') {
+                     newMessages[newMessages.length - 1] = { ...lastMessage, content: "Spiacente, si è verificato un errore. Riprova più tardi." };
+                } else {
+                    newMessages.push({ role: 'model', content: "Spiacente, si è verificato un errore. Riprova più tardi." });
+                }
                 return newMessages;
             });
         } finally {
@@ -132,7 +145,7 @@ const AiAssistant: React.FC = () => {
                          {msg.role === 'user' && <div className="bg-gray-200 p-2 rounded-full text-dark"><User size={18}/></div>}
                     </div>
                 ))}
-                 {isLoading && messages[messages.length - 1]?.content === '' && (
+                 {isLoading && (
                      <div className="flex items-start gap-3">
                          <div className="bg-primary p-2 rounded-full text-white"><Bot size={18}/></div>
                          <div className="max-w-md rounded-lg p-3 bg-gray-100 text-dark flex items-center gap-2">

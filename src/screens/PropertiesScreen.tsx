@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
-import { Property, ProjectMemberRole, User, PropertyType } from '../types';
+import { Property, ProjectMemberRole, User, PropertyType, Screen } from '../types';
 import { PlusCircle, Edit, Trash2, Eye, MapPin } from 'lucide-react';
-import { Screen } from '../App';
 import AddPropertyModal from '../components/modals/AddPropertyModal';
 import EditPropertyModal from '../components/modals/EditPropertyModal';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
