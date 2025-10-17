@@ -122,6 +122,46 @@ const AiAssistant: React.FC = () => {
         }
     };
     
+    const renderMessageContent = (msg: Message, index: number) => {
+        const isTyping = isLoading && index === messages.length - 1 && !msg.content;
+
+        if (msg.role === 'user') {
+            return (
+                <div key={index} className="flex items-start gap-3 justify-end">
+                    <div className="max-w-md rounded-lg p-3 bg-primary text-white">
+                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                    </div>
+                    <div className="bg-gray-200 p-2 rounded-full text-dark"><User size={18}/></div>
+                </div>
+            );
+        }
+
+        if (isTyping) {
+            return (
+                <div key={index} className="flex items-start gap-3">
+                    <div className="bg-primary p-2 rounded-full text-white"><Bot size={18}/></div>
+                    <div className="max-w-md rounded-lg p-3 bg-gray-100 text-dark flex items-center gap-2">
+                        <span className="font-semibold">L'assistente sta scrivendo</span>
+                        <LoaderCircle size={16} className="animate-spin" />
+                    </div>
+                </div>
+            );
+        }
+        
+        if (msg.content) {
+             return (
+                <div key={index} className="flex items-start gap-3">
+                    <div className="bg-primary p-2 rounded-full text-white"><Bot size={18}/></div>
+                    <div className="max-w-md rounded-lg p-3 bg-gray-100 text-dark">
+                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                    </div>
+                </div>
+            );
+        }
+
+        return null;
+    }
+    
     return (
         <Card className="flex flex-col h-[600px]">
             <div className="p-4 border-b flex items-center gap-3">
@@ -129,45 +169,7 @@ const AiAssistant: React.FC = () => {
                 <h2 className="text-xl font-bold text-dark">Assistente AI</h2>
             </div>
             <div className="flex-1 p-4 overflow-y-auto space-y-4">
-                {messages.map((msg, index) => {
-                    if (msg.role === 'user') {
-                        return (
-                            <div key={index} className="flex items-start gap-3 justify-end">
-                                <div className="max-w-md rounded-lg p-3 bg-primary text-white">
-                                    <p className="whitespace-pre-wrap">{msg.content}</p>
-                                </div>
-                                <div className="bg-gray-200 p-2 rounded-full text-dark"><User size={18}/></div>
-                            </div>
-                        );
-                    }
-
-                    if (msg.role === 'model') {
-                        const isTyping = isLoading && index === messages.length - 1 && !msg.content;
-                        if (isTyping) {
-                            return (
-                                <div key={index} className="flex items-start gap-3">
-                                    <div className="bg-primary p-2 rounded-full text-white"><Bot size={18}/></div>
-                                    <div className="max-w-md rounded-lg p-3 bg-gray-100 text-dark flex items-center gap-2">
-                                        <span className="font-semibold">L'assistente sta scrivendo</span>
-                                        <LoaderCircle size={16} className="animate-spin" />
-                                    </div>
-                                </div>
-                            );
-                        }
-
-                        if (msg.content) {
-                            return (
-                                <div key={index} className="flex items-start gap-3">
-                                    <div className="bg-primary p-2 rounded-full text-white"><Bot size={18}/></div>
-                                    <div className="max-w-md rounded-lg p-3 bg-gray-100 text-dark">
-                                        <p className="whitespace-pre-wrap">{msg.content}</p>
-                                    </div>
-                                </div>
-                            );
-                        }
-                    }
-                    return null;
-                })}
+                {messages.map(renderMessageContent)}
                 <div ref={messagesEndRef} />
             </div>
             <div className="p-4 border-t">
