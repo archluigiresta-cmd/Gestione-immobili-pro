@@ -7,6 +7,7 @@ import AddDeadlineModal from '../components/modals/AddDeadlineModal';
 import EditDeadlineModal from '../components/modals/EditDeadlineModal';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
 import AccordionItem from '../components/ui/AccordionItem';
+import InteractiveTable, { Column } from '../components/ui/InteractiveTable';
 
 interface DeadlinesScreenProps {
   projectId: string;
@@ -127,7 +128,7 @@ const DeadlinesScreen: React.FC<DeadlinesScreenProps> = ({ projectId, user }) =>
   }, [projectId]);
 
   const loadData = () => {
-    setDeadlines(dataService.getDeadlines(projectId).sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()));
+    setDeadlines(dataService.getDeadlines(projectId));
     setProperties(dataService.getProperties(projectId));
   };
   
@@ -168,13 +169,68 @@ const DeadlinesScreen: React.FC<DeadlinesScreenProps> = ({ projectId, user }) =>
   };
   
   const groupedDeadlines = useMemo(() => {
-      return deadlines.reduce((acc, deadline) => {
+      const sortedDeadlines = [...deadlines].sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+      return sortedDeadlines.reduce((acc, deadline) => {
           const key = deadline.propertyId;
           if (!acc[key]) acc[key] = [];
           acc[key].push(deadline);
           return acc;
       }, {} as Record<string, Deadline[]>);
   }, [deadlines]);
+  
+  const columns: Column<Deadline>[] = [
+    {
+      header: 'Stato',
+      accessor: 'isCompleted',
+      className: 'text-center',
+      render: (row) => (
+        <button onClick={() => handleToggleStatus(row.id)} className={`p-2 rounded-full ${row.isCompleted ? 'text-green-600 bg-green-100' : 'text-gray-400 hover:bg-gray-100'}`}>
+          <CheckCircle size={20} />
+        </button>
+      ),
+    },
+    {
+      header: 'Scadenza',
+      accessor: 'dueDate',
+      render: (row) => {
+        const daysLeft = Math.ceil((new Date(row.dueDate).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
+        const isOverdue = !row.isCompleted && daysLeft < 0;
+        const urgencyColor = isOverdue ? 'text-red-500' : daysLeft < 7 ? 'text-yellow-600' : 'text-gray-600';
+        return (
+          <div className={`font-medium ${urgencyColor}`}>
+            {new Date(row.dueDate).toLocaleDateString('it-IT')}
+            {!row.isCompleted && <span className="text-xs block">{isOverdue ? `Scaduto da ${Math.abs(daysLeft)} gg` : `Mancano ${daysLeft} gg`}</span>}
+          </div>
+        );
+      },
+    },
+    {
+      header: 'Titolo',
+      accessor: 'title',
+      className: 'font-medium text-dark',
+    },
+    {
+      header: 'Tipo',
+      accessor: 'type',
+      render: (row) => {
+        const displayType = (row.type === DeadlineType.OTHER && row.typeOther) ? row.typeOther : row.type;
+        return (
+          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getDeadlineTypeStyle(row.type)}`}>{displayType}</span>
+        );
+      },
+    },
+    {
+      header: 'Azioni',
+      accessor: 'id',
+      className: 'text-center',
+      render: (row) => (
+        <div className="flex justify-center items-center gap-4">
+          <button onClick={() => setEditingDeadline(row)} className="text-blue-600 hover:text-blue-800"><Edit size={18} /></button>
+          <button onClick={() => setDeletingDeadline(row)} className="text-red-600 hover:text-red-800"><Trash2 size={18} /></button>
+        </div>
+      ),
+    },
+  ];
 
 
   return (
@@ -213,50 +269,7 @@ const DeadlinesScreen: React.FC<DeadlinesScreenProps> = ({ projectId, user }) =>
               );
               return (
                   <AccordionItem key={property.id} title={title}>
-                      <div className="overflow-x-auto">
-                           <table className="w-full text-left">
-                              <thead className="bg-gray-50">
-                                <tr>
-                                  <th className="p-3 text-sm font-semibold text-gray-600 text-center">Stato</th>
-                                  <th className="p-3 text-sm font-semibold text-gray-600">Scadenza</th>
-                                  <th className="p-3 text-sm font-semibold text-gray-600">Titolo</th>
-                                  <th className="p-3 text-sm font-semibold text-gray-600">Tipo</th>
-                                  <th className="p-3 text-sm font-semibold text-gray-600 text-center">Azioni</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {propertyDeadlines.map(row => {
-                                     const daysLeft = Math.ceil((new Date(row.dueDate).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
-                                      const isOverdue = !row.isCompleted && daysLeft < 0;
-                                      const urgencyColor = isOverdue ? 'text-red-500' : daysLeft < 7 ? 'text-yellow-600' : 'text-gray-600';
-                                      const displayType = (row.type === DeadlineType.OTHER && row.typeOther) ? row.typeOther : row.type;
-                                    return (
-                                        <tr key={row.id} className="border-b last:border-b-0 hover:bg-gray-50">
-                                            <td className="p-3 text-center">
-                                                <button onClick={() => handleToggleStatus(row.id)} className={`p-2 rounded-full ${row.isCompleted ? 'text-green-600 bg-green-100' : 'text-gray-400 hover:bg-gray-100'}`}>
-                                                    <CheckCircle size={20} />
-                                                </button>
-                                            </td>
-                                            <td className={`p-3 font-medium ${urgencyColor}`}>
-                                                {new Date(row.dueDate).toLocaleDateString('it-IT')}
-                                                {!row.isCompleted && <span className="text-xs block">{isOverdue ? `Scaduto da ${Math.abs(daysLeft)} gg` : `Mancano ${daysLeft} gg`}</span>}
-                                            </td>
-                                            <td className="p-3 font-medium text-dark">{row.title}</td>
-                                            <td className="p-3">
-                                                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getDeadlineTypeStyle(row.type)}`}>{displayType}</span>
-                                            </td>
-                                            <td className="p-3 text-center">
-                                                <div className="flex justify-center items-center gap-4">
-                                                    <button onClick={() => setEditingDeadline(row)} className="text-blue-600 hover:text-blue-800"><Edit size={18} /></button>
-                                                    <button onClick={() => setDeletingDeadline(row)} className="text-red-600 hover:text-red-800"><Trash2 size={18} /></button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )
-                                })}
-                              </tbody>
-                           </table>
-                      </div>
+                      <InteractiveTable columns={columns} data={propertyDeadlines} />
                   </AccordionItem>
               )
             })}
