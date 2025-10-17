@@ -69,6 +69,7 @@ const AiAssistant: React.FC = () => {
         });
     }, []);
 
+
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
