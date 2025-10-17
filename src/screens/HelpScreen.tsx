@@ -133,20 +133,25 @@ const AiAssistant: React.FC = () => {
                     <div key={index} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
                         {msg.role === 'model' && msg.content && <div className="bg-primary p-2 rounded-full text-white"><Bot size={18}/></div>}
                         
-                        {msg.role === 'model' && isLoading && msg.content === '' ? (
-                             <div className="max-w-md rounded-lg p-3 bg-gray-100 text-dark flex items-center gap-2">
-                                <span className="font-semibold">L'assistente sta scrivendo</span>
-                                <LoaderCircle size={16} className="animate-spin" />
-                             </div>
-                        ) : msg.content ? (
+                        {msg.content && (
                              <div className={`max-w-md rounded-lg p-3 ${msg.role === 'user' ? 'bg-primary text-white' : 'bg-gray-100 text-dark'}`}>
                                 <p className="whitespace-pre-wrap">{msg.content}</p>
                              </div>
-                        ) : null}
+                        )}
 
-                         {msg.role === 'user' && <div className="bg-gray-200 p-2 rounded-full text-dark"><User size={18}/></div>}
+                        {msg.role === 'user' && <div className="bg-gray-200 p-2 rounded-full text-dark"><User size={18}/></div>}
                     </div>
                 ))}
+                
+                {isLoading && (
+                     <div className="flex items-start gap-3">
+                         <div className="bg-primary p-2 rounded-full text-white"><Bot size={18}/></div>
+                         <div className="max-w-md rounded-lg p-3 bg-gray-100 text-dark flex items-center gap-2">
+                            <span className="font-semibold">L'assistente sta scrivendo</span>
+                             <LoaderCircle size={16} className="animate-spin" />
+                         </div>
+                     </div>
+                 )}
                 <div ref={messagesEndRef} />
             </div>
             <div className="p-4 border-t">
