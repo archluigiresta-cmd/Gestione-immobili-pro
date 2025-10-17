@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useEffect } from 'react';
 import { Maintenance, MaintenanceStatus, Property } from '../../types';
 import { X } from 'lucide-react';
@@ -25,7 +22,6 @@ const EditMaintenanceModal: React.FC<EditMaintenanceModalProps> = ({ isOpen, onC
 
   useEffect(() => {
     if (isOpen) {
-      // FIX: Pass projectId to getProperties
       setProperties(dataService.getProperties(projectId));
     }
   }, [isOpen, projectId]);
@@ -44,7 +40,11 @@ const EditMaintenanceModal: React.FC<EditMaintenanceModalProps> = ({ isOpen, onC
       setError('Immobile e Descrizione sono obbligatori.');
       return;
     }
-    onSave(formData);
+    const dataToSave = { ...formData };
+    if (dataToSave.status !== MaintenanceStatus.COMPLETED) {
+        dataToSave.completionDate = undefined;
+    }
+    onSave(dataToSave);
   };
 
   if (!isOpen) return null;

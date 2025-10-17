@@ -120,7 +120,7 @@ const ProjectSelectionScreen: React.FC<ProjectSelectionScreenProps> = ({ user, o
             </div>
              <div className="flex flex-col items-end gap-2">
                 <button onClick={onLogout} className="flex items-center text-sm text-red-600 font-semibold p-2 rounded-lg hover:bg-red-50">
-                    <LogOut size={16} className="mr-1.5"/> Esci da Google
+                    <LogOut size={16} className="mr-1.5"/> Esci
                 </button>
                  <button onClick={onSwitchUser} className="flex items-center text-sm text-gray-600 font-semibold p-2 rounded-lg hover:bg-gray-100">
                     <Users size={16} className="mr-1.5"/> Cambia Utente

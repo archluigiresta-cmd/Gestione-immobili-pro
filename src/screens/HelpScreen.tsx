@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, LifeBuoy, Bot, User, Send, LoaderCircle } from 'lucide-react';
 import Card from '../components/ui/Card';
@@ -70,43 +69,39 @@ const AiAssistant: React.FC = () => {
         if (!input.trim() || isLoading) return;
 
         const userMessage: Message = { role: 'user', content: input };
-        const newMessages: Message[] = [...messages, userMessage];
-        
-        setMessages(newMessages);
+        const conversationHistory = [...messages, userMessage];
+
+        setMessages(prev => [...prev, userMessage, { role: 'model', content: '' }]);
         setInput('');
         setIsLoading(true);
 
         try {
-            // Initialize Gemini AI only when needed
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
 
             const systemInstruction = "Sei un assistente virtuale esperto per l'applicazione 'Gestore Immobili PRO'. Il tuo scopo è aiutare gli utenti a capire e utilizzare al meglio l'app. L'applicazione serve a gestire proprietà immobiliari. Le sue sezioni principali sono: Dashboard (riepilogo), Immobili (elenco proprietà), Inquilini, Contratti, Pagamenti, Scadenze, Manutenzioni, Spese, Documenti, Report e Analisi Finanziaria. Rispondi in modo chiaro, conciso e amichevole. Utilizza la formattazione markdown (come grassetto o elenchi puntati) per migliorare la leggibilità. Basa le tue risposte sulla conoscenza fornita riguardo le funzionalità dell'app.";
             
-            const contents = newMessages.map(msg => ({
-                role: msg.role,
+            const contents = conversationHistory.map(msg => ({
+                role: msg.role === 'user' ? 'user' : 'model',
                 parts: [{ text: msg.content }]
             }));
 
             const responseStream = await ai.models.generateContentStream({
                 model: 'gemini-2.5-flash',
                 contents: contents,
-                 config: {
+                config: {
                     systemInstruction: systemInstruction,
-                 },
+                },
             });
             
-            let currentResponse = '';
-            // Add an empty model message to stream into
-            setMessages(prev => [...prev, { role: 'model', content: '' }]);
-
+            let fullResponse = '';
             for await (const chunk of responseStream) {
                 const chunkText = chunk.text;
                 if (chunkText) {
-                    currentResponse += chunkText;
+                    fullResponse += chunkText;
                     setMessages(prev => {
-                        const updatedMessages = [...prev];
-                        updatedMessages[updatedMessages.length - 1] = { ...updatedMessages[updatedMessages.length - 1], content: currentResponse };
-                        return updatedMessages;
+                        const newMessages = [...prev];
+                        newMessages[newMessages.length - 1] = { ...newMessages[newMessages.length - 1], content: fullResponse };
+                        return newMessages;
                     });
                 }
             }
@@ -115,13 +110,7 @@ const AiAssistant: React.FC = () => {
             console.error("Error calling Gemini API:", error);
             setMessages(prev => {
                 const newMessages = [...prev];
-                const lastMessage = newMessages[newMessages.length - 1];
-                // Check if last message is an empty model message before updating
-                if(lastMessage && lastMessage.role === 'model' && lastMessage.content === '') {
-                     newMessages[newMessages.length - 1] = { ...lastMessage, content: "Spiacente, si è verificato un errore. Riprova più tardi." };
-                } else {
-                    newMessages.push({ role: 'model', content: "Spiacente, si è verificato un errore. Riprova più tardi." });
-                }
+                newMessages[newMessages.length - 1] = { ...newMessages[newMessages.length - 1], content: "Spiacente, si è verificato un errore. Riprova più tardi." };
                 return newMessages;
             });
         } finally {
@@ -140,12 +129,12 @@ const AiAssistant: React.FC = () => {
                     <div key={index} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
                         {msg.role === 'model' && <div className="bg-primary p-2 rounded-full text-white"><Bot size={18}/></div>}
                         <div className={`max-w-md rounded-lg p-3 ${msg.role === 'user' ? 'bg-primary text-white' : 'bg-gray-100 text-dark'}`}>
-                            <p className="whitespace-pre-wrap">{msg.content}</p>
+                             {msg.content ? <p className="whitespace-pre-wrap">{msg.content}</p> : (isLoading && index === messages.length -1) ? null : <p>...</p>}
                         </div>
                          {msg.role === 'user' && <div className="bg-gray-200 p-2 rounded-full text-dark"><User size={18}/></div>}
                     </div>
                 ))}
-                 {isLoading && (
+                 {isLoading && messages[messages.length - 1]?.content === '' && (
                      <div className="flex items-start gap-3">
                          <div className="bg-primary p-2 rounded-full text-white"><Bot size={18}/></div>
                          <div className="max-w-md rounded-lg p-3 bg-gray-100 text-dark flex items-center gap-2">
