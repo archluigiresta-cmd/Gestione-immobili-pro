@@ -1,9 +1,6 @@
-/**
- * The original `/// <reference types="vite/client" />` was causing a type resolution error.
- * This is often due to a misconfigured tsconfig.json or missing dependencies.
- * As a workaround, we are removing the problematic reference and manually defining
- * the `process.env` properties used in the application. These are injected by Vite's `define` config.
- */
+// FIX: Removed reference to "vite/client" as it cannot be resolved in the current TypeScript configuration.
+// The project does not appear to use Vite-specific client-side APIs that require these types.
+
 declare namespace NodeJS {
   interface ProcessEnv {
     API_KEY: string;
