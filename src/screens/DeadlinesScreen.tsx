@@ -133,7 +133,9 @@ const DeadlinesScreen: React.FC<DeadlinesScreenProps> = ({ projectId, user }) =>
   };
   
   const handleAddDeadline = (deadlineData: Omit<Deadline, 'id' | 'isCompleted' | 'history'>) => {
-    dataService.addDeadline({ ...deadlineData, projectId }, user.id);
+    // The deadlineData coming from the modal already contains the projectId.
+    // The redundant `... { projectId }` spread is removed to avoid confusion.
+    dataService.addDeadline(deadlineData, user.id);
     loadData();
     setAddModalOpen(false);
   };
