@@ -1,11 +1,6 @@
 import React from 'react';
-import { ArrowRight, UserCircle } from 'lucide-react';
-
-interface LoginScreenProps {
-    onLogin: () => void;
-    isApiReady: boolean;
-    onShowLocalUsers: () => void;
-}
+import { User } from '../types';
+import { UserCircle, ArrowRight, UserPlus } from 'lucide-react';
 
 const GoogleIcon = () => (
     <svg className="w-6 h-6 mr-3" viewBox="0 0 48 48">
@@ -16,43 +11,77 @@ const GoogleIcon = () => (
     </svg>
 );
 
+interface LoginScreenProps {
+    users: User[];
+    onSelectUser: (user: User) => void;
+    onGoogleLogin: () => void;
+    onRegister: () => void;
+    isApiReady: boolean;
+}
 
-const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isApiReady, onShowLocalUsers }) => {
+const LoginScreen: React.FC<LoginScreenProps> = ({ users, onSelectUser, onGoogleLogin, onRegister, isApiReady }) => {
+    const googleUser = users.find(u => u.email === 'arch.luigiresta@gmail.com');
+    const localUsers = users.filter(u => u.email !== 'arch.luigiresta@gmail.com');
+
     return (
         <div className="flex items-center justify-center min-h-screen bg-light">
-            <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-2xl shadow-2xl text-center">
+            <div className="w-full max-w-lg p-8 space-y-6 bg-white rounded-2xl shadow-2xl text-center m-4">
                 <h1 className="text-3xl font-bold text-primary">Gest-Immo PRO</h1>
                 <p className="mt-2 text-gray-600">
-                    Scegli la modalità di accesso.
+                    Seleziona il tuo profilo per accedere o registrati.
                 </p>
                 
                 <div className="pt-4 space-y-4">
-                    <button
-                        onClick={onLogin}
-                        disabled={!isApiReady}
-                        className="w-full flex items-center justify-center p-4 text-left bg-white border-2 border-gray-300 rounded-lg hover:bg-secondary hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-wait"
-                    >
-                        <GoogleIcon />
-                        <span className="font-semibold text-lg text-dark flex-1">Accedi con Google</span>
-                        <ArrowRight size={20} className="text-gray-400" />
-                    </button>
-                    {!isApiReady && (
-                        <p className="text-xs text-gray-500 mt-2 animate-pulse">
-                            Inizializzazione dei servizi...
+                    {googleUser && (
+                        <button
+                            onClick={onGoogleLogin}
+                            disabled={!isApiReady}
+                            className="w-full flex items-center justify-center p-4 text-left bg-white border-2 border-primary rounded-lg hover:bg-secondary hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-wait"
+                        >
+                            <GoogleIcon />
+                            <span className="font-semibold text-lg text-dark flex-1">Accedi come {googleUser.name}</span>
+                            <ArrowRight size={20} className="text-gray-400" />
+                        </button>
+                    )}
+                    {!isApiReady && googleUser && (
+                        <p className="text-xs text-gray-500 -mt-2 animate-pulse">
+                            Inizializzazione dei servizi Google...
                         </p>
                     )}
 
-                    <button
-                        onClick={onShowLocalUsers}
-                        className="w-full flex items-center justify-center p-4 text-left bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400"
-                    >
-                        <UserCircle size={24} className="mr-3 text-gray-600"/>
-                        <span className="font-semibold text-gray-700 flex-1">Accedi con un profilo locale</span>
-                        <ArrowRight size={20} className="text-gray-400" />
-                    </button>
+                    {localUsers.length > 0 && (
+                        <>
+                            <div className="relative pt-2"><div className="absolute inset-0 flex items-center"><span className="w-full border-t"></span></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">Oppure accedi come collaboratore</span></div></div>
+                            <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+                                {localUsers.map(user => (
+                                    <button
+                                        key={user.id}
+                                        onClick={() => onSelectUser(user)}
+                                        className="w-full flex items-center p-3 text-left bg-white border rounded-lg hover:bg-gray-100 transition-colors"
+                                    >
+                                        <UserCircle size={32} className="text-gray-500 mr-4" />
+                                        <div className="flex-1">
+                                            <p className="font-bold text-md text-dark">{user.name}</p>
+                                        </div>
+                                        <ArrowRight size={20} className="text-gray-400" />
+                                    </button>
+                                ))}
+                            </div>
+                        </>
+                    )}
+                    
+                     <div className="pt-4 border-t">
+                        <button
+                            onClick={onRegister}
+                            className="w-full flex items-center justify-center px-4 py-3 bg-secondary text-primary font-semibold rounded-lg hover:bg-blue-200 transition-colors"
+                        >
+                            <UserPlus size={20} className="mr-2" />
+                            Nuovo utente? Registrati
+                        </button>
+                    </div>
                 </div>
 
-                <div className="pt-6">
+                <div className="pt-2">
                     <p className="text-xs text-gray-400">&copy; 2024 Gestore Immobili PRO</p>
                 </div>
             </div>

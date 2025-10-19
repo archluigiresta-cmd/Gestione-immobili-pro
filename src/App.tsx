@@ -18,7 +18,6 @@ import HelpScreen from './screens/HelpScreen';
 import SplashScreen from './screens/SplashScreen';
 import LoginScreen from './screens/LoginScreen';
 import ProjectSelectionScreen from './screens/ProjectSelectionScreen';
-import UserSelectionScreen from './screens/UserSelectionScreen';
 
 // Import components
 import Sidebar from './components/layout/Sidebar';
@@ -40,7 +39,7 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 const App: React.FC = () => {
-    const [appState, setAppState] = useState<'login' | 'selectUser' | 'selectProject' | 'main'>('login');
+    const [appState, setAppState] = useState<'login' | 'selectProject' | 'main'>('login');
     const [user, setUser] = useState<User | null>(null);
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [activeScreen, setActiveScreen] = useState<Screen>('dashboard');
@@ -70,7 +69,7 @@ const App: React.FC = () => {
         };
     }, []);
 
-    const handleLogin = async () => {
+    const handleGoogleLogin = async () => {
         try {
             const loggedInUser = await googleDriveService.signIn();
             const { fileId, data } = await googleDriveService.findOrCreateDataFile();
@@ -89,12 +88,11 @@ const App: React.FC = () => {
             }
         } catch (error) {
             console.error("Login failed or cancelled", error);
-            // On failure/cancellation, stay on the login screen where the user has other choices.
         }
     };
     
     const handleLogout = () => {
-        if (user?.email) { // Only sign out of Google if it's a Google user
+        if (user?.email && user.id.length > 15) { // Heuristic to check if it's a Google ID
           googleDriveService.signOut();
         }
         setUser(null);
@@ -104,15 +102,15 @@ const App: React.FC = () => {
     };
     
     const handleSelectUser = (selectedUser: User) => {
+        if (selectedUser.email === 'arch.luigiresta@gmail.com') {
+            handleGoogleLogin();
+            return;
+        }
         if (selectedUser.password) {
             setUserForPassword(selectedUser);
         } else {
-             if (selectedUser.email === 'arch.luigiresta@gmail.com') {
-                setAppState('login'); // Force Google Login for the main user
-             } else {
-                setUser(selectedUser);
-                setAppState('selectProject');
-             }
+            setUser(selectedUser);
+            setAppState('selectProject');
         }
     };
     
@@ -131,10 +129,6 @@ const App: React.FC = () => {
         setRegisterModalOpen(false);
         alert("Richiesta di registrazione inviata. Un amministratore dovrà approvare il tuo account.");
     };
-
-    const handleBackToLogin = () => {
-        setAppState('login');
-    }
 
     const handleSelectProject = (project: Project) => {
         setSelectedProject(project);
@@ -212,27 +206,28 @@ const App: React.FC = () => {
         return <SplashScreen />;
     }
     
-    if (appState === 'login') return <LoginScreen onLogin={handleLogin} isApiReady={isApiReady} onShowLocalUsers={() => setAppState('selectUser')} />;
-    
-    if (appState === 'selectUser') {
+    if (appState === 'login') {
         const users = dataService.getUsers().filter(u => u.status === UserStatus.ACTIVE);
         return <>
-            <UserSelectionScreen 
-                users={users} 
-                onSelectUser={handleSelectUser} 
-                onBackToLogin={handleBackToLogin}
+            <LoginScreen 
+                users={users}
+                onSelectUser={handleSelectUser}
+                onGoogleLogin={handleGoogleLogin}
                 onRegister={() => setRegisterModalOpen(true)}
+                isApiReady={isApiReady}
             />
             <RegisterModal 
                 isOpen={isRegisterModalOpen}
                 onClose={() => setRegisterModalOpen(false)}
                 onRegister={handleRegister}
             />
+            {userForPassword && <PasswordModal isOpen={!!userForPassword} onClose={() => {setUserForPassword(null);}} onConfirm={handlePasswordConfirm} />}
         </>;
     }
+    
 
     if (!user) {
-         return <LoginScreen onLogin={handleLogin} isApiReady={isApiReady} onShowLocalUsers={() => setAppState('selectUser')} />;
+         return <SplashScreen />; // Should not happen if logic is correct, but as a fallback
     }
     
     if (appState === 'selectProject') {
@@ -242,14 +237,13 @@ const App: React.FC = () => {
             onCreateProject={handleCreateProject}
             onLogout={handleLogout}
             onUpdateProfile={handleUpdateProfile}
-            onSwitchUser={() => { setUser(null); setAppState('selectUser'); }}
+            onSwitchUser={() => { setUser(null); setAppState('login'); }}
         />
     }
 
     if (appState === 'main' && selectedProject) {
         const currentScreenItem = [...navigationItems, ...secondaryNavigationItems].find(item => item.screen === activeScreen);
         return (
-            <>
             <div className="flex h-screen bg-light">
                 <Sidebar 
                     activeScreen={activeScreen} 
@@ -275,13 +269,11 @@ const App: React.FC = () => {
                     </main>
                 </div>
             </div>
-             {userForPassword && <PasswordModal isOpen={!!userForPassword} onClose={() => {setUserForPassword(null); setAppState('selectUser')}} onConfirm={handlePasswordConfirm} />}
-            </>
         );
     }
 
     // Fallback in case of an unexpected state
-    return <LoginScreen onLogin={handleLogin} isApiReady={isApiReady} onShowLocalUsers={() => setAppState('selectUser')} />;
+    return <SplashScreen />;
 };
 
 export default App;
