@@ -102,10 +102,6 @@ const App: React.FC = () => {
     };
     
     const handleSelectUser = (selectedUser: User) => {
-        if (selectedUser.email === 'arch.luigiresta@gmail.com') {
-            handleGoogleLogin();
-            return;
-        }
         if (selectedUser.password) {
             setUserForPassword(selectedUser);
         } else {
