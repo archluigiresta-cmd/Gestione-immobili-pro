@@ -1,6 +1,6 @@
 import React from 'react';
 import { User } from '../types';
-import { UserCircle, ArrowRight, UserPlus } from 'lucide-react';
+import { UserCircle, ArrowRight, UserPlus, LogIn } from 'lucide-react';
 
 const GoogleIcon = () => (
     <svg className="w-6 h-6 mr-3" viewBox="0 0 48 48">
@@ -20,30 +20,28 @@ interface LoginScreenProps {
 }
 
 const LoginScreen: React.FC<LoginScreenProps> = ({ users, onSelectUser, onGoogleLogin, onRegister, isApiReady }) => {
-    const googleUser = users.find(u => u.email === 'arch.luigiresta@gmail.com');
-    const localUsers = users.filter(u => u.email !== 'arch.luigiresta@gmail.com');
+    // Local users are identified by having a password. Google-synced users do not need one in the app.
+    const localUsers = users.filter(u => u.password);
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-light">
             <div className="w-full max-w-lg p-8 space-y-6 bg-white rounded-2xl shadow-2xl text-center m-4">
                 <h1 className="text-3xl font-bold text-primary">Gest-Immo PRO</h1>
                 <p className="mt-2 text-gray-600">
-                    Seleziona il tuo profilo per accedere o registrati.
+                    Accedi con Google per la sincronizzazione dei dati, oppure usa un profilo collaboratore.
                 </p>
                 
                 <div className="pt-4 space-y-4">
-                    {googleUser && (
-                        <button
-                            onClick={onGoogleLogin}
-                            disabled={!isApiReady}
-                            className="w-full flex items-center justify-center p-4 text-left bg-white border-2 border-primary rounded-lg hover:bg-secondary hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-wait"
-                        >
-                            <GoogleIcon />
-                            <span className="font-semibold text-lg text-dark flex-1">Accedi come {googleUser.name}</span>
-                            <ArrowRight size={20} className="text-gray-400" />
-                        </button>
-                    )}
-                    {!isApiReady && googleUser && (
+                    <button
+                        onClick={onGoogleLogin}
+                        disabled={!isApiReady}
+                        className="w-full flex items-center justify-center p-4 text-left bg-white border-2 border-primary rounded-lg hover:bg-secondary hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-wait"
+                    >
+                        <GoogleIcon />
+                        <span className="font-semibold text-lg text-dark flex-1">Accedi con Google</span>
+                        <ArrowRight size={20} className="text-gray-400" />
+                    </button>
+                    {!isApiReady && (
                         <p className="text-xs text-gray-500 -mt-2 animate-pulse">
                             Inizializzazione dei servizi Google...
                         </p>
@@ -51,7 +49,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ users, onSelectUser, onGoogle
 
                     {localUsers.length > 0 && (
                         <>
-                            <div className="relative pt-2"><div className="absolute inset-0 flex items-center"><span className="w-full border-t"></span></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">Oppure accedi come collaboratore</span></div></div>
+                            <div className="relative pt-2">
+                                <div className="absolute inset-0 flex items-center"><span className="w-full border-t"></span></div>
+                                <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">Oppure</span></div>
+                            </div>
                             <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
                                 {localUsers.map(user => (
                                     <button
@@ -63,7 +64,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ users, onSelectUser, onGoogle
                                         <div className="flex-1">
                                             <p className="font-bold text-md text-dark">{user.name}</p>
                                         </div>
-                                        <ArrowRight size={20} className="text-gray-400" />
+                                        <LogIn size={20} className="text-gray-400" />
                                     </button>
                                 ))}
                             </div>
