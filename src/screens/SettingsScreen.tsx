@@ -1,13 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import { User, Project, ProjectMemberRole, UserStatus } from '../types.ts';
 import Card from '../components/ui/Card.tsx';
 import * as dataService from '../services/dataService.ts';
 import { UserCircle, Edit, Trash2, Shield, PlusCircle, Share2, Users, HardDrive, Upload, Check, X } from 'lucide-react';
 
-import EditProfileModal from '../components/modals/EditProfileModal.tsx';
-import AddUserModal from '../components/modals/AddUserModal.tsx';
-import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal.tsx';
-import ShareProjectModal from '../components/modals/ShareProjectModal.tsx';
+const EditProfileModal = lazy(() => import('../components/modals/EditProfileModal.tsx'));
+const AddUserModal = lazy(() => import('../components/modals/AddUserModal.tsx'));
+const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal.tsx'));
+const ShareProjectModal = lazy(() => import('../components/modals/ShareProjectModal.tsx'));
 
 interface SettingsScreenProps {
   user: User;
@@ -334,21 +334,22 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
                     </div>
                 </Card>
             )}
-
-            <EditProfileModal isOpen={isEditProfileModalOpen} onClose={() => setEditProfileModalOpen(false)} user={user} onSave={handleSaveProfile} />
-            <AddUserModal isOpen={isAddUserModalOpen} onClose={() => setAddUserModalOpen(false)} onSave={handleAddUserAndRefresh} />
-            <ShareProjectModal isOpen={isShareModalOpen} onClose={() => setShareModalOpen(false)} onShare={handleShareProject} project={project} />
-            {deletingUser && (
-                <ConfirmDeleteModal 
-                    isOpen={!!deletingUser} 
-                    onClose={() => setDeletingUser(null)} 
-                    onConfirm={() => {
-                        onDeleteUser(deletingUser.id);
-                        setDeletingUser(null);
-                    }}
-                    message={`Sei sicuro di voler eliminare l'utente "${deletingUser.name}"? L'azione è irreversibile.`}
-                />
-            )}
+            <Suspense fallback={null}>
+              <EditProfileModal isOpen={isEditProfileModalOpen} onClose={() => setEditProfileModalOpen(false)} user={user} onSave={handleSaveProfile} />
+              <AddUserModal isOpen={isAddUserModalOpen} onClose={() => setAddUserModalOpen(false)} onSave={handleAddUserAndRefresh} />
+              <ShareProjectModal isOpen={isShareModalOpen} onClose={() => setShareModalOpen(false)} onShare={handleShareProject} project={project} />
+              {deletingUser && (
+                  <ConfirmDeleteModal 
+                      isOpen={!!deletingUser} 
+                      onClose={() => setDeletingUser(null)} 
+                      onConfirm={() => {
+                          onDeleteUser(deletingUser.id);
+                          setDeletingUser(null);
+                      }}
+                      message={`Sei sicuro di voler eliminare l'utente "${deletingUser.name}"? L'azione è irreversibile.`}
+                  />
+              )}
+            </Suspense>
         </div>
     );
 };

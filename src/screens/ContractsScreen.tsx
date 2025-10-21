@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import Card from '../components/ui/Card.tsx';
 import * as dataService from '../services/dataService.ts';
 import { Contract, ProjectMemberRole, User, Property, Tenant } from '../types.ts';
 import { Download, PlusCircle, Edit, Trash2 } from 'lucide-react';
-import AddContractModal from '../components/modals/AddContractModal.tsx';
-import EditContractModal from '../components/modals/EditContractModal.tsx';
-import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal.tsx';
 import AccordionItem from '../components/ui/AccordionItem.tsx';
+
+const AddContractModal = lazy(() => import('../components/modals/AddContractModal.tsx'));
+const EditContractModal = lazy(() => import('../components/modals/EditContractModal.tsx'));
+const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal.tsx'));
 
 interface ContractsScreenProps {
   projectId: string;
@@ -153,30 +154,31 @@ const ContractsScreen: React.FC<ContractsScreenProps> = ({ projectId, user, user
       </div>
 
     </div>
-
-    <AddContractModal 
-      isOpen={isAddModalOpen}
-      onClose={() => setAddModalOpen(false)}
-      onSave={handleAddContract}
-      projectId={projectId}
-    />
-    {editingContract && (
-      <EditContractModal
-        isOpen={!!editingContract}
-        onClose={() => setEditingContract(null)}
-        onSave={handleUpdateContract}
-        contract={editingContract}
+    <Suspense fallback={null}>
+      <AddContractModal 
+        isOpen={isAddModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onSave={handleAddContract}
         projectId={projectId}
       />
-    )}
-    {deletingContract && (
-      <ConfirmDeleteModal
-        isOpen={!!deletingContract}
-        onClose={() => setDeletingContract(null)}
-        onConfirm={handleDeleteContract}
-        message={`Sei sicuro di voler eliminare il contratto per l'immobile "${properties.find(p=>p.id === deletingContract.propertyId)?.name}"?`}
-      />
-    )}
+      {editingContract && (
+        <EditContractModal
+          isOpen={!!editingContract}
+          onClose={() => setEditingContract(null)}
+          onSave={handleUpdateContract}
+          contract={editingContract}
+          projectId={projectId}
+        />
+      )}
+      {deletingContract && (
+        <ConfirmDeleteModal
+          isOpen={!!deletingContract}
+          onClose={() => setDeletingContract(null)}
+          onConfirm={handleDeleteContract}
+          message={`Sei sicuro di voler eliminare il contratto per l'immobile "${properties.find(p=>p.id === deletingContract.propertyId)?.name}"?`}
+        />
+      )}
+    </Suspense>
     </>
   );
 };

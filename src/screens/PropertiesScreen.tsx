@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import Card from '../components/ui/Card.tsx';
 import * as dataService from '../services/dataService.ts';
 import { Property, ProjectMemberRole, User, PropertyType, Screen } from '../types.ts';
 import { PlusCircle, Edit, Trash2, Eye, MapPin } from 'lucide-react';
-import AddPropertyModal from '../components/modals/AddPropertyModal.tsx';
-import EditPropertyModal from '../components/modals/EditPropertyModal.tsx';
-import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal.tsx';
+
+const AddPropertyModal = lazy(() => import('../components/modals/AddPropertyModal.tsx'));
+const EditPropertyModal = lazy(() => import('../components/modals/EditPropertyModal.tsx'));
+const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal.tsx'));
 
 interface PropertiesScreenProps {
   onNavigate: (screen: Screen, propertyId?: string) => void;
@@ -113,29 +114,30 @@ const PropertiesScreen: React.FC<PropertiesScreenProps> = ({ onNavigate, project
           />
         ))}
       </div>
-      
-      <AddPropertyModal 
-        isOpen={isAddModalOpen}
-        onClose={() => setAddModalOpen(false)}
-        onSave={handleAddProperty}
-        projectId={projectId}
-      />
-      {editingProperty && (
-        <EditPropertyModal
-          isOpen={!!editingProperty}
-          onClose={() => setEditingProperty(null)}
-          onSave={handleUpdateProperty}
-          property={editingProperty}
+      <Suspense fallback={null}>
+        <AddPropertyModal 
+          isOpen={isAddModalOpen}
+          onClose={() => setAddModalOpen(false)}
+          onSave={handleAddProperty}
+          projectId={projectId}
         />
-      )}
-      {deletingProperty && (
-        <ConfirmDeleteModal
-          isOpen={!!deletingProperty}
-          onClose={() => setDeletingProperty(null)}
-          onConfirm={handleDeleteProperty}
-          message={`Sei sicuro di voler eliminare l'immobile "${deletingProperty.name}"?`}
-        />
-      )}
+        {editingProperty && (
+          <EditPropertyModal
+            isOpen={!!editingProperty}
+            onClose={() => setEditingProperty(null)}
+            onSave={handleUpdateProperty}
+            property={editingProperty}
+          />
+        )}
+        {deletingProperty && (
+          <ConfirmDeleteModal
+            isOpen={!!deletingProperty}
+            onClose={() => setDeletingProperty(null)}
+            onConfirm={handleDeleteProperty}
+            message={`Sei sicuro di voler eliminare l'immobile "${deletingProperty.name}"?`}
+          />
+        )}
+      </Suspense>
     </>
   );
 };

@@ -1,12 +1,14 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import Card from '../components/ui/Card.tsx';
 import * as dataService from '../services/dataService.ts';
 import { Document, User, DocumentType, Property } from '../types.ts';
 import { PlusCircle, Edit, Trash2, Download, FileText } from 'lucide-react';
-import AddDocumentModal from '../components/modals/AddDocumentModal.tsx';
-import EditDocumentModal from '../components/modals/EditDocumentModal.tsx';
-import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal.tsx';
 import AccordionItem from '../components/ui/AccordionItem.tsx';
+
+const AddDocumentModal = lazy(() => import('../components/modals/AddDocumentModal.tsx'));
+const EditDocumentModal = lazy(() => import('../components/modals/EditDocumentModal.tsx'));
+const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal.tsx'));
+
 
 interface DocumentsScreenProps {
   projectId: string;
@@ -128,30 +130,31 @@ const DocumentsScreen: React.FC<DocumentsScreenProps> = ({ projectId, user }) =>
             )}
         </div>
       </div>
-
-      <AddDocumentModal
-        isOpen={isAddModalOpen}
-        onClose={() => setAddModalOpen(false)}
-        onSave={handleAddDocument}
-        projectId={projectId}
-      />
-      {editingDocument && (
-        <EditDocumentModal
-          isOpen={!!editingDocument}
-          onClose={() => setEditingDocument(null)}
-          onSave={handleUpdateDocument}
-          document={editingDocument}
+      <Suspense fallback={null}>
+        <AddDocumentModal
+          isOpen={isAddModalOpen}
+          onClose={() => setAddModalOpen(false)}
+          onSave={handleAddDocument}
           projectId={projectId}
         />
-      )}
-      {deletingDocument && (
-        <ConfirmDeleteModal
-          isOpen={!!deletingDocument}
-          onClose={() => setDeletingDocument(null)}
-          onConfirm={handleDeleteDocument}
-          message={`Sei sicuro di voler eliminare il documento "${deletingDocument.name}"?`}
-        />
-      )}
+        {editingDocument && (
+          <EditDocumentModal
+            isOpen={!!editingDocument}
+            onClose={() => setEditingDocument(null)}
+            onSave={handleUpdateDocument}
+            document={editingDocument}
+            projectId={projectId}
+          />
+        )}
+        {deletingDocument && (
+          <ConfirmDeleteModal
+            isOpen={!!deletingDocument}
+            onClose={() => setDeletingDocument(null)}
+            onConfirm={handleDeleteDocument}
+            message={`Sei sicuro di voler eliminare il documento "${deletingDocument.name}"?`}
+          />
+        )}
+      </Suspense>
     </>
   );
 };

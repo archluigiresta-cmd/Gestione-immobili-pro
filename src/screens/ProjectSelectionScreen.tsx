@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { User, Project } from '../types.ts';
 import * as dataService from '../services/dataService.ts';
 import { Briefcase, PlusCircle, ArrowRight, UserCircle, LogOut, Edit, MoreVertical, Trash2, Users } from 'lucide-react';
-import CreateProjectModal from '../components/modals/CreateProjectModal.tsx';
-import EditProfileModal from '../components/modals/EditProfileModal.tsx';
-import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal.tsx';
+
+const CreateProjectModal = lazy(() => import('../components/modals/CreateProjectModal.tsx'));
+const EditProfileModal = lazy(() => import('../components/modals/EditProfileModal.tsx'));
+const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal.tsx'));
 
 interface ProjectSelectionScreenProps {
   user: User;
@@ -163,25 +164,27 @@ const ProjectSelectionScreen: React.FC<ProjectSelectionScreenProps> = ({ user, o
 
       </div>
     </div>
-    <CreateProjectModal 
-        isOpen={isCreateModalOpen}
-        onClose={() => setCreateModalOpen(false)}
-        onSave={handleCreate}
-    />
-    <EditProfileModal
-        isOpen={isProfileModalOpen}
-        onClose={() => setProfileModalOpen(false)}
-        user={user}
-        onSave={handleSaveProfile}
-    />
-    {deletingProject && (
-        <ConfirmDeleteModal
-            isOpen={!!deletingProject}
-            onClose={() => setDeletingProject(null)}
-            onConfirm={handleDeleteProject}
-            message={`Sei sicuro di voler eliminare il progetto "${deletingProject.name}"? Tutti i dati associati (immobili, contratti, spese, etc.) verranno rimossi definitivamente. Questa azione è irreversibile.`}
-        />
-    )}
+    <Suspense fallback={null}>
+      <CreateProjectModal 
+          isOpen={isCreateModalOpen}
+          onClose={() => setCreateModalOpen(false)}
+          onSave={handleCreate}
+      />
+      <EditProfileModal
+          isOpen={isProfileModalOpen}
+          onClose={() => setProfileModalOpen(false)}
+          user={user}
+          onSave={handleSaveProfile}
+      />
+      {deletingProject && (
+          <ConfirmDeleteModal
+              isOpen={!!deletingProject}
+              onClose={() => setDeletingProject(null)}
+              onConfirm={handleDeleteProject}
+              message={`Sei sicuro di voler eliminare il progetto "${deletingProject.name}"? Tutti i dati associati (immobili, contratti, spese, etc.) verranno rimossi definitivamente. Questa azione è irreversibile.`}
+          />
+      )}
+    </Suspense>
     </>
   );
 };

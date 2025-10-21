@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { Property, Tenant, Contract, Expense, Maintenance, Deadline, Document, ProjectMemberRole, CustomField, CustomFieldType, HistoryLog, User } from '../types.ts';
 import * as dataService from '../services/dataService.ts';
 import Card from '../components/ui/Card.tsx';
 import { ArrowLeft, Building2, Square, BedDouble, FileText, CircleDollarSign, Wrench, Calendar, Users, PlusCircle, Edit, Trash2, Info, History, UserCircle } from 'lucide-react';
-import AddCustomFieldModal from '../components/modals/AddCustomFieldModal.tsx';
-import EditCustomFieldModal from '../components/modals/EditCustomFieldModal.tsx';
-import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal.tsx';
+
+const AddCustomFieldModal = lazy(() => import('../components/modals/AddCustomFieldModal.tsx'));
+const EditCustomFieldModal = lazy(() => import('../components/modals/EditCustomFieldModal.tsx'));
+const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal.tsx'));
+
 
 interface PropertyDetailScreenProps {
   propertyId: string;
@@ -333,29 +335,31 @@ const PropertyDetailScreen: React.FC<PropertyDetailScreenProps> = ({ propertyId,
         </div>
       </div>
       
-      <AddCustomFieldModal 
-        isOpen={isAddCfModalOpen}
-        onClose={() => setAddCfModalOpen(false)}
-        onSave={handleAddCustomField}
-      />
-      
-      {editingCf && (
-        <EditCustomFieldModal 
-            isOpen={!!editingCf}
-            onClose={() => setEditingCf(null)}
-            onSave={handleUpdateCustomField}
-            field={editingCf}
+      <Suspense fallback={null}>
+        <AddCustomFieldModal 
+          isOpen={isAddCfModalOpen}
+          onClose={() => setAddCfModalOpen(false)}
+          onSave={handleAddCustomField}
         />
-      )}
+        
+        {editingCf && (
+          <EditCustomFieldModal 
+              isOpen={!!editingCf}
+              onClose={() => setEditingCf(null)}
+              onSave={handleUpdateCustomField}
+              field={editingCf}
+          />
+        )}
 
-      {deletingCf && (
-        <ConfirmDeleteModal
-            isOpen={!!deletingCf}
-            onClose={() => setDeletingCf(null)}
-            onConfirm={handleDeleteCustomField}
-            message={`Sei sicuro di voler eliminare il campo "${deletingCf.label}"?`}
-        />
-      )}
+        {deletingCf && (
+          <ConfirmDeleteModal
+              isOpen={!!deletingCf}
+              onClose={() => setDeletingCf(null)}
+              onConfirm={handleDeleteCustomField}
+              message={`Sei sicuro di voler eliminare il campo "${deletingCf.label}"?`}
+          />
+        )}
+      </Suspense>
     </div>
   );
 };

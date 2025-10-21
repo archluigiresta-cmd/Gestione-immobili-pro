@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { DollarSign, Building, AlertTriangle, CheckCircle, Settings } from 'lucide-react';
 import Card from '../components/ui/Card.tsx';
 import * as dataService from '../services/dataService.ts';
 import { Deadline, Property, Screen } from '../types.ts';
-import CustomizeDashboardModal from '../components/modals/CustomizeDashboardModal.tsx';
 import { availableDashboardWidgets } from '../components/dashboard/widgets.tsx';
+
+const CustomizeDashboardModal = lazy(() => import('../components/modals/CustomizeDashboardModal.tsx'));
+
 
 interface StatCardProps {
   title: string;
@@ -89,12 +91,14 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate, projectId
         })}
       </div>
       
-      <CustomizeDashboardModal
-        isOpen={isCustomizeModalOpen}
-        onClose={() => setCustomizeModalOpen(false)}
-        onSave={handleSaveWidgets}
-        currentWidgets={activeWidgets}
-      />
+      <Suspense fallback={null}>
+        <CustomizeDashboardModal
+          isOpen={isCustomizeModalOpen}
+          onClose={() => setCustomizeModalOpen(false)}
+          onSave={handleSaveWidgets}
+          currentWidgets={activeWidgets}
+        />
+      </Suspense>
     </div>
   );
 };

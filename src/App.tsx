@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 
 // Import screens
 import DashboardScreen from './screens/DashboardScreen.tsx';
@@ -20,17 +20,17 @@ import LoginScreen from './screens/LoginScreen.tsx';
 import ProjectSelectionScreen from './screens/ProjectSelectionScreen.tsx';
 import UserSelectionScreen from './screens/UserSelectionScreen.tsx';
 
-// Import components
-import Sidebar from './components/layout/Sidebar.tsx';
-import Header from './components/layout/Header.tsx';
-import RegisterModal from './components/modals/RegisterModal.tsx';
-import PasswordModal from './components/modals/PasswordModal.tsx';
-
-
 // Import services and types
 import * as dataService from './services/dataService.ts';
 import * as googleDriveService from './services/googleDriveService.ts';
 import { User, Project, ProjectMemberRole, UserStatus, navigationItems, secondaryNavigationItems, Screen } from './types.ts';
+
+// Lazy load modals
+const RegisterModal = lazy(() => import('./components/modals/RegisterModal.tsx'));
+const PasswordModal = lazy(() => import('./components/modals/PasswordModal.tsx'));
+const Sidebar = lazy(() => import('./components/layout/Sidebar.tsx'));
+const Header = lazy(() => import('./components/layout/Header.tsx'));
+
 
 // PWA install type
 interface BeforeInstallPromptEvent extends Event {
@@ -207,37 +207,41 @@ const App: React.FC = () => {
     const localUsers = activeUsers.filter(u => u.password);
 
     if (appState === 'login') {
-        return <>
-            <LoginScreen 
-                onGoogleLogin={handleGoogleLogin}
-                onCollaboratorLogin={() => setAppState('selectUser')}
-                onRegister={() => setRegisterModalOpen(true)}
-                isApiReady={isApiReady}
-                hasLocalUsers={localUsers.length > 0}
-            />
-            <RegisterModal 
-                isOpen={isRegisterModalOpen}
-                onClose={() => setRegisterModalOpen(false)}
-                onRegister={handleRegister}
-            />
-        </>;
+        return (
+            <Suspense fallback={<SplashScreen />}>
+                <LoginScreen 
+                    onGoogleLogin={handleGoogleLogin}
+                    onCollaboratorLogin={() => setAppState('selectUser')}
+                    onRegister={() => setRegisterModalOpen(true)}
+                    isApiReady={isApiReady}
+                    hasLocalUsers={localUsers.length > 0}
+                />
+                <RegisterModal 
+                    isOpen={isRegisterModalOpen}
+                    onClose={() => setRegisterModalOpen(false)}
+                    onRegister={handleRegister}
+                />
+            </Suspense>
+        );
     }
 
     if (appState === 'selectUser') {
-        return <>
-            <UserSelectionScreen
-                users={localUsers}
-                onSelectUser={handleSelectUser}
-                onBackToLogin={() => setAppState('login')}
-                onRegister={() => setRegisterModalOpen(true)}
-            />
-            {userForPassword && <PasswordModal isOpen={!!userForPassword} onClose={() => {setUserForPassword(null);}} onConfirm={handlePasswordConfirm} />}
-            <RegisterModal 
-                isOpen={isRegisterModalOpen}
-                onClose={() => setRegisterModalOpen(false)}
-                onRegister={handleRegister}
-            />
-        </>
+        return (
+            <Suspense fallback={<SplashScreen />}>
+                <UserSelectionScreen
+                    users={localUsers}
+                    onSelectUser={handleSelectUser}
+                    onBackToLogin={() => setAppState('login')}
+                    onRegister={() => setRegisterModalOpen(true)}
+                />
+                {userForPassword && <PasswordModal isOpen={!!userForPassword} onClose={() => {setUserForPassword(null);}} onConfirm={handlePasswordConfirm} />}
+                <RegisterModal 
+                    isOpen={isRegisterModalOpen}
+                    onClose={() => setRegisterModalOpen(false)}
+                    onRegister={handleRegister}
+                />
+            </Suspense>
+        );
     }
     
 
@@ -246,41 +250,51 @@ const App: React.FC = () => {
     }
     
     if (appState === 'selectProject') {
-        return <ProjectSelectionScreen 
-            user={user} 
-            onSelectProject={handleSelectProject} 
-            onCreateProject={handleCreateProject}
-            onLogout={handleLogout}
-            onUpdateProfile={handleUpdateProfile}
-            onSwitchUser={() => { setUser(null); setAppState('login'); }}
-        />
+        return (
+            <Suspense fallback={<SplashScreen />}>
+                <ProjectSelectionScreen 
+                    user={user} 
+                    onSelectProject={handleSelectProject} 
+                    onCreateProject={handleCreateProject}
+                    onLogout={handleLogout}
+                    onUpdateProfile={handleUpdateProfile}
+                    onSwitchUser={() => { setUser(null); setAppState('login'); }}
+                />
+            </Suspense>
+        );
     }
 
     if (appState === 'main' && selectedProject) {
         const currentScreenItem = [...navigationItems, ...secondaryNavigationItems].find(item => item.screen === activeScreen);
         return (
             <div className="flex h-screen bg-light">
-                <Sidebar 
-                    activeScreen={activeScreen} 
-                    setActiveScreen={(s) => handleNavigate(s)} 
-                    isSidebarOpen={isSidebarOpen} 
-                    setSidebarOpen={setSidebarOpen} 
-                    onInstall={handleInstall}
-                    isInstallable={isInstallable}
-                />
-                <div className="flex-1 flex flex-col overflow-hidden">
-                    <Header 
-                        currentScreen={currentScreenItem?.name || 'Dettaglio'}
-                        currentProjectName={selectedProject.name}
-                        toggleSidebar={() => setSidebarOpen(!isSidebarOpen)} 
-                        user={user}
-                        onLogout={handleLogout}
-                        onNavigate={(s) => handleNavigate(s)}
-                        onBackToProjects={() => setAppState('selectProject')}
-                        pendingUsersCount={dataService.getUsers().filter(u => u.status === UserStatus.PENDING).length}
+                <Suspense fallback={null}>
+                    <Sidebar 
+                        activeScreen={activeScreen} 
+                        setActiveScreen={(s) => handleNavigate(s)} 
+                        isSidebarOpen={isSidebarOpen} 
+                        setSidebarOpen={setSidebarOpen} 
+                        onInstall={handleInstall}
+                        isInstallable={isInstallable}
                     />
+                </Suspense>
+                <div className="flex-1 flex flex-col overflow-hidden">
+                    <Suspense fallback={null}>
+                        <Header 
+                            currentScreen={currentScreenItem?.name || 'Dettaglio'}
+                            currentProjectName={selectedProject.name}
+                            toggleSidebar={() => setSidebarOpen(!isSidebarOpen)} 
+                            user={user}
+                            onLogout={handleLogout}
+                            onNavigate={(s) => handleNavigate(s)}
+                            onBackToProjects={() => setAppState('selectProject')}
+                            pendingUsersCount={dataService.getUsers().filter(u => u.status === UserStatus.PENDING).length}
+                        />
+                    </Suspense>
                     <main className="flex-1 overflow-x-hidden overflow-y-auto p-6">
-                        {renderScreen()}
+                        <Suspense fallback={<div className="text-center p-8">Caricamento...</div>}>
+                            {renderScreen()}
+                        </Suspense>
                     </main>
                 </div>
             </div>
