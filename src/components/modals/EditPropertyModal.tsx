@@ -9,7 +9,7 @@ interface EditPropertyModalProps {
   property: Property;
 }
 
-export const EditPropertyModal: React.FC<EditPropertyModalProps> = ({ isOpen, onClose, onSave, property }) => {
+const EditPropertyModal: React.FC<EditPropertyModalProps> = ({ isOpen, onClose, onSave, property }) => {
   const [formData, setFormData] = useState<Property>(property);
   const [imagePreview, setImagePreview] = useState<string | null>(property.imageUrl);
   const [error, setError] = useState('');
@@ -167,3 +167,5 @@ export const EditPropertyModal: React.FC<EditPropertyModalProps> = ({ isOpen, on
     </div>
   );
 };
+
+export default EditPropertyModal;
