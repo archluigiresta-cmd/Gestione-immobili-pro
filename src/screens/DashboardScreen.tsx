@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { DollarSign, Building, AlertTriangle, CheckCircle, Clock, Settings, Wrench } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import Card from '../components/ui/Card';
-import * as dataService from '../services/dataService';
-import { Deadline, Property, Expense, Maintenance, MaintenanceStatus, ExpenseCategory, Screen } from '../types';
+import Card from '../components/ui/Card.tsx';
+import * as dataService from '../services/dataService.ts';
+import { Deadline, Property, Expense, Maintenance, MaintenanceStatus, ExpenseCategory, Screen } from '../types.ts';
 import CustomizeDashboardModal from '../components/modals/CustomizeDashboardModal.tsx';
 
 interface StatCardProps {

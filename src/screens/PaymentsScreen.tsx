@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import Card from '../components/ui/Card';
-import * as dataService from '../services/dataService';
-import { Payment, PaymentStatus, Property, ProjectMemberRole, User, Contract, Tenant } from '../types';
+import Card from '../components/ui/Card.tsx';
+import * as dataService from '../services/dataService.ts';
+import { Payment, PaymentStatus, Property, ProjectMemberRole, User, Contract, Tenant } from '../types.ts';
 import { CheckCircle, Clock, AlertCircle, PlusCircle, Edit, Trash2, DollarSign } from 'lucide-react';
-import AccordionItem from '../components/ui/AccordionItem';
-import ExportButton from '../components/ui/ExportButton';
+import AccordionItem from '../components/ui/AccordionItem.tsx';
+import ExportButton from '../components/ui/ExportButton.tsx';
 import AddPaymentModal from '../components/modals/AddPaymentModal.tsx';
 import EditPaymentModal from '../components/modals/EditPaymentModal.tsx';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal.tsx';

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import Card from '../components/ui/Card';
-import * as dataService from '../services/dataService';
-import { Property, ProjectMemberRole, User, PropertyType, Screen } from '../types';
+import Card from '../components/ui/Card.tsx';
+import * as dataService from '../services/dataService.ts';
+import { Property, ProjectMemberRole, User, PropertyType, Screen } from '../types.ts';
 import { PlusCircle, Edit, Trash2, Eye, MapPin } from 'lucide-react';
 import AddPropertyModal from '../components/modals/AddPropertyModal.tsx';
 import EditPropertyModal from '../components/modals/EditPropertyModal.tsx';

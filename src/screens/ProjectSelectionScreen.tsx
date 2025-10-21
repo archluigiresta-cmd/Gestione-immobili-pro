@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Project } from '../types';
-import * as dataService from '../services/dataService';
+import { User, Project } from '../types.ts';
+import * as dataService from '../services/dataService.ts';
 import { Briefcase, PlusCircle, ArrowRight, UserCircle, LogOut, Edit, MoreVertical, Trash2, Users } from 'lucide-react';
 import CreateProjectModal from '../components/modals/CreateProjectModal.tsx';
 import EditProfileModal from '../components/modals/EditProfileModal.tsx';

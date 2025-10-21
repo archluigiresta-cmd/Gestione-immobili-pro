@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Project, ProjectMemberRole, UserStatus } from '../types';
-import Card from '../components/ui/Card';
-import * as dataService from '../services/dataService';
+import { User, Project, ProjectMemberRole, UserStatus } from '../types.ts';
+import Card from '../components/ui/Card.tsx';
+import * as dataService from '../services/dataService.ts';
 import { UserCircle, Edit, Trash2, Shield, PlusCircle, Share2, Users, HardDrive, Upload, Check, X } from 'lucide-react';
 
 import EditProfileModal from '../components/modals/EditProfileModal.tsx';

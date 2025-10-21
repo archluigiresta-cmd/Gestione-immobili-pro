@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import Card from '../components/ui/Card';
-import * as dataService from '../services/dataService';
-import { Expense, ExpenseCategory, User, Property } from '../types';
+import Card from '../components/ui/Card.tsx';
+import * as dataService from '../services/dataService.ts';
+import { Expense, ExpenseCategory, User, Property } from '../types.ts';
 import { PlusCircle, Edit, Trash2, ExternalLink, Download, DollarSign, File as FileIcon, Clock, History } from 'lucide-react';
 import AddExpenseModal from '../components/modals/AddExpenseModal.tsx';
 import EditExpenseModal from '../components/modals/EditExpenseModal.tsx';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal.tsx';
-import AccordionItem from '../components/ui/AccordionItem';
+import AccordionItem from '../components/ui/AccordionItem.tsx';
 import ExpenseHistoryModal from '../components/modals/ExpenseHistoryModal.tsx';
 
 

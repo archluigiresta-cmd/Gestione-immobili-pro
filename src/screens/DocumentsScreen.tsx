@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import Card from '../components/ui/Card';
-import * as dataService from '../services/dataService';
-import { Document, User, DocumentType, Property } from '../types';
+import Card from '../components/ui/Card.tsx';
+import * as dataService from '../services/dataService.ts';
+import { Document, User, DocumentType, Property } from '../types.ts';
 import { PlusCircle, Edit, Trash2, Download, FileText } from 'lucide-react';
 import AddDocumentModal from '../components/modals/AddDocumentModal.tsx';
 import EditDocumentModal from '../components/modals/EditDocumentModal.tsx';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal.tsx';
-import AccordionItem from '../components/ui/AccordionItem';
+import AccordionItem from '../components/ui/AccordionItem.tsx';
 
 interface DocumentsScreenProps {
   projectId: string;

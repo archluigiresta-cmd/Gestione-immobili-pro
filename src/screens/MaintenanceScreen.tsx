@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import Card from '../components/ui/Card';
-import * as dataService from '../services/dataService';
-import { Maintenance, MaintenanceStatus, User, Property } from '../types';
+import Card from '../components/ui/Card.tsx';
+import * as dataService from '../services/dataService.ts';
+import { Maintenance, MaintenanceStatus, User, Property } from '../types.ts';
 import { PlusCircle, Edit, Trash2, Wrench, Clock, CheckCircle } from 'lucide-react';
 import AddMaintenanceModal from '../components/modals/AddMaintenanceModal.tsx';
 import EditMaintenanceModal from '../components/modals/EditMaintenanceModal.tsx';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal.tsx';
-import AccordionItem from '../components/ui/AccordionItem';
+import AccordionItem from '../components/ui/AccordionItem.tsx';
 
 interface MaintenanceScreenProps {
   projectId: string;

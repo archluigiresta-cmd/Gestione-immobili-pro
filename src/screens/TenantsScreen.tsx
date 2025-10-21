@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import Card from '../components/ui/Card';
-import * as dataService from '../services/dataService';
-import { Tenant, User, Property, Contract } from '../types';
+import Card from '../components/ui/Card.tsx';
+import * as dataService from '../services/dataService.ts';
+import { Tenant, User, Property, Contract } from '../types.ts';
 import { Mail, Phone, Home, PlusCircle, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import AddTenantModal from '../components/modals/AddTenantModal.tsx';
 import EditTenantModal from '../components/modals/EditTenantModal.tsx';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal.tsx';
-import AccordionItem from '../components/ui/AccordionItem';
+import AccordionItem from '../components/ui/AccordionItem.tsx';
 
 const TenantCard: React.FC<{ tenant: Tenant, propertyName: string, onEdit: () => void, onDelete: () => void }> = ({ tenant, propertyName, onEdit, onDelete }) => {
     const [menuOpen, setMenuOpen] = useState(false);
