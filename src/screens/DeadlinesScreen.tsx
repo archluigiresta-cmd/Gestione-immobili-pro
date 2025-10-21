@@ -7,7 +7,8 @@ import AddDeadlineModal from '../components/modals/AddDeadlineModal.tsx';
 import EditDeadlineModal from '../components/modals/EditDeadlineModal.tsx';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal.tsx';
 import AccordionItem from '../components/ui/AccordionItem.tsx';
-import InteractiveTable, { Column } from '../components/ui/InteractiveTable.tsx';
+import InteractiveTable from '../components/ui/InteractiveTable.tsx';
+import type { Column } from '../components/ui/InteractiveTable.tsx';
 
 interface DeadlinesScreenProps {
   projectId: string;
