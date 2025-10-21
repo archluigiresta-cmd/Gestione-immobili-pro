@@ -3,7 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { Clock } from 'lucide-react';
 import Card from '../ui/Card.tsx';
 import * as dataService from '../../services/dataService.ts';
-import { Deadline, Expense, Maintenance, MaintenanceStatus, ExpenseCategory } from '../../types.ts';
+import { Deadline, Expense, Maintenance, MaintenanceStatus, ExpenseCategory, Property } from '../../types.ts';
 
 interface WidgetProps {
   projectId: string;
