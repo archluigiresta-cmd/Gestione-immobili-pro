@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { Expense, Property, ExpenseCategory } from '../../types';
+import { Expense, Property, ExpenseCategory } from '../../types.ts';
 import { X, Download, ExternalLink } from 'lucide-react';
-import InteractiveTable, { Column } from '../ui/InteractiveTable';
+import InteractiveTable, { Column } from '../ui/InteractiveTable.tsx';
 
 interface ExpenseHistoryModalProps {
   isOpen: boolean;

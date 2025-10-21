@@ -1,6 +1,6 @@
 import React from 'react';
 import { Download } from 'lucide-react';
-import { exportToCsv } from '../../utils/csv';
+import { exportToCsv } from '../../utils/csv.ts';
 
 interface ExportButtonProps<T> {
   data: T[];
