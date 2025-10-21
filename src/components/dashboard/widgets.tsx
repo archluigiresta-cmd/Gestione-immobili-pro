@@ -9,7 +9,7 @@ interface WidgetProps {
   projectId: string;
 }
 
-// Widget Components
+// Widget Components (moved from DashboardScreen)
 const UpcomingDeadlinesWidget: React.FC<WidgetProps> = ({ projectId }) => {
     const deadlines = dataService.getDeadlines(projectId);
     const upcomingDeadlinesList = deadlines
