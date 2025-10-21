@@ -9,7 +9,7 @@ interface WidgetProps {
   projectId: string;
 }
 
-// Widget Components (moved from DashboardScreen)
+// Widget Components
 const UpcomingDeadlinesWidget: React.FC<WidgetProps> = ({ projectId }) => {
     const deadlines = dataService.getDeadlines(projectId);
     const upcomingDeadlinesList = deadlines
@@ -113,7 +113,7 @@ const ExpensesSummaryWidget: React.FC<WidgetProps> = ({ projectId }) => {
                     <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} fill="#8884d8" label>
                         {chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                     </Pie>
-                    <Tooltip formatter={(value: number) => `€${value.toLocaleString('it-IT')}`} />
+                    <Tooltip formatter={(value: number) => `€${value.toLocaleString('it-IT')}`}/>
                     <Legend />
                 </PieChart>
             </ResponsiveContainer>
