@@ -25,7 +25,7 @@ import * as dataService from './services/dataService.ts';
 import * as googleDriveService from './services/googleDriveService.ts';
 import { User, Project, ProjectMemberRole, UserStatus, navigationItems, secondaryNavigationItems, Screen } from './types.ts';
 
-// Lazy load modals
+// Lazy load modals and major layout components
 const RegisterModal = lazy(() => import('./components/modals/RegisterModal.tsx'));
 const PasswordModal = lazy(() => import('./components/modals/PasswordModal.tsx'));
 const Sidebar = lazy(() => import('./components/layout/Sidebar.tsx'));
