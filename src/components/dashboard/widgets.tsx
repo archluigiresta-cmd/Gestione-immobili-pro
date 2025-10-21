@@ -26,7 +26,7 @@ const UpcomingDeadlinesWidget: React.FC<WidgetProps> = ({ projectId }) => {
         <Card className="p-4">
           <h2 className="text-lg font-bold text-dark mb-4">Prossime Scadenze</h2>
           <ul>
-            {upcomingDeadlinesList.map((deadline: Deadline) => {
+            {upcomingDeadlinesList.length > 0 ? upcomingDeadlinesList.map((deadline: Deadline) => {
               const daysLeft = getDaysDiff(deadline.dueDate);
               const isOverdue = daysLeft < 0;
               const urgencyColor = isOverdue ? 'text-red-500' : daysLeft < 7 ? 'text-yellow-600' : 'text-green-600';
@@ -42,7 +42,7 @@ const UpcomingDeadlinesWidget: React.FC<WidgetProps> = ({ projectId }) => {
                   {isOverdue ? `Scaduto` : `${daysLeft} gg`}
                 </div>
               </li>
-            )})}
+            )}) : <p className="text-sm text-gray-500 text-center py-4">Nessuna scadenza imminente.</p>}
           </ul>
         </Card>
     );
@@ -57,15 +57,17 @@ const RecentExpensesWidget: React.FC<WidgetProps> = ({ projectId }) => {
     return (
         <Card className="p-4">
             <h2 className="text-lg font-bold text-dark mb-4">Spese Recenti</h2>
-            <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={recentExpensesData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip formatter={(value: number) => `€${value.toLocaleString('it-IT')}`}/>
-                <Bar dataKey="importo" fill="#1E40AF" />
-            </BarChart>
-            </ResponsiveContainer>
+            {recentExpensesData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={recentExpensesData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip formatter={(value: number) => `€${value.toLocaleString('it-IT')}`}/>
+                    <Bar dataKey="importo" fill="#1E40AF" />
+                </BarChart>
+                </ResponsiveContainer>
+            ) : <p className="text-sm text-gray-500 text-center py-4">Nessuna spesa recente.</p>}
         </Card>
     );
 };
@@ -108,15 +110,17 @@ const ExpensesSummaryWidget: React.FC<WidgetProps> = ({ projectId }) => {
     return (
         <Card className="p-4">
             <h2 className="text-lg font-bold text-dark mb-4">Spese per Categoria</h2>
-            <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                    <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} fill="#8884d8" label>
-                        {chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-                    </Pie>
-                    <Tooltip formatter={(value: number) => `€${value.toLocaleString('it-IT')}`}/>
-                    <Legend />
-                </PieChart>
-            </ResponsiveContainer>
+             {chartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                        <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} fill="#8884d8" label>
+                            {chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                        </Pie>
+                        <Tooltip formatter={(value: number) => `€${value.toLocaleString('it-IT')}`}/>
+                        <Legend />
+                    </PieChart>
+                </ResponsiveContainer>
+            ) : <p className="text-sm text-gray-500 text-center py-4">Nessuna spesa da categorizzare.</p>}
         </Card>
     );
 };
