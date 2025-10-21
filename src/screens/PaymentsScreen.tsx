@@ -5,9 +5,9 @@ import { Payment, PaymentStatus, Property, ProjectMemberRole, User, Contract, Te
 import { CheckCircle, Clock, AlertCircle, PlusCircle, Edit, Trash2, DollarSign } from 'lucide-react';
 import AccordionItem from '../components/ui/AccordionItem';
 import ExportButton from '../components/ui/ExportButton';
-import AddPaymentModal from '../components/modals/AddPaymentModal';
-import EditPaymentModal from '../components/modals/EditPaymentModal';
-import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
+import AddPaymentModal from '../components/modals/AddPaymentModal.tsx';
+import EditPaymentModal from '../components/modals/EditPaymentModal.tsx';
+import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal.tsx';
 
 interface PaymentsScreenProps {
   projectId: string;
