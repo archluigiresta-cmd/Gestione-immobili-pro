@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { User, Project } from '../types';
 import * as dataService from '../services/dataService';
 import { Briefcase, PlusCircle, ArrowRight, UserCircle, LogOut, Edit, MoreVertical, Trash2, Users } from 'lucide-react';
-import CreateProjectModal from '../components/modals/CreateProjectModal';
-import EditProfileModal from '../components/modals/EditProfileModal';
-import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
+import CreateProjectModal from '../components/modals/CreateProjectModal.tsx';
+import EditProfileModal from '../components/modals/EditProfileModal.tsx';
+import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal.tsx';
 
 interface ProjectSelectionScreenProps {
   user: User;

@@ -3,9 +3,9 @@ import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
 import { Maintenance, MaintenanceStatus, User, Property } from '../types';
 import { PlusCircle, Edit, Trash2, Wrench, Clock, CheckCircle } from 'lucide-react';
-import AddMaintenanceModal from '../components/modals/AddMaintenanceModal';
-import EditMaintenanceModal from '../components/modals/EditMaintenanceModal';
-import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
+import AddMaintenanceModal from '../components/modals/AddMaintenanceModal.tsx';
+import EditMaintenanceModal from '../components/modals/EditMaintenanceModal.tsx';
+import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal.tsx';
 import AccordionItem from '../components/ui/AccordionItem';
 
 interface MaintenanceScreenProps {

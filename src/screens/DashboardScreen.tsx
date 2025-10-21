@@ -4,7 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
 import { Deadline, Property, Expense, Maintenance, MaintenanceStatus, ExpenseCategory, Screen } from '../types';
-import CustomizeDashboardModal from '../components/modals/CustomizeDashboardModal';
+import CustomizeDashboardModal from '../components/modals/CustomizeDashboardModal.tsx';
 
 interface StatCardProps {
   title: string;

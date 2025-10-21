@@ -3,9 +3,9 @@ import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
 import { Document, User, DocumentType, Property } from '../types';
 import { PlusCircle, Edit, Trash2, Download, FileText } from 'lucide-react';
-import AddDocumentModal from '../components/modals/AddDocumentModal';
-import EditDocumentModal from '../components/modals/EditDocumentModal';
-import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
+import AddDocumentModal from '../components/modals/AddDocumentModal.tsx';
+import EditDocumentModal from '../components/modals/EditDocumentModal.tsx';
+import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal.tsx';
 import AccordionItem from '../components/ui/AccordionItem';
 
 interface DocumentsScreenProps {

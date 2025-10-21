@@ -23,8 +23,8 @@ import UserSelectionScreen from './screens/UserSelectionScreen';
 // Import components
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
-import RegisterModal from './components/modals/RegisterModal';
-import PasswordModal from './components/modals/PasswordModal';
+import RegisterModal from './components/modals/RegisterModal.tsx';
+import PasswordModal from './components/modals/PasswordModal.tsx';
 
 
 // Import services and types

@@ -3,9 +3,9 @@ import { Property, Tenant, Contract, Expense, Maintenance, Deadline, Document, P
 import * as dataService from '../services/dataService';
 import Card from '../components/ui/Card';
 import { ArrowLeft, Building2, Square, BedDouble, FileText, CircleDollarSign, Wrench, Calendar, Users, PlusCircle, Edit, Trash2, Info, History, UserCircle } from 'lucide-react';
-import AddCustomFieldModal from '../components/modals/AddCustomFieldModal';
-import EditCustomFieldModal from '../components/modals/EditCustomFieldModal';
-import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
+import AddCustomFieldModal from '../components/modals/AddCustomFieldModal.tsx';
+import EditCustomFieldModal from '../components/modals/EditCustomFieldModal.tsx';
+import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal.tsx';
 
 interface PropertyDetailScreenProps {
   propertyId: string;
