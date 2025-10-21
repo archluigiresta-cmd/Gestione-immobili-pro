@@ -1,6 +1,6 @@
 import React from 'react';
 import { User } from '../types';
-import { UserCircle, ArrowRight, UserPlus, LogIn } from 'lucide-react';
+import { ArrowRight, UserPlus, Users } from 'lucide-react';
 
 const GoogleIcon = () => (
     <svg className="w-6 h-6 mr-3" viewBox="0 0 48 48">
@@ -12,20 +12,18 @@ const GoogleIcon = () => (
 );
 
 interface LoginScreenProps {
-    users: User[];
-    onSelectUser: (user: User) => void;
     onGoogleLogin: () => void;
+    onCollaboratorLogin: () => void;
     onRegister: () => void;
     isApiReady: boolean;
+    hasLocalUsers: boolean;
 }
 
-const LoginScreen: React.FC<LoginScreenProps> = ({ users, onSelectUser, onGoogleLogin, onRegister, isApiReady }) => {
-    // Local users are identified by having a password. Google-synced users do not need one in the app.
-    const localUsers = users.filter(u => u.password);
+const LoginScreen: React.FC<LoginScreenProps> = ({ onGoogleLogin, onCollaboratorLogin, onRegister, isApiReady, hasLocalUsers }) => {
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-light">
-            <div className="w-full max-w-lg p-8 space-y-6 bg-white rounded-2xl shadow-2xl text-center m-4">
+            <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-2xl shadow-2xl text-center m-4">
                 <h1 className="text-3xl font-bold text-primary">Gest-Immo PRO</h1>
                 <p className="mt-2 text-gray-600">
                     Accedi con Google per la sincronizzazione dei dati, oppure usa un profilo collaboratore.
@@ -46,32 +44,25 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ users, onSelectUser, onGoogle
                             Inizializzazione dei servizi Google...
                         </p>
                     )}
-
-                    {localUsers.length > 0 && (
+                    
+                    {hasLocalUsers && (
                         <>
                             <div className="relative pt-2">
                                 <div className="absolute inset-0 flex items-center"><span className="w-full border-t"></span></div>
                                 <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">Oppure</span></div>
                             </div>
-                            <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-                                {localUsers.map(user => (
-                                    <button
-                                        key={user.id}
-                                        onClick={() => onSelectUser(user)}
-                                        className="w-full flex items-center p-3 text-left bg-white border rounded-lg hover:bg-gray-100 transition-colors"
-                                    >
-                                        <UserCircle size={32} className="text-gray-500 mr-4" />
-                                        <div className="flex-1">
-                                            <p className="font-bold text-md text-dark">{user.name}</p>
-                                        </div>
-                                        <LogIn size={20} className="text-gray-400" />
-                                    </button>
-                                ))}
-                            </div>
+                            <button
+                                onClick={onCollaboratorLogin}
+                                className="w-full flex items-center justify-center p-4 text-left bg-white border rounded-lg hover:bg-gray-100 transition-colors"
+                            >
+                                <Users size={24} className="text-gray-600 mr-3" />
+                                <span className="font-semibold text-lg text-dark flex-1">Accedi come Collaboratore</span>
+                                <ArrowRight size={20} className="text-gray-400" />
+                            </button>
                         </>
                     )}
                     
-                     <div className="pt-4 border-t">
+                    <div className="pt-4 border-t">
                         <button
                             onClick={onRegister}
                             className="w-full flex items-center justify-center px-4 py-3 bg-secondary text-primary font-semibold rounded-lg hover:bg-blue-200 transition-colors"

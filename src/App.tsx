@@ -18,6 +18,7 @@ import HelpScreen from './screens/HelpScreen';
 import SplashScreen from './screens/SplashScreen';
 import LoginScreen from './screens/LoginScreen';
 import ProjectSelectionScreen from './screens/ProjectSelectionScreen';
+import UserSelectionScreen from './screens/UserSelectionScreen';
 
 // Import components
 import Sidebar from './components/layout/Sidebar';
@@ -39,7 +40,7 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 const App: React.FC = () => {
-    const [appState, setAppState] = useState<'login' | 'selectProject' | 'main'>('login');
+    const [appState, setAppState] = useState<'login' | 'selectUser' | 'selectProject' | 'main'>('login');
     const [user, setUser] = useState<User | null>(null);
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [activeScreen, setActiveScreen] = useState<Screen>('dashboard');
@@ -202,23 +203,41 @@ const App: React.FC = () => {
         return <SplashScreen />;
     }
     
+    const activeUsers = dataService.getUsers().filter(u => u.status === UserStatus.ACTIVE);
+    const localUsers = activeUsers.filter(u => u.password);
+
     if (appState === 'login') {
-        const users = dataService.getUsers().filter(u => u.status === UserStatus.ACTIVE);
         return <>
             <LoginScreen 
-                users={users}
-                onSelectUser={handleSelectUser}
                 onGoogleLogin={handleGoogleLogin}
+                onCollaboratorLogin={() => setAppState('selectUser')}
                 onRegister={() => setRegisterModalOpen(true)}
                 isApiReady={isApiReady}
+                hasLocalUsers={localUsers.length > 0}
             />
             <RegisterModal 
                 isOpen={isRegisterModalOpen}
                 onClose={() => setRegisterModalOpen(false)}
                 onRegister={handleRegister}
             />
-            {userForPassword && <PasswordModal isOpen={!!userForPassword} onClose={() => {setUserForPassword(null);}} onConfirm={handlePasswordConfirm} />}
         </>;
+    }
+
+    if (appState === 'selectUser') {
+        return <>
+            <UserSelectionScreen
+                users={localUsers}
+                onSelectUser={handleSelectUser}
+                onBackToLogin={() => setAppState('login')}
+                onRegister={() => setRegisterModalOpen(true)}
+            />
+            {userForPassword && <PasswordModal isOpen={!!userForPassword} onClose={() => {setUserForPassword(null);}} onConfirm={handlePasswordConfirm} />}
+            <RegisterModal 
+                isOpen={isRegisterModalOpen}
+                onClose={() => setRegisterModalOpen(false)}
+                onRegister={handleRegister}
+            />
+        </>
     }
     
 
