@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Expense, Property, ExpenseCategory } from '../../types';
 import { X, Download, ExternalLink } from 'lucide-react';

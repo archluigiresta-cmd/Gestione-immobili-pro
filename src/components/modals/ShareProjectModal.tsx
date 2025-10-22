@@ -98,5 +98,4 @@ const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, 
   );
 };
 
-// FIX: Changed export syntax to help with module resolution for React.lazy
-export { ShareProjectModal as default };
+export default ShareProjectModal;
