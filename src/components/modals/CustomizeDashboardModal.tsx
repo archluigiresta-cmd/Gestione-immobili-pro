@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-// FIX: Import from widgets file to break circular dependency with DashboardScreen
-import { availableDashboardWidgets } from '../../components/dashboard/widgets';
+import { availableDashboardWidgets } from '@/components/dashboard/widgets';
 
 interface CustomizeDashboardModalProps {
   isOpen: boolean;

@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
-import { User, Project } from '../types';
-import * as dataService from '../services/dataService';
+import React, { useState, useEffect, useRef } from 'react';
+import { User, Project } from '@/types';
+import * as dataService from '@/services/dataService';
 import { Briefcase, PlusCircle, ArrowRight, UserCircle, LogOut, Edit, MoreVertical, Trash2, Users } from 'lucide-react';
-
-const CreateProjectModal = lazy(() => import('../components/modals/CreateProjectModal'));
-const EditProfileModal = lazy(() => import('../components/modals/EditProfileModal'));
-const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal'));
+import CreateProjectModal from '@/components/modals/CreateProjectModal';
+import EditProfileModal from '@/components/modals/EditProfileModal';
+import ConfirmDeleteModal from '@/components/modals/ConfirmDeleteModal';
 
 interface ProjectSelectionScreenProps {
   user: User;
@@ -87,6 +86,7 @@ const ProjectSelectionScreen: React.FC<ProjectSelectionScreenProps> = ({ user, o
   
   const handleCreate = (projectName: string) => {
     onCreateProject(projectName);
+    // After creating, the main app logic handles selecting it. We just need to refresh our list.
     loadProjects(); 
     setCreateModalOpen(false);
   }
@@ -94,7 +94,7 @@ const ProjectSelectionScreen: React.FC<ProjectSelectionScreenProps> = ({ user, o
   const handleDeleteProject = () => {
     if (deletingProject) {
         dataService.deleteProject(deletingProject.id);
-        loadProjects();
+        loadProjects(); // Refresh the list after deletion
         setDeletingProject(null);
     }
   };
@@ -119,7 +119,7 @@ const ProjectSelectionScreen: React.FC<ProjectSelectionScreenProps> = ({ user, o
                     </button>
                 </div>
             </div>
-             <div className="flex flex-col items-end gap-2">
+            <div className="flex flex-col items-end gap-2">
                 <button onClick={onLogout} className="flex items-center text-sm text-red-600 font-semibold p-2 rounded-lg hover:bg-red-50">
                     <LogOut size={16} className="mr-1.5"/> Esci
                 </button>
@@ -164,27 +164,25 @@ const ProjectSelectionScreen: React.FC<ProjectSelectionScreenProps> = ({ user, o
 
       </div>
     </div>
-    <Suspense fallback={null}>
-      <CreateProjectModal 
-          isOpen={isCreateModalOpen}
-          onClose={() => setCreateModalOpen(false)}
-          onSave={handleCreate}
-      />
-      <EditProfileModal
-          isOpen={isProfileModalOpen}
-          onClose={() => setProfileModalOpen(false)}
-          user={user}
-          onSave={handleSaveProfile}
-      />
-      {deletingProject && (
-          <ConfirmDeleteModal
-              isOpen={!!deletingProject}
-              onClose={() => setDeletingProject(null)}
-              onConfirm={handleDeleteProject}
-              message={`Sei sicuro di voler eliminare il progetto "${deletingProject.name}"? Tutti i dati associati (immobili, contratti, spese, etc.) verranno rimossi definitivamente. Questa azione è irreversibile.`}
-          />
-      )}
-    </Suspense>
+    <CreateProjectModal 
+        isOpen={isCreateModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onSave={handleCreate}
+    />
+    <EditProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setProfileModalOpen(false)}
+        user={user}
+        onSave={handleSaveProfile}
+    />
+    {deletingProject && (
+        <ConfirmDeleteModal
+            isOpen={!!deletingProject}
+            onClose={() => setDeletingProject(null)}
+            onConfirm={handleDeleteProject}
+            message={`Sei sicuro di voler eliminare il progetto "${deletingProject.name}"? Tutti i dati associati (immobili, contratti, spese, etc.) verranno rimossi definitivamente. Questa azione è irreversibile.`}
+        />
+    )}
     </>
   );
 };

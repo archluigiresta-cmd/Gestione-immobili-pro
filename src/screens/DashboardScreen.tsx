@@ -1,12 +1,10 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DollarSign, Building, AlertTriangle, CheckCircle, Settings } from 'lucide-react';
-import Card from '../components/ui/Card';
-import * as dataService from '../services/dataService';
-import { Deadline, Property, Screen } from '../types';
-import { availableDashboardWidgets } from '../components/dashboard/widgets';
-
-const CustomizeDashboardModal = lazy(() => import('../components/modals/CustomizeDashboardModal'));
-
+import Card from '@/components/ui/Card';
+import * as dataService from '@/services/dataService';
+import { Deadline, Property, Screen } from '@/types';
+import CustomizeDashboardModal from '@/components/modals/CustomizeDashboardModal';
+import { availableDashboardWidgets } from '@/components/dashboard/widgets';
 
 interface StatCardProps {
   title: string;
@@ -91,14 +89,12 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate, projectId
         })}
       </div>
       
-      <Suspense fallback={null}>
-        <CustomizeDashboardModal
-          isOpen={isCustomizeModalOpen}
-          onClose={() => setCustomizeModalOpen(false)}
-          onSave={handleSaveWidgets}
-          currentWidgets={activeWidgets}
-        />
-      </Suspense>
+      <CustomizeDashboardModal
+        isOpen={isCustomizeModalOpen}
+        onClose={() => setCustomizeModalOpen(false)}
+        onSave={handleSaveWidgets}
+        currentWidgets={activeWidgets}
+      />
     </div>
   );
 };

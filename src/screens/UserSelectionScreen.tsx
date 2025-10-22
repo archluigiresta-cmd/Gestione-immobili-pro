@@ -1,5 +1,5 @@
 import React from 'react';
-import { User } from '../types';
+import { User } from '@/types';
 import { UserCircle, ArrowRight, ArrowLeft, UserPlus } from 'lucide-react';
 
 interface UserSelectionScreenProps {

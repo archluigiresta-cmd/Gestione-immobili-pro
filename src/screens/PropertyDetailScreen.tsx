@@ -1,13 +1,11 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { Property, Tenant, Contract, Expense, Maintenance, Deadline, Document, ProjectMemberRole, CustomField, CustomFieldType, HistoryLog, User } from '../types';
-import * as dataService from '../services/dataService';
-import Card from '../components/ui/Card';
+import React, { useState, useEffect } from 'react';
+import { Property, Tenant, Contract, Expense, Maintenance, Deadline, Document, ProjectMemberRole, CustomField, CustomFieldType, HistoryLog, User } from '@/types';
+import * as dataService from '@/services/dataService';
+import Card from '@/components/ui/Card';
 import { ArrowLeft, Building2, Square, BedDouble, FileText, CircleDollarSign, Wrench, Calendar, Users, PlusCircle, Edit, Trash2, Info, History, UserCircle } from 'lucide-react';
-
-const AddCustomFieldModal = lazy(() => import('../components/modals/AddCustomFieldModal'));
-const EditCustomFieldModal = lazy(() => import('../components/modals/EditCustomFieldModal'));
-const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal'));
-
+import AddCustomFieldModal from '@/components/modals/AddCustomFieldModal';
+import EditCustomFieldModal from '@/components/modals/EditCustomFieldModal';
+import ConfirmDeleteModal from '@/components/modals/ConfirmDeleteModal';
 
 interface PropertyDetailScreenProps {
   propertyId: string;
@@ -302,64 +300,67 @@ const PropertyDetailScreen: React.FC<PropertyDetailScreenProps> = ({ propertyId,
                 </div>
                 <div className="p-6">
                     <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-bold text-dark">{tabs.find(t=>t.id === activeTab)?.label}</h2>
-                        {activeTab !== 'history' && (
-                            <button 
-                                onClick={handleAddButton}
-                                className="flex items-center text-sm px-3 py-1.5 bg-secondary text-primary font-semibold rounded-lg hover:bg-blue-200 transition-colors disabled:bg-gray-200 disabled:text-gray-500 disabled:cursor-not-allowed"
-                                disabled={isViewer}
-                            >
+                        <h2 className="text-xl font-bold text-dark">
+                            Dettagli {tabs.find(t => t.id === activeTab)?.label}
+                        </h2>
+                        {activeTab !== 'history' && !isViewer && (
+                             <button onClick={handleAddButton} className="flex items-center text-sm px-3 py-1.5 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover">
                                 <PlusCircle size={16} className="mr-2"/> Aggiungi
                             </button>
                         )}
                     </div>
 
                     {activeTab === 'tenant' && (
-                         property.isRented && contract && tenant ? (
+                        <div>
+                        {contract && tenant ? (
                             <div className="space-y-4">
-                                <div><p className="text-sm text-gray-500">Inquilino</p><p className="font-semibold text-dark">{tenant.name}</p><p className="text-sm text-gray-700">{tenant.email} | {tenant.phone}</p></div>
-                                <div><p className="text-sm text-gray-500">Contratto</p><p className="font-semibold text-dark">Dal {new Date(contract.startDate).toLocaleDateString('it-IT')} al {new Date(contract.endDate).toLocaleDateString('it-IT')}</p></div>
-                                <div><p className="text-sm text-gray-500">Canone Mensile</p><p className="font-bold text-lg text-primary">€{contract.rentAmount.toLocaleString('it-IT')}</p></div>
+                                <div>
+                                    <h3 className="font-bold text-lg text-primary">{tenant.name}</h3>
+                                    <p className="text-gray-600">{tenant.email} - {tenant.phone}</p>
+                                </div>
+                                <div className="border-t pt-4">
+                                    <h4 className="font-semibold text-dark">Dettagli Contratto</h4>
+                                    <p><strong>Inizio:</strong> {new Date(contract.startDate).toLocaleDateString('it-IT')}</p>
+                                    <p><strong>Fine:</strong> {new Date(contract.endDate).toLocaleDateString('it-IT')}</p>
+                                    <p><strong>Canone:</strong> €{contract.rentAmount.toLocaleString('it-IT')}</p>
+                                </div>
                             </div>
-                        ) : (
-                            <div className="text-center p-4 bg-green-50 rounded-lg"><p className="font-semibold text-green-800">Immobile attualmente libero</p></div>
-                        )
+                        ) : <p className="text-center text-gray-500 py-8">Nessun contratto attivo per questo immobile.</p>}
+                        </div>
                     )}
+
                     {activeTab === 'expenses' && <ExpensesTab expenses={expenses} />}
                     {activeTab === 'maintenance' && <MaintenanceTab maintenances={maintenances} />}
                     {activeTab === 'deadlines' && <DeadlinesTab deadlines={deadlines} />}
                     {activeTab === 'documents' && <DocumentsTab documents={documents} />}
                     {activeTab === 'history' && <HistoryTab historyLogs={allHistory} />}
+
                 </div>
             </Card>
         </div>
       </div>
       
-      <Suspense fallback={null}>
-        <AddCustomFieldModal 
-          isOpen={isAddCfModalOpen}
-          onClose={() => setAddCfModalOpen(false)}
-          onSave={handleAddCustomField}
+        <AddCustomFieldModal
+            isOpen={isAddCfModalOpen}
+            onClose={() => setAddCfModalOpen(false)}
+            onSave={handleAddCustomField}
         />
-        
         {editingCf && (
-          <EditCustomFieldModal 
-              isOpen={!!editingCf}
-              onClose={() => setEditingCf(null)}
-              onSave={handleUpdateCustomField}
-              field={editingCf}
-          />
+            <EditCustomFieldModal
+                isOpen={!!editingCf}
+                onClose={() => setEditingCf(null)}
+                onSave={handleUpdateCustomField}
+                field={editingCf}
+            />
         )}
-
         {deletingCf && (
-          <ConfirmDeleteModal
-              isOpen={!!deletingCf}
-              onClose={() => setDeletingCf(null)}
-              onConfirm={handleDeleteCustomField}
-              message={`Sei sicuro di voler eliminare il campo "${deletingCf.label}"?`}
-          />
+            <ConfirmDeleteModal
+                isOpen={!!deletingCf}
+                onClose={() => setDeletingCf(null)}
+                onConfirm={handleDeleteCustomField}
+                message={`Sei sicuro di voler eliminare il campo "${deletingCf.label}"?`}
+            />
         )}
-      </Suspense>
     </div>
   );
 };

@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu, UserCircle, Settings, LogOut, Briefcase, Bell } from 'lucide-react';
-import { User } from '../../types';
-// FIX: Changed import path to break circular dependency.
-import { Screen } from '../../types';
+import { User } from '@/types';
+import { Screen } from '@/types';
 
 interface HeaderProps {
   currentScreen: string;

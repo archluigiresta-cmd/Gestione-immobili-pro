@@ -1,36 +1,35 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 
-// FIX: Replaced all alias paths with relative paths to resolve module loading issues.
-// LAZY LOAD ALL SCREENS
-const DashboardScreen = lazy(() => import('./screens/DashboardScreen'));
-const PropertiesScreen = lazy(() => import('./screens/PropertiesScreen'));
-const PropertyDetailScreen = lazy(() => import('./screens/PropertyDetailScreen'));
-const ContractsScreen = lazy(() => import('./screens/ContractsScreen'));
-const TenantsScreen = lazy(() => import('./screens/TenantsScreen'));
-const PaymentsScreen = lazy(() => import('./screens/PaymentsScreen'));
-const DeadlinesScreen = lazy(() => import('./screens/DeadlinesScreen'));
-const MaintenanceScreen = lazy(() => import('./screens/MaintenanceScreen'));
-const ExpensesScreen = lazy(() => import('./screens/ExpensesScreen'));
-const DocumentsScreen = lazy(() => import('./screens/DocumentsScreen'));
-const ReportsScreen = lazy(() => import('./screens/ReportsScreen'));
-const FinancialAnalysisScreen = lazy(() => import('./screens/FinancialAnalysisScreen'));
-const SettingsScreen = lazy(() => import('./screens/SettingsScreen'));
-const HelpScreen = lazy(() => import('./screens/HelpScreen'));
-const SplashScreen = lazy(() => import('./screens/SplashScreen'));
-const LoginScreen = lazy(() => import('./screens/LoginScreen'));
-const ProjectSelectionScreen = lazy(() => import('./screens/ProjectSelectionScreen'));
-const UserSelectionScreen = lazy(() => import('./screens/UserSelectionScreen'));
+// LAZY LOAD ALL SCREENS using ALIAS paths
+const DashboardScreen = lazy(() => import('@/screens/DashboardScreen'));
+const PropertiesScreen = lazy(() => import('@/screens/PropertiesScreen'));
+const PropertyDetailScreen = lazy(() => import('@/screens/PropertyDetailScreen'));
+const ContractsScreen = lazy(() => import('@/screens/ContractsScreen'));
+const TenantsScreen = lazy(() => import('@/screens/TenantsScreen'));
+const PaymentsScreen = lazy(() => import('@/screens/PaymentsScreen'));
+const DeadlinesScreen = lazy(() => import('@/screens/DeadlinesScreen'));
+const MaintenanceScreen = lazy(() => import('@/screens/MaintenanceScreen'));
+const ExpensesScreen = lazy(() => import('@/screens/ExpensesScreen'));
+const DocumentsScreen = lazy(() => import('@/screens/DocumentsScreen'));
+const ReportsScreen = lazy(() => import('@/screens/ReportsScreen'));
+const FinancialAnalysisScreen = lazy(() => import('@/screens/FinancialAnalysisScreen'));
+const SettingsScreen = lazy(() => import('@/screens/SettingsScreen'));
+const HelpScreen = lazy(() => import('@/screens/HelpScreen'));
+const SplashScreen = lazy(() => import('@/screens/SplashScreen'));
+const LoginScreen = lazy(() => import('@/screens/LoginScreen'));
+const ProjectSelectionScreen = lazy(() => import('@/screens/ProjectSelectionScreen'));
+const UserSelectionScreen = lazy(() => import('@/screens/UserSelectionScreen'));
 
-// Import services and types (no extensions)
-import * as dataService from './services/dataService';
-import * as googleDriveService from './services/googleDriveService';
-import { User, Project, ProjectMemberRole, UserStatus, navigationItems, secondaryNavigationItems, Screen } from './types';
+// Import services and types (using ALIAS paths)
+import * as dataService from '@/services/dataService';
+import * as googleDriveService from '@/services/googleDriveService';
+import { User, Project, ProjectMemberRole, UserStatus, navigationItems, secondaryNavigationItems, Screen } from '@/types';
 
-// Lazy load modals and major layout components
-const RegisterModal = lazy(() => import('./components/modals/RegisterModal'));
-const PasswordModal = lazy(() => import('./components/modals/PasswordModal'));
-const Sidebar = lazy(() => import('./components/layout/Sidebar'));
-const Header = lazy(() => import('./components/layout/Header'));
+// Lazy load modals and major layout components (using ALIAS paths)
+const RegisterModal = lazy(() => import('@/components/modals/RegisterModal'));
+const PasswordModal = lazy(() => import('@/components/modals/PasswordModal'));
+const Sidebar = lazy(() => import('@/components/layout/Sidebar'));
+const Header = lazy(() => import('@/components/layout/Header'));
 
 
 // PWA install type

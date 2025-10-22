@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import Card from '../components/ui/Card';
-import * as dataService from '../services/dataService';
-import { Property, Tenant, Contract, Payment, Expense, Maintenance, Deadline, Document } from '../types';
-// FIX: Changed from default import to named import for PropertyReportCard to fix module resolution error.
-import { PropertyReportCard, AggregatedPropertyData } from '../components/reports/PropertyReportCard';
+import Card from '@/components/ui/Card';
+import * as dataService from '@/services/dataService';
+import { Property, Tenant, Contract, Payment, Expense, Maintenance, Deadline, Document } from '@/types';
+// FIX: Changed to a default import for PropertyReportCard as suggested by the error message.
+import PropertyReportCard, { AggregatedPropertyData } from '@/components/reports/PropertyReportCard';
 
 interface ReportsScreenProps {
   projectId: string;
