@@ -138,7 +138,7 @@ const AiAssistant: React.FC = () => {
                          {msg.role === 'user' && <div className="bg-gray-200 p-2 rounded-full text-dark"><User size={18}/></div>}
                     </div>
                 ))}
-                 {isLoading && messages[messages.length - 1]?.content === '' && (
+                 {isLoading && messages.length > 0 && messages[messages.length - 1]?.content === '' && (
                      <div className="flex items-start gap-3">
                          <div className="bg-primary p-2 rounded-full text-white"><Bot size={18}/></div>
                          <div className="max-w-md rounded-lg p-3 bg-gray-100 text-dark flex items-center gap-2">

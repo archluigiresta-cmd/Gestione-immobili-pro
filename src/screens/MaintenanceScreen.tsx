@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
 import { Maintenance, MaintenanceStatus, User, Property } from '../types';
 import { PlusCircle, Edit, Trash2, Wrench, Clock, CheckCircle } from 'lucide-react';
 import AccordionItem from '../components/ui/AccordionItem';
+import AddMaintenanceModal from '../components/modals/AddMaintenanceModal';
+import EditMaintenanceModal from '../components/modals/EditMaintenanceModal';
+import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
 
-const AddMaintenanceModal = lazy(() => import('../components/modals/AddMaintenanceModal'));
-const EditMaintenanceModal = lazy(() => import('../components/modals/EditMaintenanceModal'));
-const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal'));
 
 interface MaintenanceScreenProps {
   projectId: string;
@@ -144,31 +144,30 @@ const MaintenanceScreen: React.FC<MaintenanceScreenProps> = ({ projectId, user }
             )}
         </div>
       </div>
-      <Suspense fallback={null}>
-        <AddMaintenanceModal 
-          isOpen={isAddModalOpen}
-          onClose={() => setAddModalOpen(false)}
-          onSave={handleAddMaintenance}
+      
+      <AddMaintenanceModal 
+        isOpen={isAddModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onSave={handleAddMaintenance}
+        projectId={projectId}
+      />
+      {editingMaintenance && (
+        <EditMaintenanceModal
+          isOpen={!!editingMaintenance}
+          onClose={() => setEditingMaintenance(null)}
+          onSave={handleUpdateMaintenance}
+          maintenance={editingMaintenance}
           projectId={projectId}
         />
-        {editingMaintenance && (
-          <EditMaintenanceModal
-            isOpen={!!editingMaintenance}
-            onClose={() => setEditingMaintenance(null)}
-            onSave={handleUpdateMaintenance}
-            maintenance={editingMaintenance}
-            projectId={projectId}
-          />
-        )}
-        {deletingMaintenance && (
-          <ConfirmDeleteModal
-            isOpen={!!deletingMaintenance}
-            onClose={() => setDeletingMaintenance(null)}
-            onConfirm={handleDeleteMaintenance}
-            message={`Sei sicuro di voler eliminare la richiesta di manutenzione "${deletingMaintenance.description}"?`}
-          />
-        )}
-      </Suspense>
+      )}
+      {deletingMaintenance && (
+        <ConfirmDeleteModal
+          isOpen={!!deletingMaintenance}
+          onClose={() => setDeletingMaintenance(null)}
+          onConfirm={handleDeleteMaintenance}
+          message={`Sei sicuro di voler eliminare la richiesta di manutenzione "${deletingMaintenance.description}"?`}
+        />
+      )}
     </>
   );
 };

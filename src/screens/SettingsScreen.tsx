@@ -1,13 +1,13 @@
-import React, { useState, useRef, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { User, Project, ProjectMemberRole, UserStatus } from '../types';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
 import { UserCircle, Edit, Trash2, Shield, PlusCircle, Share2, Users, HardDrive, Upload, Check, X } from 'lucide-react';
 
-const EditProfileModal = lazy(() => import('../components/modals/EditProfileModal'));
-const AddUserModal = lazy(() => import('../components/modals/AddUserModal'));
-const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal'));
-const ShareProjectModal = lazy(() => import('../components/modals/ShareProjectModal'));
+import EditProfileModal from '../components/modals/EditProfileModal';
+import AddUserModal from '../components/modals/AddUserModal';
+import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
+import ShareProjectModal from '../components/modals/ShareProjectModal';
 
 interface SettingsScreenProps {
   user: User;
@@ -334,7 +334,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
                     </div>
                 </Card>
             )}
-            <Suspense fallback={null}>
+
               <EditProfileModal isOpen={isEditProfileModalOpen} onClose={() => setEditProfileModalOpen(false)} user={user} onSave={handleSaveProfile} />
               <AddUserModal isOpen={isAddUserModalOpen} onClose={() => setAddUserModalOpen(false)} onSave={handleAddUserAndRefresh} />
               <ShareProjectModal isOpen={isShareModalOpen} onClose={() => setShareModalOpen(false)} onShare={handleShareProject} project={project} />
@@ -349,7 +349,6 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
                       message={`Sei sicuro di voler eliminare l'utente "${deletingUser.name}"? L'azione è irreversibile.`}
                   />
               )}
-            </Suspense>
         </div>
     );
 };

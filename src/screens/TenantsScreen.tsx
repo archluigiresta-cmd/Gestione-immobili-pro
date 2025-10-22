@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
 import { Tenant, User, Property, Contract } from '../types';
 import { Mail, Phone, Home, PlusCircle, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import AccordionItem from '../components/ui/AccordionItem';
+import AddTenantModal from '../components/modals/AddTenantModal';
+import EditTenantModal from '../components/modals/EditTenantModal';
+import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
 
-const AddTenantModal = lazy(() => import('../components/modals/AddTenantModal'));
-const EditTenantModal = lazy(() => import('../components/modals/EditTenantModal'));
-const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal'));
 
 const TenantCard: React.FC<{ tenant: Tenant, propertyName: string, onEdit: () => void, onDelete: () => void }> = ({ tenant, propertyName, onEdit, onDelete }) => {
     const [menuOpen, setMenuOpen] = useState(false);
@@ -165,33 +165,32 @@ const TenantsScreen: React.FC<TenantsScreenProps> = ({ projectId, user }) => {
                 )}
             </div>
         </div>
-        <Suspense fallback={null}>
-          <AddTenantModal
-              isOpen={isAddModalOpen}
-              onClose={() => setAddModalOpen(false)}
-              onSave={handleAddTenant}
-              projectId={projectId}
-          />
 
-          {editingTenant && (
-              <EditTenantModal
-                  isOpen={!!editingTenant}
-                  onClose={() => setEditingTenant(null)}
-                  onSave={handleUpdateTenant}
-                  tenant={editingTenant}
-                  projectId={projectId}
-              />
-          )}
+        <AddTenantModal
+            isOpen={isAddModalOpen}
+            onClose={() => setAddModalOpen(false)}
+            onSave={handleAddTenant}
+            projectId={projectId}
+        />
 
-          {deletingTenant && (
-              <ConfirmDeleteModal
-                  isOpen={!!deletingTenant}
-                  onClose={() => setDeletingTenant(null)}
-                  onConfirm={handleDeleteTenant}
-                  message={`Sei sicuro di voler eliminare l'inquilino "${deletingTenant.name}"?`}
-              />
-          )}
-        </Suspense>
+        {editingTenant && (
+            <EditTenantModal
+                isOpen={!!editingTenant}
+                onClose={() => setEditingTenant(null)}
+                onSave={handleUpdateTenant}
+                tenant={editingTenant}
+                projectId={projectId}
+            />
+        )}
+
+        {deletingTenant && (
+            <ConfirmDeleteModal
+                isOpen={!!deletingTenant}
+                onClose={() => setDeletingTenant(null)}
+                onConfirm={handleDeleteTenant}
+                message={`Sei sicuro di voler eliminare l'inquilino "${deletingTenant.name}"?`}
+            />
+        )}
         </>
     );
 };

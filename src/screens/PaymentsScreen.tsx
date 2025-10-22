@@ -1,14 +1,13 @@
-import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
 import { Payment, PaymentStatus, Property, ProjectMemberRole, User, Contract, Tenant } from '../types';
 import { CheckCircle, Clock, AlertCircle, PlusCircle, Edit, Trash2, DollarSign } from 'lucide-react';
 import AccordionItem from '../components/ui/AccordionItem';
 import ExportButton from '../components/ui/ExportButton';
-
-const AddPaymentModal = lazy(() => import('../components/modals/AddPaymentModal'));
-const EditPaymentModal = lazy(() => import('../components/modals/EditPaymentModal'));
-const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal'));
+import AddPaymentModal from '../components/modals/AddPaymentModal';
+import EditPaymentModal from '../components/modals/EditPaymentModal';
+import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
 
 interface PaymentsScreenProps {
   projectId: string;
@@ -260,31 +259,30 @@ const PaymentsScreen: React.FC<PaymentsScreenProps> = ({ projectId, user, userRo
                 </div>
             </Card>
         </div>
-        <Suspense fallback={null}>
-          <AddPaymentModal
-            isOpen={isAddModalOpen}
-            onClose={() => setAddModalOpen(false)}
-            onSave={handleAddPayment}
+
+      <AddPaymentModal
+        isOpen={isAddModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onSave={handleAddPayment}
+        projectId={projectId}
+      />
+      {editingPayment && (
+        <EditPaymentModal
+            isOpen={!!editingPayment}
+            onClose={() => setEditingPayment(null)}
+            onSave={handleUpdatePayment}
+            payment={editingPayment}
             projectId={projectId}
-          />
-          {editingPayment && (
-            <EditPaymentModal
-                isOpen={!!editingPayment}
-                onClose={() => setEditingPayment(null)}
-                onSave={handleUpdatePayment}
-                payment={editingPayment}
-                projectId={projectId}
-            />
-          )}
-          {deletingPayment && (
-            <ConfirmDeleteModal
-                isOpen={!!deletingPayment}
-                onClose={() => setDeletingPayment(null)}
-                onConfirm={handleDeletePayment}
-                message={`Sei sicuro di voler eliminare questo pagamento di €${deletingPayment.amount} per ${deletingPayment.tenantName}?`}
-            />
-          )}
-        </Suspense>
+        />
+      )}
+      {deletingPayment && (
+        <ConfirmDeleteModal
+            isOpen={!!deletingPayment}
+            onClose={() => setDeletingPayment(null)}
+            onConfirm={handleDeletePayment}
+            message={`Sei sicuro di voler eliminare questo pagamento di €${deletingPayment.amount} per ${deletingPayment.tenantName}?`}
+        />
+      )}
       </>
     );
 };

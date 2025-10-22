@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
 import { Deadline, DeadlineType, User, Property } from '../types';
 import { PlusCircle, Edit, Trash2, CheckCircle, List, CalendarDays } from 'lucide-react';
 import AccordionItem from '../components/ui/AccordionItem';
 import InteractiveTable, { Column } from '../components/ui/InteractiveTable';
+import AddDeadlineModal from '../components/modals/AddDeadlineModal';
+import EditDeadlineModal from '../components/modals/EditDeadlineModal';
+import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
 
-const AddDeadlineModal = lazy(() => import('../components/modals/AddDeadlineModal'));
-const EditDeadlineModal = lazy(() => import('../components/modals/EditDeadlineModal'));
-const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal'));
 
 interface DeadlinesScreenProps {
   projectId: string;
@@ -287,31 +287,29 @@ const DeadlinesScreen: React.FC<DeadlinesScreenProps> = ({ projectId, user }) =>
         )}
       </div>
 
-      <Suspense fallback={null}>
-        <AddDeadlineModal
-          isOpen={isAddModalOpen}
-          onClose={() => setAddModalOpen(false)}
-          onSave={handleAddDeadline}
+      <AddDeadlineModal
+        isOpen={isAddModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onSave={handleAddDeadline}
+        projectId={projectId}
+      />
+      {editingDeadline && (
+        <EditDeadlineModal
+          isOpen={!!editingDeadline}
+          onClose={() => setEditingDeadline(null)}
+          onSave={handleUpdateDeadline}
+          deadline={editingDeadline}
           projectId={projectId}
         />
-        {editingDeadline && (
-          <EditDeadlineModal
-            isOpen={!!editingDeadline}
-            onClose={() => setEditingDeadline(null)}
-            onSave={handleUpdateDeadline}
-            deadline={editingDeadline}
-            projectId={projectId}
-          />
-        )}
-        {deletingDeadline && (
-          <ConfirmDeleteModal
-            isOpen={!!deletingDeadline}
-            onClose={() => setDeletingDeadline(null)}
-            onConfirm={handleDeleteDeadline}
-            message={`Sei sicuro di voler eliminare la scadenza "${deletingDeadline.title}"?`}
-          />
-        )}
-      </Suspense>
+      )}
+      {deletingDeadline && (
+        <ConfirmDeleteModal
+          isOpen={!!deletingDeadline}
+          onClose={() => setDeletingDeadline(null)}
+          onConfirm={handleDeleteDeadline}
+          message={`Sei sicuro di voler eliminare la scadenza "${deletingDeadline.title}"?`}
+        />
+      )}
     </>
   );
 };
