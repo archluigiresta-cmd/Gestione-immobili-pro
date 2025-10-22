@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { User, Project } from '../types';
 // FIX: Corrected import path to point to the correct file location.
 import * as dataService from '../services/dataService';
-import { Briefcase, PlusCircle, ArrowRight, UserCircle, LogOut, Edit, MoreVertical, Trash2 } from 'lucide-react';
+import { Briefcase, PlusCircle, ArrowRight, UserCircle, LogOut, Edit, MoreVertical, Trash2, Users } from 'lucide-react';
 import CreateProjectModal from '../components/modals/CreateProjectModal';
 import EditProfileModal from '../components/modals/EditProfileModal';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
@@ -13,6 +13,7 @@ interface ProjectSelectionScreenProps {
   onCreateProject: (projectName: string) => void;
   onLogout: () => void;
   onUpdateProfile: (updatedUser: User) => void;
+  onSwitchUser: () => void;
 }
 
 const ProjectCard: React.FC<{ 
@@ -70,7 +71,7 @@ const ProjectCard: React.FC<{
     );
 };
 
-const ProjectSelectionScreen: React.FC<ProjectSelectionScreenProps> = ({ user, onSelectProject, onCreateProject, onLogout, onUpdateProfile }) => {
+const ProjectSelectionScreen: React.FC<ProjectSelectionScreenProps> = ({ user, onSelectProject, onCreateProject, onLogout, onUpdateProfile, onSwitchUser }) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isProfileModalOpen, setProfileModalOpen] = useState(false);
@@ -119,9 +120,14 @@ const ProjectSelectionScreen: React.FC<ProjectSelectionScreenProps> = ({ user, o
                     </button>
                 </div>
             </div>
-            <button onClick={onLogout} className="flex items-center text-sm text-red-600 font-semibold p-2 rounded-lg hover:bg-red-50">
-                <LogOut size={16} className="mr-1.5"/> Esci
-            </button>
+            <div className="flex flex-col items-end gap-2">
+                <button onClick={onLogout} className="flex items-center text-sm text-red-600 font-semibold p-2 rounded-lg hover:bg-red-50">
+                    <LogOut size={16} className="mr-1.5"/> Esci
+                </button>
+                 <button onClick={onSwitchUser} className="flex items-center text-sm text-gray-600 font-semibold p-2 rounded-lg hover:bg-gray-100">
+                    <Users size={16} className="mr-1.5"/> Cambia Utente
+                </button>
+            </div>
         </div>
         
         <div className="text-center border-t pt-6">

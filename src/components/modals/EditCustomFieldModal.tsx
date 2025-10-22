@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { CustomField, CustomFieldType } from '../../types';
+import { CustomField, CustomFieldType } from '@/types';
 import { X } from 'lucide-react';
 
 interface EditCustomFieldModalProps {

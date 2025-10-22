@@ -1,5 +1,4 @@
-// FIX: Removed reference to "vite/client" as it cannot be resolved in the current TypeScript configuration.
-// The project does not appear to use Vite-specific client-side APIs that require these types.
+/// <reference types="vite/client" />
 
 declare namespace NodeJS {
   interface ProcessEnv {

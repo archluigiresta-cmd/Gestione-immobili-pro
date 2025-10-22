@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { User, Project, ProjectMemberRole } from '../../types';
+import { User, Project, ProjectMemberRole } from '@/types';
 import { X } from 'lucide-react';
-import * as dataService from '../../services/dataService';
+import * as dataService from '@/services/dataService';
 
 interface ShareProjectModalProps {
   isOpen: boolean;

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, LifeBuoy, Bot, User, Send, LoaderCircle } from 'lucide-react';
-import Card from '../components/ui/Card';
+import Card from '@/components/ui/Card';
 import { GoogleGenAI, Chat } from "@google/genai";
 
 const faqData = [

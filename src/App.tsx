@@ -1,5 +1,6 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 
+// FIX: Replaced all alias paths with relative paths to resolve module loading issues.
 // LAZY LOAD ALL SCREENS
 const DashboardScreen = lazy(() => import('./screens/DashboardScreen'));
 const PropertiesScreen = lazy(() => import('./screens/PropertiesScreen'));

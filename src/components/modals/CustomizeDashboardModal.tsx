@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { availableDashboardWidgets } from '../dashboard/widgets';
+import { availableDashboardWidgets } from '@/components/dashboard/widgets';
 
 interface CustomizeDashboardModalProps {
   isOpen: boolean;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Tenant, CustomField, CustomFieldType } from '../../types';
+import { Tenant, CustomField, CustomFieldType } from '@/types';
 import { X, PlusCircle, Trash2 } from 'lucide-react';
-import * as dataService from '../../services/dataService';
+import * as dataService from '@/services/dataService';
 
 interface EditTenantModalProps {
   isOpen: boolean;

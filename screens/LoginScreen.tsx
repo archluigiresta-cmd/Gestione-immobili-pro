@@ -1,9 +1,12 @@
 import React from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, UserPlus, Users } from 'lucide-react';
 
 interface LoginScreenProps {
-    onLogin: () => void;
+    onGoogleLogin: () => void;
+    onCollaboratorLogin: () => void;
+    onRegister: () => void;
     isApiReady: boolean;
+    hasLocalUsers: boolean;
 }
 
 const GoogleIcon = () => (
@@ -16,18 +19,20 @@ const GoogleIcon = () => (
 );
 
 
-const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isApiReady }) => {
+const LoginScreen: React.FC<LoginScreenProps> = ({ onGoogleLogin, onCollaboratorLogin, onRegister, isApiReady, hasLocalUsers }) => {
     return (
         <div className="flex items-center justify-center min-h-screen bg-light">
-            <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-2xl shadow-2xl text-center">
-                <h1 className="text-3xl font-bold text-primary">Gest-Immo PRO</h1>
-                <p className="mt-2 text-gray-600">
-                    Accedi con il tuo account Google per sincronizzare i dati su tutti i tuoi dispositivi.
-                </p>
+            <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-2xl shadow-2xl text-center">
+                <div>
+                    <h1 className="text-3xl font-bold text-primary">Gest-Immo PRO</h1>
+                    <p className="mt-2 text-gray-600">
+                        Seleziona una modalità di accesso.
+                    </p>
+                </div>
                 
-                <div className="pt-4">
+                <div className="space-y-4 pt-4">
                     <button
-                        onClick={onLogin}
+                        onClick={onGoogleLogin}
                         disabled={!isApiReady}
                         className="w-full flex items-center justify-center p-4 text-left bg-white border-2 border-gray-300 rounded-lg hover:bg-secondary hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-wait"
                     >
@@ -35,14 +40,36 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isApiReady }) => {
                         <span className="font-semibold text-lg text-dark flex-1">Accedi con Google</span>
                         <ArrowRight size={20} className="text-gray-400" />
                     </button>
+
+                    {hasLocalUsers && (
+                         <button
+                            onClick={onCollaboratorLogin}
+                            className="w-full flex items-center justify-center p-4 text-left bg-white border-2 border-gray-300 rounded-lg hover:bg-secondary hover:shadow-md transition-all duration-200"
+                        >
+                            <Users size={24} className="mr-3 text-primary"/>
+                            <span className="font-semibold text-lg text-dark flex-1">Accedi come Collaboratore</span>
+                            <ArrowRight size={20} className="text-gray-400" />
+                        </button>
+                    )}
+                    
                     {!isApiReady && (
                         <p className="text-xs text-gray-500 mt-2 animate-pulse">
-                            Inizializzazione del servizio di autenticazione...
+                            Inizializzazione dei servizi...
                         </p>
                     )}
                 </div>
 
-                <div className="pt-6">
+                 <div className="pt-4 border-t">
+                     <button
+                        onClick={onRegister}
+                        className="w-full flex items-center justify-center px-4 py-3 bg-secondary text-primary font-semibold rounded-lg hover:bg-blue-200 transition-colors"
+                    >
+                        <UserPlus size={20} className="mr-2" />
+                        Nuovo utente? Registrati qui
+                    </button>
+                </div>
+
+                <div className="pt-2">
                     <p className="text-xs text-gray-400">&copy; 2024 Gestore Immobili PRO</p>
                 </div>
             </div>

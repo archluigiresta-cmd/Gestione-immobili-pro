@@ -1,5 +1,4 @@
 import React from 'react';
-import { User } from '../types';
 import { ArrowRight, UserPlus, Users } from 'lucide-react';
 
 const GoogleIcon = () => (
@@ -23,54 +22,51 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onGoogleLogin, onCollaborator
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-light">
-            <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-2xl shadow-2xl text-center m-4">
-                <h1 className="text-3xl font-bold text-primary">Gest-Immo PRO</h1>
-                <p className="mt-2 text-gray-600">
-                    Accedi con Google per la sincronizzazione dei dati, oppure usa un profilo collaboratore.
-                </p>
+            <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-2xl shadow-2xl text-center">
+                <div>
+                    <h1 className="text-3xl font-bold text-primary">Gest-Immo PRO</h1>
+                    <p className="mt-2 text-gray-600">
+                        Seleziona una modalità di accesso.
+                    </p>
+                </div>
                 
-                <div className="pt-4 space-y-4">
+                <div className="space-y-4 pt-4">
                     <button
                         onClick={onGoogleLogin}
                         disabled={!isApiReady}
-                        className="w-full flex items-center justify-center p-4 text-left bg-white border-2 border-primary rounded-lg hover:bg-secondary hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-wait"
+                        className="w-full flex items-center justify-center p-4 text-left bg-white border-2 border-gray-300 rounded-lg hover:bg-secondary hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-wait"
                     >
                         <GoogleIcon />
                         <span className="font-semibold text-lg text-dark flex-1">Accedi con Google</span>
                         <ArrowRight size={20} className="text-gray-400" />
                     </button>
+
+                    {hasLocalUsers && (
+                         <button
+                            onClick={onCollaboratorLogin}
+                            className="w-full flex items-center justify-center p-4 text-left bg-white border-2 border-gray-300 rounded-lg hover:bg-secondary hover:shadow-md transition-all duration-200"
+                        >
+                            <Users size={24} className="mr-3 text-primary"/>
+                            <span className="font-semibold text-lg text-dark flex-1">Accedi come Collaboratore</span>
+                            <ArrowRight size={20} className="text-gray-400" />
+                        </button>
+                    )}
+                    
                     {!isApiReady && (
-                        <p className="text-xs text-gray-500 -mt-2 animate-pulse">
-                            Inizializzazione dei servizi Google...
+                        <p className="text-xs text-gray-500 mt-2 animate-pulse">
+                            Inizializzazione dei servizi...
                         </p>
                     )}
-                    
-                    {hasLocalUsers && (
-                        <>
-                            <div className="relative pt-2">
-                                <div className="absolute inset-0 flex items-center"><span className="w-full border-t"></span></div>
-                                <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">Oppure</span></div>
-                            </div>
-                            <button
-                                onClick={onCollaboratorLogin}
-                                className="w-full flex items-center justify-center p-4 text-left bg-white border rounded-lg hover:bg-gray-100 transition-colors"
-                            >
-                                <Users size={24} className="text-gray-600 mr-3" />
-                                <span className="font-semibold text-lg text-dark flex-1">Accedi come Collaboratore</span>
-                                <ArrowRight size={20} className="text-gray-400" />
-                            </button>
-                        </>
-                    )}
-                    
-                    <div className="pt-4 border-t">
-                        <button
-                            onClick={onRegister}
-                            className="w-full flex items-center justify-center px-4 py-3 bg-secondary text-primary font-semibold rounded-lg hover:bg-blue-200 transition-colors"
-                        >
-                            <UserPlus size={20} className="mr-2" />
-                            Nuovo utente? Registrati
-                        </button>
-                    </div>
+                </div>
+
+                 <div className="pt-4 border-t">
+                     <button
+                        onClick={onRegister}
+                        className="w-full flex items-center justify-center px-4 py-3 bg-secondary text-primary font-semibold rounded-lg hover:bg-blue-200 transition-colors"
+                    >
+                        <UserPlus size={20} className="mr-2" />
+                        Nuovo utente? Registrati qui
+                    </button>
                 </div>
 
                 <div className="pt-2">

@@ -1,9 +1,9 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Clock } from 'lucide-react';
-import Card from '../ui/Card';
-import * as dataService from '../../services/dataService';
-import { Deadline, Expense, Maintenance, MaintenanceStatus, ExpenseCategory } from '../../types';
+import Card from '@/components/ui/Card';
+import * as dataService from '@/services/dataService';
+import { Deadline, Expense, Maintenance, MaintenanceStatus, ExpenseCategory } from '@/types';
 
 interface WidgetProps {
   projectId: string;

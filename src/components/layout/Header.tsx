@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu, UserCircle, Settings, LogOut, Briefcase, Bell } from 'lucide-react';
-import { User, Screen } from '../../types';
+import { User, Screen } from '@/types';
 
 interface HeaderProps {
   currentScreen: string;
