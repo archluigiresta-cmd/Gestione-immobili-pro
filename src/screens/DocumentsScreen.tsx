@@ -1,14 +1,12 @@
-import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
-import Card from '../components/ui/Card';
-import * as dataService from '../services/dataService';
-import { Document, User, DocumentType, Property } from '../types';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import Card from '@/components/ui/Card';
+import * as dataService from '@/services/dataService';
+import { Document, User, DocumentType, Property } from '@/types';
 import { PlusCircle, Edit, Trash2, Download, FileText } from 'lucide-react';
-import AccordionItem from '../components/ui/AccordionItem';
-
-const AddDocumentModal = lazy(() => import('../components/modals/AddDocumentModal'));
-const EditDocumentModal = lazy(() => import('../components/modals/EditDocumentModal'));
-const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal'));
-
+import AddDocumentModal from '@/components/modals/AddDocumentModal';
+import EditDocumentModal from '@/components/modals/EditDocumentModal';
+import ConfirmDeleteModal from '@/components/modals/ConfirmDeleteModal';
+import AccordionItem from '@/components/ui/AccordionItem';
 
 interface DocumentsScreenProps {
   projectId: string;
@@ -130,6 +128,7 @@ const DocumentsScreen: React.FC<DocumentsScreenProps> = ({ projectId, user }) =>
             )}
         </div>
       </div>
+
       <Suspense fallback={null}>
         <AddDocumentModal
           isOpen={isAddModalOpen}

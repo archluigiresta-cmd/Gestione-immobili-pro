@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
-import { Maintenance, MaintenanceStatus, Property } from '../../types';
+import { Maintenance, MaintenanceStatus, Property } from '@/types';
 import { X } from 'lucide-react';
-import * as dataService from '../../services/dataService';
+import * as dataService from '@/services/dataService';
 
 interface AddMaintenanceModalProps {
   isOpen: boolean;
