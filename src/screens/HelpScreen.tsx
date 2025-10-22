@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, LifeBuoy, Bot, User, Send, LoaderCircle } from 'lucide-react';
-import Card from '../components/ui/Card.tsx';
+import Card from '../components/ui/Card';
 import { GoogleGenAI, Chat } from "@google/genai";
 
 const faqData = [
@@ -58,6 +58,7 @@ const AiAssistant: React.FC = () => {
     const chatRef = useRef<Chat | null>(null);
 
     useEffect(() => {
+        // Initialize the chat session once when the component mounts
         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
         const systemInstruction = "Sei un assistente virtuale esperto per l'applicazione 'Gestore Immobili PRO'. Il tuo scopo è aiutare gli utenti a capire e utilizzare al meglio l'app. L'applicazione serve a gestire proprietà immobiliari. Le sue sezioni principali sono: Dashboard (riepilogo), Immobili (elenco proprietà), Inquilini, Contratti, Pagamenti, Scadenze, Manutenzioni, Spese, Documenti, Report e Analisi Finanziaria. Rispondi in modo chiaro, conciso e amichevole. Utilizza la formattazione markdown (come grassetto o elenchi puntati) per migliorare la leggibilità. Basa le tue risposte sulla conoscenza fornita riguardo le funzionalità dell'app.";
         
@@ -68,7 +69,6 @@ const AiAssistant: React.FC = () => {
             }
         });
     }, []);
-
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -99,21 +99,21 @@ const AiAssistant: React.FC = () => {
                     currentResponse += chunkText;
                     setMessages(prev => {
                         const newMessages = [...prev];
-                        newMessages[newMessages.length - 1] = { 
-                            ...newMessages[newMessages.length - 1], 
-                            content: currentResponse 
-                        };
+                        const lastMessage = newMessages[newMessages.length - 1];
+                        if (lastMessage && lastMessage.role === 'model') {
+                            lastMessage.content = currentResponse;
+                        }
                         return newMessages;
                     });
                 }
             }
-
         } catch (error) {
             console.error("Error calling Gemini API:", error);
             setMessages(prev => {
                 const newMessages = [...prev];
-                if (newMessages.length > 0) {
-                   newMessages[newMessages.length - 1].content = "Spiacente, si è verificato un errore. Riprova più tardi.";
+                const lastMessage = newMessages[newMessages.length - 1];
+                if (lastMessage && lastMessage.role === 'model') {
+                    lastMessage.content = "Spiacente, si è verificato un errore. Riprova più tardi.";
                 }
                 return newMessages;
             });
@@ -122,46 +122,6 @@ const AiAssistant: React.FC = () => {
         }
     };
     
-    const renderMessageContent = (msg: Message, index: number) => {
-        const isTyping = isLoading && index === messages.length - 1 && !msg.content;
-
-        if (msg.role === 'user') {
-            return (
-                <div key={index} className="flex items-start gap-3 justify-end">
-                    <div className="max-w-md rounded-lg p-3 bg-primary text-white">
-                        <p className="whitespace-pre-wrap">{msg.content}</p>
-                    </div>
-                    <div className="bg-gray-200 p-2 rounded-full text-dark"><User size={18}/></div>
-                </div>
-            );
-        }
-
-        if (isTyping) {
-            return (
-                <div key={index} className="flex items-start gap-3">
-                    <div className="bg-primary p-2 rounded-full text-white"><Bot size={18}/></div>
-                    <div className="max-w-md rounded-lg p-3 bg-gray-100 text-dark flex items-center gap-2">
-                        <span className="font-semibold">L'assistente sta scrivendo</span>
-                        <LoaderCircle size={16} className="animate-spin" />
-                    </div>
-                </div>
-            );
-        }
-        
-        if (msg.content) {
-             return (
-                <div key={index} className="flex items-start gap-3">
-                    <div className="bg-primary p-2 rounded-full text-white"><Bot size={18}/></div>
-                    <div className="max-w-md rounded-lg p-3 bg-gray-100 text-dark">
-                        <p className="whitespace-pre-wrap">{msg.content}</p>
-                    </div>
-                </div>
-            );
-        }
-
-        return null;
-    }
-    
     return (
         <Card className="flex flex-col h-[600px]">
             <div className="p-4 border-b flex items-center gap-3">
@@ -169,7 +129,24 @@ const AiAssistant: React.FC = () => {
                 <h2 className="text-xl font-bold text-dark">Assistente AI</h2>
             </div>
             <div className="flex-1 p-4 overflow-y-auto space-y-4">
-                {messages.map(renderMessageContent)}
+                {messages.map((msg, index) => (
+                    <div key={index} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
+                        {msg.role === 'model' && <div className="bg-primary p-2 rounded-full text-white"><Bot size={18}/></div>}
+                        <div className={`max-w-md rounded-lg p-3 ${msg.role === 'user' ? 'bg-primary text-white' : 'bg-gray-100 text-dark'}`}>
+                            <p className="whitespace-pre-wrap">{msg.content}</p>
+                        </div>
+                         {msg.role === 'user' && <div className="bg-gray-200 p-2 rounded-full text-dark"><User size={18}/></div>}
+                    </div>
+                ))}
+                 {isLoading && messages[messages.length - 1]?.content === '' && (
+                     <div className="flex items-start gap-3">
+                         <div className="bg-primary p-2 rounded-full text-white"><Bot size={18}/></div>
+                         <div className="max-w-md rounded-lg p-3 bg-gray-100 text-dark flex items-center gap-2">
+                            <span className="font-semibold">L'assistente sta scrivendo</span>
+                             <LoaderCircle size={16} className="animate-spin" />
+                         </div>
+                     </div>
+                 )}
                 <div ref={messagesEndRef} />
             </div>
             <div className="p-4 border-t">
