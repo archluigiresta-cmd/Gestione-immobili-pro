@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Deadline, DeadlineType, Property } from '@/types';
+import { Deadline, DeadlineType, Property } from '../../types';
 import { X, CalendarPlus } from 'lucide-react';
-import * as dataService from '@/services/dataService';
+import * as dataService from '../../services/dataService';
 
 // Helper function to generate a Google Calendar link
 const generateGoogleCalendarUrl = (deadline: Deadline, propertyName: string) => {
