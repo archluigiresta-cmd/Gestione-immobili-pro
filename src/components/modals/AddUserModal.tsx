@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { User } from '../../types.ts';
+import { User } from '../../types';
 import { X } from 'lucide-react';
 
 interface AddUserModalProps {

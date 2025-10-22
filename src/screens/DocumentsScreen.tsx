@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
-import Card from '../components/ui/Card.tsx';
-import * as dataService from '../services/dataService.ts';
-import { Document, User, DocumentType, Property } from '../types.ts';
+import Card from '../components/ui/Card';
+import * as dataService from '../services/dataService';
+import { Document, User, DocumentType, Property } from '../types';
 import { PlusCircle, Edit, Trash2, Download, FileText } from 'lucide-react';
-import AccordionItem from '../components/ui/AccordionItem.tsx';
+import AccordionItem from '../components/ui/AccordionItem';
 
-const AddDocumentModal = lazy(() => import('../components/modals/AddDocumentModal.tsx'));
-const EditDocumentModal = lazy(() => import('../components/modals/EditDocumentModal.tsx'));
-const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal.tsx'));
+const AddDocumentModal = lazy(() => import('../components/modals/AddDocumentModal'));
+const EditDocumentModal = lazy(() => import('../components/modals/EditDocumentModal'));
+const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal'));
 
 
 interface DocumentsScreenProps {

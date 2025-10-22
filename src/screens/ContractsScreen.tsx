@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
-import Card from '../components/ui/Card.tsx';
-import * as dataService from '../services/dataService.ts';
-import { Contract, ProjectMemberRole, User, Property, Tenant } from '../types.ts';
+import Card from '../components/ui/Card';
+import * as dataService from '../services/dataService';
+import { Contract, ProjectMemberRole, User, Property, Tenant } from '../types';
 import { Download, PlusCircle, Edit, Trash2 } from 'lucide-react';
-import AccordionItem from '../components/ui/AccordionItem.tsx';
+import AccordionItem from '../components/ui/AccordionItem';
 
-const AddContractModal = lazy(() => import('../components/modals/AddContractModal.tsx'));
-const EditContractModal = lazy(() => import('../components/modals/EditContractModal.tsx'));
-const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal.tsx'));
+const AddContractModal = lazy(() => import('../components/modals/AddContractModal'));
+const EditContractModal = lazy(() => import('../components/modals/EditContractModal'));
+const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal'));
 
 interface ContractsScreenProps {
   projectId: string;

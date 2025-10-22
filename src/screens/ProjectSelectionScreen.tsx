@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
-import { User, Project } from '../types.ts';
-import * as dataService from '../services/dataService.ts';
+import { User, Project } from '../types';
+import * as dataService from '../services/dataService';
 import { Briefcase, PlusCircle, ArrowRight, UserCircle, LogOut, Edit, MoreVertical, Trash2, Users } from 'lucide-react';
 
-const CreateProjectModal = lazy(() => import('../components/modals/CreateProjectModal.tsx'));
-const EditProfileModal = lazy(() => import('../components/modals/EditProfileModal.tsx'));
-const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal.tsx'));
+const CreateProjectModal = lazy(() => import('../components/modals/CreateProjectModal'));
+const EditProfileModal = lazy(() => import('../components/modals/EditProfileModal'));
+const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal'));
 
 interface ProjectSelectionScreenProps {
   user: User;

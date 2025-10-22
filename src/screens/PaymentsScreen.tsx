@@ -1,14 +1,14 @@
 import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
-import Card from '../components/ui/Card.tsx';
-import * as dataService from '../services/dataService.ts';
-import { Payment, PaymentStatus, Property, ProjectMemberRole, User, Contract, Tenant } from '../types.ts';
+import Card from '../components/ui/Card';
+import * as dataService from '../services/dataService';
+import { Payment, PaymentStatus, Property, ProjectMemberRole, User, Contract, Tenant } from '../types';
 import { CheckCircle, Clock, AlertCircle, PlusCircle, Edit, Trash2, DollarSign } from 'lucide-react';
-import AccordionItem from '../components/ui/AccordionItem.tsx';
-import ExportButton from '../components/ui/ExportButton.tsx';
+import AccordionItem from '../components/ui/AccordionItem';
+import ExportButton from '../components/ui/ExportButton';
 
-const AddPaymentModal = lazy(() => import('../components/modals/AddPaymentModal.tsx'));
-const EditPaymentModal = lazy(() => import('../components/modals/EditPaymentModal.tsx'));
-const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal.tsx'));
+const AddPaymentModal = lazy(() => import('../components/modals/AddPaymentModal'));
+const EditPaymentModal = lazy(() => import('../components/modals/EditPaymentModal'));
+const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal'));
 
 interface PaymentsScreenProps {
   projectId: string;

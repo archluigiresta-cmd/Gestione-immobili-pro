@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
-import Card from '../components/ui/Card.tsx';
-import * as dataService from '../services/dataService.ts';
-import { Maintenance, MaintenanceStatus, User, Property } from '../types.ts';
+import Card from '../components/ui/Card';
+import * as dataService from '../services/dataService';
+import { Maintenance, MaintenanceStatus, User, Property } from '../types';
 import { PlusCircle, Edit, Trash2, Wrench, Clock, CheckCircle } from 'lucide-react';
-import AccordionItem from '../components/ui/AccordionItem.tsx';
+import AccordionItem from '../components/ui/AccordionItem';
 
-const AddMaintenanceModal = lazy(() => import('../components/modals/AddMaintenanceModal.tsx'));
-const EditMaintenanceModal = lazy(() => import('../components/modals/EditMaintenanceModal.tsx'));
-const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal.tsx'));
+const AddMaintenanceModal = lazy(() => import('../components/modals/AddMaintenanceModal'));
+const EditMaintenanceModal = lazy(() => import('../components/modals/EditMaintenanceModal'));
+const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal'));
 
 interface MaintenanceScreenProps {
   projectId: string;

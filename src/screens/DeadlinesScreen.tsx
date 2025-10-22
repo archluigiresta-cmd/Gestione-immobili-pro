@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
-import Card from '../components/ui/Card.tsx';
-import * as dataService from '../services/dataService.ts';
-import { Deadline, DeadlineType, User, Property } from '../types.ts';
+import Card from '../components/ui/Card';
+import * as dataService from '../services/dataService';
+import { Deadline, DeadlineType, User, Property } from '../types';
 import { PlusCircle, Edit, Trash2, CheckCircle, List, CalendarDays } from 'lucide-react';
-import AccordionItem from '../components/ui/AccordionItem.tsx';
-import InteractiveTable from '../components/ui/InteractiveTable.tsx';
-import type { Column } from '../components/ui/InteractiveTable.tsx';
+import AccordionItem from '../components/ui/AccordionItem';
+import InteractiveTable from '../components/ui/InteractiveTable';
+import type { Column } from '../components/ui/InteractiveTable';
 
-const AddDeadlineModal = lazy(() => import('../components/modals/AddDeadlineModal.tsx'));
-const EditDeadlineModal = lazy(() => import('../components/modals/EditDeadlineModal.tsx'));
-const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal.tsx'));
+const AddDeadlineModal = lazy(() => import('../components/modals/AddDeadlineModal'));
+const EditDeadlineModal = lazy(() => import('../components/modals/EditDeadlineModal'));
+const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal'));
 
 interface DeadlinesScreenProps {
   projectId: string;

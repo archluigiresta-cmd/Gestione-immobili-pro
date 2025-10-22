@@ -1,35 +1,35 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 
 // Import screens
-import DashboardScreen from './screens/DashboardScreen.tsx';
-import PropertiesScreen from './screens/PropertiesScreen.tsx';
-import PropertyDetailScreen from './screens/PropertyDetailScreen.tsx';
-import ContractsScreen from './screens/ContractsScreen.tsx';
-import TenantsScreen from './screens/TenantsScreen.tsx';
-import PaymentsScreen from './screens/PaymentsScreen.tsx';
-import DeadlinesScreen from './screens/DeadlinesScreen.tsx';
-import MaintenanceScreen from './screens/MaintenanceScreen.tsx';
-import ExpensesScreen from './screens/ExpensesScreen.tsx';
-import DocumentsScreen from './screens/DocumentsScreen.tsx';
-import ReportsScreen from './screens/ReportsScreen.tsx';
-import FinancialAnalysisScreen from './screens/FinancialAnalysisScreen.tsx';
-import SettingsScreen from './screens/SettingsScreen.tsx';
-import HelpScreen from './screens/HelpScreen.tsx';
-import SplashScreen from './screens/SplashScreen.tsx';
-import LoginScreen from './screens/LoginScreen.tsx';
-import ProjectSelectionScreen from './screens/ProjectSelectionScreen.tsx';
-import UserSelectionScreen from './screens/UserSelectionScreen.tsx';
+import DashboardScreen from './screens/DashboardScreen';
+import PropertiesScreen from './screens/PropertiesScreen';
+import PropertyDetailScreen from './screens/PropertyDetailScreen';
+import ContractsScreen from './screens/ContractsScreen';
+import TenantsScreen from './screens/TenantsScreen';
+import PaymentsScreen from './screens/PaymentsScreen';
+import DeadlinesScreen from './screens/DeadlinesScreen';
+import MaintenanceScreen from './screens/MaintenanceScreen';
+import ExpensesScreen from './screens/ExpensesScreen';
+import DocumentsScreen from './screens/DocumentsScreen';
+import ReportsScreen from './screens/ReportsScreen';
+import FinancialAnalysisScreen from './screens/FinancialAnalysisScreen';
+import SettingsScreen from './screens/SettingsScreen';
+import HelpScreen from './screens/HelpScreen';
+import SplashScreen from './screens/SplashScreen';
+import LoginScreen from './screens/LoginScreen';
+import ProjectSelectionScreen from './screens/ProjectSelectionScreen';
+import UserSelectionScreen from './screens/UserSelectionScreen';
 
 // Import services and types
-import * as dataService from './services/dataService.ts';
-import * as googleDriveService from './services/googleDriveService.ts';
-import { User, Project, ProjectMemberRole, UserStatus, navigationItems, secondaryNavigationItems, Screen } from './types.ts';
+import * as dataService from './services/dataService';
+import * as googleDriveService from './services/googleDriveService';
+import { User, Project, ProjectMemberRole, UserStatus, navigationItems, secondaryNavigationItems, Screen } from './types';
 
 // Lazy load modals and major layout components
-const RegisterModal = lazy(() => import('./components/modals/RegisterModal.tsx'));
-const PasswordModal = lazy(() => import('./components/modals/PasswordModal.tsx'));
-const Sidebar = lazy(() => import('./components/layout/Sidebar.tsx'));
-const Header = lazy(() => import('./components/layout/Header.tsx'));
+const RegisterModal = lazy(() => import('./components/modals/RegisterModal'));
+const PasswordModal = lazy(() => import('./components/modals/PasswordModal'));
+const Sidebar = lazy(() => import('./components/layout/Sidebar'));
+const Header = lazy(() => import('./components/layout/Header'));
 
 
 // PWA install type

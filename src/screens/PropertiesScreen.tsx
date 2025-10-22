@@ -1,12 +1,12 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
-import Card from '../components/ui/Card.tsx';
-import * as dataService from '../services/dataService.ts';
-import { Property, ProjectMemberRole, User, PropertyType, Screen } from '../types.ts';
+import Card from '../components/ui/Card';
+import * as dataService from '../services/dataService';
+import { Property, ProjectMemberRole, User, PropertyType, Screen } from '../types';
 import { PlusCircle, Edit, Trash2, Eye, MapPin } from 'lucide-react';
 
-const AddPropertyModal = lazy(() => import('../components/modals/AddPropertyModal.tsx'));
-const EditPropertyModal = lazy(() => import('../components/modals/EditPropertyModal.tsx'));
-const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal.tsx'));
+const AddPropertyModal = lazy(() => import('../components/modals/AddPropertyModal'));
+const EditPropertyModal = lazy(() => import('../components/modals/EditPropertyModal'));
+const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal'));
 
 interface PropertiesScreenProps {
   onNavigate: (screen: Screen, propertyId?: string) => void;

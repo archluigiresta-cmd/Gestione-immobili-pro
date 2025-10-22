@@ -1,11 +1,11 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { DollarSign, Building, AlertTriangle, CheckCircle, Settings } from 'lucide-react';
-import Card from '../components/ui/Card.tsx';
-import * as dataService from '../services/dataService.ts';
-import { Deadline, Property, Screen } from '../types.ts';
-import { availableDashboardWidgets } from '../components/dashboard/widgets.tsx';
+import Card from '../components/ui/Card';
+import * as dataService from '../services/dataService';
+import { Deadline, Property, Screen } from '../types';
+import { availableDashboardWidgets } from '../components/dashboard/widgets';
 
-const CustomizeDashboardModal = lazy(() => import('../components/modals/CustomizeDashboardModal.tsx'));
+const CustomizeDashboardModal = lazy(() => import('../components/modals/CustomizeDashboardModal'));
 
 
 interface StatCardProps {

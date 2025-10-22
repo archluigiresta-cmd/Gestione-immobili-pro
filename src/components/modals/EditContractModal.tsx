@@ -1,30 +1,43 @@
 
 import React, { useState, useEffect } from 'react';
-import { Tenant, CustomField, CustomFieldType } from '../../types';
+import { Contract, Property, Tenant, CustomField, CustomFieldType } from '../../types';
 import { X, PlusCircle, Trash2 } from 'lucide-react';
 import * as dataService from '../../services/dataService';
 
-interface EditTenantModalProps {
+interface EditContractModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (tenant: Tenant) => void;
-  tenant: Tenant;
+  onSave: (contract: Contract) => void;
+  contract: Contract;
   projectId: string;
 }
 
-const EditTenantModal: React.FC<EditTenantModalProps> = ({ isOpen, onClose, onSave, tenant, projectId }) => {
-  const [formData, setFormData] = useState<Tenant>(tenant);
+const EditContractModal: React.FC<EditContractModalProps> = ({ isOpen, onClose, onSave, contract, projectId }) => {
+  const [formData, setFormData] = useState<Contract>(contract);
   const [error, setError] = useState('');
 
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+
   useEffect(() => {
-    setFormData(tenant);
-  }, [tenant]);
+    setFormData(contract);
+  }, [contract]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setProperties(dataService.getProperties(projectId));
+      setTenants(dataService.getTenants(projectId));
+    }
+  }, [isOpen, projectId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({
+      ...prev,
+      [name]: name === 'rentAmount' ? Number(value) : value,
+    }));
   };
-
+  
   const handleAddCustomField = () => {
     const newField = { id: `cf-${Date.now()}`, label: '', type: CustomFieldType.TEXT, value: '' };
     setFormData(prev => ({ ...prev, customFields: [...prev.customFields, newField] }));
@@ -48,8 +61,8 @@ const EditTenantModal: React.FC<EditTenantModalProps> = ({ isOpen, onClose, onSa
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.email || !formData.phone) {
-      setError('Nome, Email e Telefono sono obbligatori.');
+    if (!formData.propertyId || !formData.tenantId || !formData.startDate || !formData.endDate || formData.rentAmount <= 0) {
+      setError('Tutti i campi principali sono obbligatori e il canone deve essere maggiore di zero.');
       return;
     }
     const cleanedCustomFields = formData.customFields.filter(cf => cf.label.trim() !== '');
@@ -62,7 +75,7 @@ const EditTenantModal: React.FC<EditTenantModalProps> = ({ isOpen, onClose, onSa
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
       <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg m-4 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-dark">Modifica Inquilino</h2>
+          <h2 className="text-xl font-bold text-dark">Modifica Contratto</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-800">
             <X size={24} />
           </button>
@@ -70,25 +83,32 @@ const EditTenantModal: React.FC<EditTenantModalProps> = ({ isOpen, onClose, onSa
         {error && <p className="bg-red-100 text-red-700 p-2 rounded mb-4 text-sm">{error}</p>}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Nome Completo</label>
-            <input type="text" name="name" value={formData.name} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Email</label>
-            <input type="email" name="email" value={formData.email} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Telefono</label>
-            <input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Contratto</label>
-            <select name="contractId" value={formData.contractId} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
-              <option value="">Nessun contratto</option>
-              {dataService.getContracts(projectId).map(c => <option key={c.id} value={c.id}>Contratto per {dataService.getProperties(projectId).find(p=>p.id === c.propertyId)?.name}</option>)}
+            <label className="block text-sm font-medium text-gray-700">Immobile</label>
+            <select name="propertyId" value={formData.propertyId} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
+              {properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
-          
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Inquilino</label>
+            <select name="tenantId" value={formData.tenantId} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
+              {tenants.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Data Inizio</label>
+              <input type="date" name="startDate" value={formData.startDate} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Data Fine</label>
+              <input type="date" name="endDate" value={formData.endDate} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Canone Mensile (€)</label>
+            <input type="number" name="rentAmount" value={formData.rentAmount} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" />
+          </div>
+
            <div className="pt-2">
             <h3 className="text-md font-semibold text-dark border-b pb-2 mb-3">Campi Personalizzati</h3>
             <div className="space-y-3">
@@ -150,4 +170,4 @@ const EditTenantModal: React.FC<EditTenantModalProps> = ({ isOpen, onClose, onSa
   );
 };
 
-export default EditTenantModal;
+export default EditContractModal;

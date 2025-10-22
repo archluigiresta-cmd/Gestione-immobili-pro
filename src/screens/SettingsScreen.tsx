@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect, lazy, Suspense } from 'react';
-import { User, Project, ProjectMemberRole, UserStatus } from '../types.ts';
-import Card from '../components/ui/Card.tsx';
-import * as dataService from '../services/dataService.ts';
+import { User, Project, ProjectMemberRole, UserStatus } from '../types';
+import Card from '../components/ui/Card';
+import * as dataService from '../services/dataService';
 import { UserCircle, Edit, Trash2, Shield, PlusCircle, Share2, Users, HardDrive, Upload, Check, X } from 'lucide-react';
 
-const EditProfileModal = lazy(() => import('../components/modals/EditProfileModal.tsx'));
-const AddUserModal = lazy(() => import('../components/modals/AddUserModal.tsx'));
-const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal.tsx'));
-const ShareProjectModal = lazy(() => import('../components/modals/ShareProjectModal.tsx'));
+const EditProfileModal = lazy(() => import('../components/modals/EditProfileModal'));
+const AddUserModal = lazy(() => import('../components/modals/AddUserModal'));
+const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal'));
+const ShareProjectModal = lazy(() => import('../components/modals/ShareProjectModal'));
 
 interface SettingsScreenProps {
   user: User;

@@ -1,12 +1,12 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { Property, Tenant, Contract, Expense, Maintenance, Deadline, Document, ProjectMemberRole, CustomField, CustomFieldType, HistoryLog, User } from '../types.ts';
-import * as dataService from '../services/dataService.ts';
-import Card from '../components/ui/Card.tsx';
+import { Property, Tenant, Contract, Expense, Maintenance, Deadline, Document, ProjectMemberRole, CustomField, CustomFieldType, HistoryLog, User } from '../types';
+import * as dataService from '../services/dataService';
+import Card from '../components/ui/Card';
 import { ArrowLeft, Building2, Square, BedDouble, FileText, CircleDollarSign, Wrench, Calendar, Users, PlusCircle, Edit, Trash2, Info, History, UserCircle } from 'lucide-react';
 
-const AddCustomFieldModal = lazy(() => import('../components/modals/AddCustomFieldModal.tsx'));
-const EditCustomFieldModal = lazy(() => import('../components/modals/EditCustomFieldModal.tsx'));
-const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal.tsx'));
+const AddCustomFieldModal = lazy(() => import('../components/modals/AddCustomFieldModal'));
+const EditCustomFieldModal = lazy(() => import('../components/modals/EditCustomFieldModal'));
+const ConfirmDeleteModal = lazy(() => import('../components/modals/ConfirmDeleteModal'));
 
 
 interface PropertyDetailScreenProps {

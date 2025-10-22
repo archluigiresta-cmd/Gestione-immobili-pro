@@ -4,31 +4,22 @@ import { Payment, PaymentStatus, Contract, Property } from '../../types';
 import { X } from 'lucide-react';
 import * as dataService from '../../services/dataService';
 
-interface AddPaymentModalProps {
+interface EditPaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (payment: Omit<Payment, 'id' | 'history'>) => void;
+  onSave: (payment: Payment) => void;
+  payment: Payment;
   projectId: string;
 }
 
-const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ isOpen, onClose, onSave, projectId }) => {
-  const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().getMonth() + 1;
-
-  const getInitialState = () => ({
-    contractId: '',
-    propertyId: '',
-    amount: 0,
-    paymentDate: '' as string | null,
-    dueDate: '',
-    referenceMonth: currentMonth,
-    referenceYear: currentYear,
-    status: PaymentStatus.PENDING,
-  });
-
-  const [formData, setFormData] = useState(getInitialState());
+const EditPaymentModal: React.FC<EditPaymentModalProps> = ({ isOpen, onClose, onSave, payment, projectId }) => {
+  const [formData, setFormData] = useState<Payment>(payment);
   const [contracts, setContracts] = useState<(Contract & { propertyName: string })[]>([]);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    setFormData(payment);
+  }, [payment]);
 
   useEffect(() => {
     if (isOpen) {
@@ -43,22 +34,7 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ isOpen, onClose, onSa
       setContracts(enrichedContracts);
     }
   }, [isOpen, projectId]);
-
-  const handleContractChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const contractId = e.target.value;
-    const selectedContract = contracts.find(c => c.id === contractId);
-    if (selectedContract) {
-      setFormData(prev => ({
-        ...prev,
-        contractId: selectedContract.id,
-        propertyId: selectedContract.propertyId,
-        amount: selectedContract.rentAmount,
-      }));
-    } else {
-      setFormData(prev => ({ ...prev, contractId: '', propertyId: '', amount: 0 }));
-    }
-  };
-
+  
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -66,12 +42,6 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ isOpen, onClose, onSa
       [name]: (name === 'amount' || name === 'referenceMonth' || name === 'referenceYear') ? Number(value) : value,
     }));
   };
-  
-  const handleClose = () => {
-    setFormData(getInitialState());
-    setError('');
-    onClose();
-  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,10 +51,9 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ isOpen, onClose, onSa
     }
     const finalData = {
         ...formData,
-        paymentDate: formData.paymentDate || null, // Ensure empty string becomes null
+        paymentDate: formData.paymentDate || null,
     };
-    onSave({ ...finalData, projectId });
-    handleClose();
+    onSave(finalData);
   };
 
   if (!isOpen) return null;
@@ -93,14 +62,14 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ isOpen, onClose, onSa
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
       <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg m-4 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-dark">Registra Nuovo Pagamento</h2>
-          <button onClick={handleClose} className="text-gray-500 hover:text-gray-800"><X size={24} /></button>
+          <h2 className="text-xl font-bold text-dark">Modifica Pagamento</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-800"><X size={24} /></button>
         </div>
         {error && <p className="bg-red-100 text-red-700 p-2 rounded mb-4 text-sm">{error}</p>}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">Contratto</label>
-            <select value={formData.contractId} onChange={handleContractChange} className="mt-1 block w-full input">
+            <select value={formData.contractId} disabled className="mt-1 block w-full input bg-gray-100">
               <option value="">Seleziona un contratto</option>
               {contracts.map(c => <option key={c.id} value={c.id}>Contratto per {c.propertyName}</option>)}
             </select>
@@ -138,8 +107,8 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ isOpen, onClose, onSa
             </div>
           </div>
           <div className="flex justify-end pt-4">
-            <button type="button" onClick={handleClose} className="mr-2 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Annulla</button>
-            <button type="submit" className="px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm">Registra</button>
+            <button type="button" onClick={onClose} className="mr-2 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Annulla</button>
+            <button type="submit" className="px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm">Salva Modifiche</button>
           </div>
         </form>
       </div>
@@ -147,4 +116,4 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ isOpen, onClose, onSa
   );
 };
 
-export default AddPaymentModal;
+export default EditPaymentModal;

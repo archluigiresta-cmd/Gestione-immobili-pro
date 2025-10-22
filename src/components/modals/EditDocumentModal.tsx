@@ -4,30 +4,26 @@ import { Document, Property, CustomField, CustomFieldType, DocumentType } from '
 import { X, PlusCircle, Trash2, Link, UploadCloud, File as FileIcon } from 'lucide-react';
 import * as dataService from '../../services/dataService';
 
-interface AddDocumentModalProps {
+interface EditDocumentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (document: Omit<Document, 'id' | 'history'>) => void;
+  onSave: (document: Document) => void;
+  document: Document;
   projectId: string;
 }
 
-const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ isOpen, onClose, onSave, projectId }) => {
-  const getInitialState = () => ({
-    name: '',
-    propertyId: '',
-    type: DocumentType.CONTRACT,
-    typeOther: '',
-    uploadDate: new Date().toISOString().split('T')[0],
-    fileUrl: '',
-    expiryDate: undefined as string | undefined,
-  });
-
-  const [formData, setFormData] = useState(getInitialState());
-  const [customFields, setCustomFields] = useState<Omit<CustomField, 'id'>[]>([]);
+const EditDocumentModal: React.FC<EditDocumentModalProps> = ({ isOpen, onClose, onSave, document, projectId }) => {
+  const [formData, setFormData] = useState<Document>(document);
   const [properties, setProperties] = useState<Property[]>([]);
   const [error, setError] = useState('');
-  const [uploadType, setUploadType] = useState<'url' | 'file'>('url');
+  const [uploadType, setUploadType] = useState<'url' | 'file'>(document.fileData ? 'file' : 'url');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  useEffect(() => {
+    setFormData(document);
+    setUploadType(document.fileData ? 'file' : 'url');
+    setSelectedFile(null);
+  }, [document]);
 
   useEffect(() => {
     if (isOpen) {
@@ -47,13 +43,20 @@ const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ isOpen, onClose, on
         setFormData(prev => ({ ...prev, [name]: value }));
     }
   };
+
+  const handleUploadTypeChange = (type: 'url' | 'file') => {
+    setUploadType(type);
+    if (type === 'url') {
+        setFormData(prev => ({...prev, fileData: undefined, fileName: undefined}));
+        setSelectedFile(null);
+    } else {
+        setFormData(prev => ({...prev, fileUrl: undefined}));
+    }
+  };
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setSelectedFile(e.target.files[0]);
-      if (!formData.name) {
-        setFormData(prev => ({ ...prev, name: e.target.files![0].name.replace(/\.[^/.]+$/, "") }));
-      }
     }
   };
 
@@ -65,32 +68,27 @@ const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ isOpen, onClose, on
       reader.onerror = error => reject(error);
     });
   };
-  
+
   const handleAddCustomField = () => {
-    setCustomFields([...customFields, { label: '', type: CustomFieldType.TEXT, value: '' }]);
-  };
-
-  const handleCustomFieldChange = (index: number, field: keyof Omit<CustomField, 'id'>, value: any) => {
-    const newCustomFields = [...customFields];
-    if (field === 'type') {
-        newCustomFields[index].value = value === CustomFieldType.BOOLEAN ? false : '';
-    }
-    (newCustomFields[index] as any)[field] = value;
-    setCustomFields(newCustomFields);
+    const newField = { id: `cf-${Date.now()}`, label: '', type: CustomFieldType.TEXT, value: '' };
+    setFormData(prev => ({ ...prev, customFields: [...prev.customFields, newField] }));
   };
   
-  const handleRemoveCustomField = (index: number) => {
-    setCustomFields(customFields.filter((_, i) => i !== index));
-  };
+  const handleCustomFieldChange = (index: number, field: keyof CustomField, value: any) => {
+    const newCustomFields = [...formData.customFields];
+    const targetField = { ...newCustomFields[index] };
 
-  const handleClose = () => {
-      setFormData(getInitialState());
-      setCustomFields([]);
-      setError('');
-      setUploadType('url');
-      setSelectedFile(null);
-      onClose();
-  }
+    if (field === 'type') {
+      targetField.value = value === CustomFieldType.BOOLEAN ? false : '';
+    }
+    (targetField as any)[field] = value;
+    newCustomFields[index] = targetField;
+    setFormData(prev => ({...prev, customFields: newCustomFields}));
+  };
+  
+  const handleRemoveCustomField = (id: string) => {
+    setFormData(prev => ({ ...prev, customFields: prev.customFields.filter(cf => cf.id !== id) }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,11 +96,11 @@ const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ isOpen, onClose, on
       setError('Nome del documento e immobile sono obbligatori.');
       return;
     }
-    if (uploadType === 'url' && !formData.fileUrl) {
+     if (uploadType === 'url' && !formData.fileUrl) {
       setError('L\'URL del file è obbligatorio.');
       return;
     }
-    if (uploadType === 'file' && !selectedFile) {
+    if (uploadType === 'file' && !selectedFile && !formData.fileData) {
       setError('Devi selezionare un file da caricare.');
       return;
     }
@@ -111,37 +109,22 @@ const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ isOpen, onClose, on
         return;
     }
 
-    const finalCustomFields = customFields
-      .filter(cf => cf.label.trim() !== '')
-      .map(cf => ({...cf, id: `cf-${Date.now()}-${Math.random()}`}));
-    
+    const cleanedCustomFields = formData.customFields.filter(cf => cf.label.trim() !== '');
     const { typeOther, ...restOfData } = formData;
-    const dataToSave = {
+    let dataToSave = {
         ...restOfData,
+        customFields: cleanedCustomFields,
         ...(formData.type === DocumentType.OTHER && { typeOther }),
     };
 
     if (uploadType === 'file' && selectedFile) {
-      const fileData = await handleFileToBase64(selectedFile);
-      onSave({ 
-        ...dataToSave, 
-        projectId, 
-        customFields: finalCustomFields, 
-        fileData, 
-        fileName: selectedFile.name,
-        fileUrl: undefined
-      });
-    } else {
-       onSave({ 
-        ...dataToSave, 
-        projectId, 
-        customFields: finalCustomFields,
-        fileData: undefined,
-        fileName: undefined,
-      });
+        const fileData = await handleFileToBase64(selectedFile);
+        dataToSave.fileData = fileData;
+        dataToSave.fileName = selectedFile.name;
+        dataToSave.fileUrl = undefined;
     }
-    
-    handleClose();
+
+    onSave(dataToSave);
   };
 
   if (!isOpen) return null;
@@ -150,8 +133,8 @@ const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ isOpen, onClose, on
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
       <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg m-4 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-dark">Carica Nuovo Documento</h2>
-          <button onClick={handleClose} className="text-gray-500 hover:text-gray-800"><X size={24} /></button>
+          <h2 className="text-xl font-bold text-dark">Modifica Documento</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-800"><X size={24} /></button>
         </div>
         {error && <p className="bg-red-100 text-red-700 p-2 rounded mb-4 text-sm">{error}</p>}
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -188,18 +171,18 @@ const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ isOpen, onClose, on
               </div>
           )}
 
-          <div>
+           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Sorgente del Documento</label>
             <div className="flex gap-2 rounded-lg bg-gray-100 p-1">
-                <button type="button" onClick={() => setUploadType('url')} className={`w-full flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${uploadType === 'url' ? 'bg-primary text-white shadow' : 'text-gray-600'}`}>
+                <button type="button" onClick={() => handleUploadTypeChange('url')} className={`w-full flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${uploadType === 'url' ? 'bg-primary text-white shadow' : 'text-gray-600'}`}>
                     <Link size={16}/> Link Esterno (URL)
                 </button>
-                <button type="button" onClick={() => setUploadType('file')} className={`w-full flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${uploadType === 'file' ? 'bg-primary text-white shadow' : 'text-gray-600'}`}>
+                <button type="button" onClick={() => handleUploadTypeChange('file')} className={`w-full flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${uploadType === 'file' ? 'bg-primary text-white shadow' : 'text-gray-600'}`}>
                     <UploadCloud size={16}/> Carica File
                 </button>
             </div>
           </div>
-
+          
           {uploadType === 'url' ? (
             <div>
               <label className="block text-sm font-medium text-gray-700">URL del File</label>
@@ -207,7 +190,7 @@ const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ isOpen, onClose, on
             </div>
           ) : (
             <div>
-              <label className="block text-sm font-medium text-gray-700">Seleziona File</label>
+              <label className="block text-sm font-medium text-gray-700">File Caricato</label>
               <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
                   <div className="space-y-1 text-center">
                       {selectedFile ? (
@@ -215,31 +198,42 @@ const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ isOpen, onClose, on
                               <FileIcon size={32} className="mx-auto text-green-500"/>
                               <p className="font-semibold text-dark">{selectedFile.name}</p>
                               <p className="text-xs text-gray-500">{(selectedFile.size / 1024).toFixed(2)} KB</p>
-                              <button type="button" onClick={() => setSelectedFile(null)} className="text-xs text-red-600 hover:underline">Cambia file</button>
+                              <label htmlFor="file-upload-edit" className="text-sm cursor-pointer text-primary hover:underline">
+                                  Cambia file
+                                  <input id="file-upload-edit" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} accept=".pdf,.dwg,.jpg,.jpeg,.png,.gif"/>
+                              </label>
+                          </>
+                      ) : formData.fileName ? (
+                          <>
+                            <FileIcon size={32} className="mx-auto text-green-500"/>
+                            <p className="font-semibold text-dark">{formData.fileName}</p>
+                            <label htmlFor="file-upload-edit" className="text-sm cursor-pointer text-primary hover:underline">
+                                Clicca per sostituire
+                                <input id="file-upload-edit" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} accept=".pdf,.dwg,.jpg,.jpeg,.png,.gif"/>
+                            </label>
                           </>
                       ) : (
-                          <>
+                           <>
                               <UploadCloud size={32} className="mx-auto text-gray-400"/>
                               <div className="flex text-sm text-gray-600">
-                                  <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-primary hover:text-primary-hover focus-within:outline-none">
+                                  <label htmlFor="file-upload-edit" className="relative cursor-pointer bg-white rounded-md font-medium text-primary hover:text-primary-hover focus-within:outline-none">
                                       <span>Cerca un file</span>
-                                      <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} accept=".pdf,.dwg,.jpg,.jpeg,.png,.gif"/>
+                                      <input id="file-upload-edit" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} accept=".pdf,.dwg,.jpg,.jpeg,.png,.gif"/>
                                   </label>
-                                  <p className="pl-1">o trascinalo qui</p>
                               </div>
                               <p className="text-xs text-gray-500">PDF, DWG, JPG, PNG, GIF</p>
                           </>
                       )}
                   </div>
               </div>
-            </div>
+          </div>
           )}
-          
-           <div className="pt-2">
+
+          <div className="pt-2">
             <h3 className="text-md font-semibold text-dark border-b pb-2 mb-3">Campi Personalizzati</h3>
             <div className="space-y-3">
-              {customFields.map((field, index) => (
-                <div key={index} className="grid grid-cols-12 gap-2 items-center">
+              {formData.customFields.map((field, index) => (
+                <div key={field.id} className="grid grid-cols-12 gap-2 items-center">
                   <input
                     type="text"
                     placeholder="Nome Campo"
@@ -275,7 +269,7 @@ const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ isOpen, onClose, on
                       </select>
                     )}
                   </div>
-                  <button type="button" onClick={() => handleRemoveCustomField(index)} className="col-span-1 text-red-500 hover:text-red-700">
+                  <button type="button" onClick={() => handleRemoveCustomField(field.id)} className="col-span-1 text-red-500 hover:text-red-700">
                     <Trash2 size={18} />
                   </button>
                 </div>
@@ -287,8 +281,8 @@ const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ isOpen, onClose, on
           </div>
 
           <div className="flex justify-end pt-4">
-            <button type="button" onClick={handleClose} className="mr-2 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Annulla</button>
-            <button type="submit" className="px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm">Salva Documento</button>
+            <button type="button" onClick={onClose} className="mr-2 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Annulla</button>
+            <button type="submit" className="px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm">Salva Modifiche</button>
           </div>
         </form>
       </div>
@@ -296,4 +290,4 @@ const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ isOpen, onClose, on
   );
 };
 
-export default AddDocumentModal;
+export default EditDocumentModal;

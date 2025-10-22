@@ -4,39 +4,27 @@ import { Expense, Property, ExpenseCategory, UtilityType, TaxType } from '../../
 import { X, Link, UploadCloud, File as FileIcon } from 'lucide-react';
 import * as dataService from '../../services/dataService';
 
-interface AddExpenseModalProps {
+interface EditExpenseModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (expense: Omit<Expense, 'id' | 'history'>) => void;
+  onSave: (expense: Expense) => void;
+  expense: Expense;
   projectId: string;
 }
 
-const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onSave, projectId }) => {
-  const getInitialState = () => ({
-    propertyId: '',
-    description: '',
-    amount: 0,
-    category: ExpenseCategory.UTILITIES,
-    categoryOther: '',
-    date: new Date().toISOString().split('T')[0],
-    providerUrl: '',
-    invoiceUrl: '',
-    utilityType: UtilityType.ELECTRICITY,
-    utilityTypeOther: '',
-    utilityProvider: '',
-    utilityDetails: '',
-    taxType: TaxType.IMU,
-    taxTypeOther: '',
-    taxReferenceYear: new Date().getFullYear(),
-    taxDetails: '',
-  });
-
-  const [formData, setFormData] = useState(getInitialState());
+const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ isOpen, onClose, onSave, expense, projectId }) => {
+  const [formData, setFormData] = useState<Expense>(expense);
   const [properties, setProperties] = useState<Property[]>([]);
   const [error, setError] = useState('');
-  const [invoiceUploadType, setInvoiceUploadType] = useState<'url' | 'file'>('url');
+  const [invoiceUploadType, setInvoiceUploadType] = useState<'url' | 'file'>(expense.invoiceData ? 'file' : 'url');
   const [selectedInvoice, setSelectedInvoice] = useState<File | null>(null);
 
+
+  useEffect(() => {
+    setFormData(expense);
+    setInvoiceUploadType(expense.invoiceData ? 'file' : 'url');
+    setSelectedInvoice(null);
+  }, [expense]);
 
   useEffect(() => {
     if (isOpen) {
@@ -53,24 +41,34 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onSa
         if (name === 'category') {
             newState.categoryOther = '';
             if (value !== ExpenseCategory.UTILITIES) {
-                newState.utilityType = undefined;
-                newState.utilityTypeOther = '';
-                newState.utilityProvider = '';
-                newState.utilityDetails = '';
+                delete newState.utilityType;
+                delete newState.utilityTypeOther;
+                delete newState.utilityProvider;
+                delete newState.utilityDetails;
             }
             if (value !== ExpenseCategory.TAXES) {
-                newState.taxType = undefined;
-                newState.taxTypeOther = '';
-                newState.taxReferenceYear = new Date().getFullYear();
-                newState.taxDetails = '';
+                delete newState.taxType;
+                delete newState.taxTypeOther;
+                delete newState.taxReferenceYear;
+                delete newState.taxDetails;
             }
         }
-        
-        if(name === 'utilityType' && value !== UtilityType.OTHER) newState.utilityTypeOther = '';
-        if(name === 'taxType' && value !== TaxType.OTHER) newState.taxTypeOther = '';
-        
+
+        if(name === 'utilityType' && value !== UtilityType.OTHER) delete newState.utilityTypeOther;
+        if(name === 'taxType' && value !== TaxType.OTHER) delete newState.taxTypeOther;
+
         return newState;
     });
+  };
+  
+  const handleUploadTypeChange = (type: 'url' | 'file') => {
+    setInvoiceUploadType(type);
+    if (type === 'url') {
+        setFormData(prev => ({...prev, invoiceData: undefined, invoiceName: undefined}));
+        setSelectedInvoice(null);
+    } else {
+        setFormData(prev => ({...prev, invoiceUrl: undefined}));
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,7 +92,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onSa
       setError('Immobile, descrizione, importo (> 0) e data sono obbligatori.');
       return;
     }
-    if (formData.category === ExpenseCategory.OTHER && !formData.categoryOther?.trim()) {
+     if (formData.category === ExpenseCategory.OTHER && !formData.categoryOther?.trim()) {
         setError('Specificare la categoria è obbligatorio quando si seleziona "Altro".');
         return;
     }
@@ -106,58 +104,40 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onSa
         setError('Specificare il tipo di tassa è obbligatorio.');
         return;
     }
-    if (invoiceUploadType === 'url' && !formData.invoiceUrl?.trim()) {
-        // Not mandatory, just reset file if empty
-        setFormData(prev => ({...prev, invoiceUrl: ''}));
-    }
-    if (invoiceUploadType === 'file' && !selectedInvoice) {
-       // Not mandatory
-    }
-    
-    let dataToSave: Omit<Expense, 'id' | 'history'> = {
-        projectId,
-        propertyId: formData.propertyId,
-        description: formData.description,
-        amount: formData.amount,
-        category: formData.category,
-        date: formData.date,
-        providerUrl: formData.providerUrl,
-    };
+
+    let dataToSave: Expense = { ...formData };
 
     if (invoiceUploadType === 'file' && selectedInvoice) {
         dataToSave.invoiceData = await handleFileToBase64(selectedInvoice);
         dataToSave.invoiceName = selectedInvoice.name;
-    } else {
-        dataToSave.invoiceUrl = formData.invoiceUrl;
+        dataToSave.invoiceUrl = undefined;
+    } else if (invoiceUploadType === 'url') {
+        dataToSave.invoiceData = undefined;
+        dataToSave.invoiceName = undefined;
     }
 
-    if (formData.category === ExpenseCategory.OTHER) dataToSave.categoryOther = formData.categoryOther;
+    if (dataToSave.category !== ExpenseCategory.OTHER) delete dataToSave.categoryOther;
     
-    if (formData.category === ExpenseCategory.UTILITIES) {
-        dataToSave.utilityType = formData.utilityType;
-        dataToSave.utilityProvider = formData.utilityProvider;
-        dataToSave.utilityDetails = formData.utilityDetails;
-        if(formData.utilityType === UtilityType.OTHER) dataToSave.utilityTypeOther = formData.utilityTypeOther;
+    if (dataToSave.category !== ExpenseCategory.UTILITIES) {
+        delete dataToSave.utilityType;
+        delete dataToSave.utilityTypeOther;
+        delete dataToSave.utilityProvider;
+        delete dataToSave.utilityDetails;
+    } else if (dataToSave.utilityType !== UtilityType.OTHER) {
+        delete dataToSave.utilityTypeOther;
     }
     
-    if (formData.category === ExpenseCategory.TAXES) {
-        dataToSave.taxType = formData.taxType;
-        dataToSave.taxReferenceYear = formData.taxReferenceYear;
-        dataToSave.taxDetails = formData.taxDetails;
-        if(formData.taxType === TaxType.OTHER) dataToSave.taxTypeOther = formData.taxTypeOther;
+    if (dataToSave.category !== ExpenseCategory.TAXES) {
+        delete dataToSave.taxType;
+        delete dataToSave.taxTypeOther;
+        delete dataToSave.taxReferenceYear;
+        delete dataToSave.taxDetails;
+    } else if (dataToSave.taxType !== TaxType.OTHER) {
+        delete dataToSave.taxTypeOther;
     }
 
     onSave(dataToSave);
-    onClose();
   };
-  
-  const handleClose = () => {
-      setFormData(getInitialState());
-      setError('');
-      setSelectedInvoice(null);
-      setInvoiceUploadType('url');
-      onClose();
-  }
 
   if (!isOpen) return null;
 
@@ -165,8 +145,8 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onSa
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
       <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg m-4 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-dark">Aggiungi Nuova Spesa</h2>
-          <button onClick={handleClose} className="text-gray-500 hover:text-gray-800">
+          <h2 className="text-xl font-bold text-dark">Modifica Spesa</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-800">
             <X size={24} />
           </button>
         </div>
@@ -211,52 +191,52 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onSa
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Tipo Utenza</label>
-                      <select name="utilityType" value={formData.utilityType} onChange={handleChange} className="mt-1 block w-full input">
+                      <select name="utilityType" value={formData.utilityType || ''} onChange={handleChange} className="mt-1 block w-full input">
                         {Object.values(UtilityType).map(type => <option key={type} value={type}>{type}</option>)}
                       </select>
                     </div>
                     {formData.utilityType === UtilityType.OTHER && (
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Specifica Tipo Utenza</label>
-                            <input type="text" name="utilityTypeOther" value={formData.utilityTypeOther} onChange={handleChange} className="mt-1 block w-full input" />
+                            <input type="text" name="utilityTypeOther" value={formData.utilityTypeOther || ''} onChange={handleChange} className="mt-1 block w-full input" />
                         </div>
                     )}
                 </div>
-                <div>
+                 <div>
                   <label className="block text-sm font-medium text-gray-700">Gestore</label>
-                  <input type="text" name="utilityProvider" value={formData.utilityProvider} onChange={handleChange} className="mt-1 block w-full input" placeholder="Es. Enel Energia" />
+                  <input type="text" name="utilityProvider" value={formData.utilityProvider || ''} onChange={handleChange} className="mt-1 block w-full input" placeholder="Es. Enel Energia" />
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-gray-700">Note / Dettagli Aggiuntivi</label>
-                    <textarea name="utilityDetails" value={formData.utilityDetails} onChange={handleChange} rows={2} className="mt-1 block w-full input" placeholder="Es. Codice cliente, POD, PDR..."></textarea>
+                    <textarea name="utilityDetails" value={formData.utilityDetails || ''} onChange={handleChange} rows={2} className="mt-1 block w-full input" placeholder="Es. Codice cliente, POD, PDR..."></textarea>
                 </div>
             </div>
           )}
-          
+
           {formData.category === ExpenseCategory.TAXES && (
             <div className="p-4 bg-yellow-50 rounded-lg space-y-4 border border-yellow-200">
                 <h3 className="text-md font-semibold text-yellow-800">Dettagli Tassa</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Tipo Tassa</label>
-                      <select name="taxType" value={formData.taxType} onChange={handleChange} className="mt-1 block w-full input">
+                      <select name="taxType" value={formData.taxType || ''} onChange={handleChange} className="mt-1 block w-full input">
                         {Object.values(TaxType).map(type => <option key={type} value={type}>{type}</option>)}
                       </select>
                     </div>
                     {formData.taxType === TaxType.OTHER && (
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Specifica Tipo Tassa</label>
-                            <input type="text" name="taxTypeOther" value={formData.taxTypeOther} onChange={handleChange} className="mt-1 block w-full input" />
+                            <input type="text" name="taxTypeOther" value={formData.taxTypeOther || ''} onChange={handleChange} className="mt-1 block w-full input" />
                         </div>
                     )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Anno di Riferimento</label>
-                  <input type="number" name="taxReferenceYear" value={formData.taxReferenceYear} onChange={handleChange} className="mt-1 block w-full input" placeholder="Es. 2024" />
+                  <input type="number" name="taxReferenceYear" value={formData.taxReferenceYear || ''} onChange={handleChange} className="mt-1 block w-full input" placeholder="Es. 2024" />
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-gray-700">Note / Dettagli Aggiuntivi</label>
-                    <textarea name="taxDetails" value={formData.taxDetails} onChange={handleChange} rows={2} className="mt-1 block w-full input" placeholder="Es. Acconto, Saldo, Rif. F24..."></textarea>
+                    <textarea name="taxDetails" value={formData.taxDetails || ''} onChange={handleChange} rows={2} className="mt-1 block w-full input" placeholder="Es. Acconto, Saldo, Rif. F24..."></textarea>
                 </div>
             </div>
           )}
@@ -273,23 +253,24 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onSa
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Link al sito del gestore (Opzionale)</label>
-            <input type="url" name="providerUrl" value={formData.providerUrl} onChange={handleChange} className="mt-1 block w-full input" placeholder="https://..." />
+            <input type="url" name="providerUrl" value={formData.providerUrl || ''} onChange={handleChange} className="mt-1 block w-full input" placeholder="https://..." />
           </div>
           
            <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Fattura (Opzionale)</label>
                 <div className="flex gap-2 rounded-lg bg-gray-100 p-1">
-                    <button type="button" onClick={() => setInvoiceUploadType('url')} className={`w-full flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${invoiceUploadType === 'url' ? 'bg-primary text-white shadow' : 'text-gray-600'}`}>
+                    <button type="button" onClick={() => handleUploadTypeChange('url')} className={`w-full flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${invoiceUploadType === 'url' ? 'bg-primary text-white shadow' : 'text-gray-600'}`}>
                         <Link size={16}/> Link Esterno (URL)
                     </button>
-                    <button type="button" onClick={() => setInvoiceUploadType('file')} className={`w-full flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${invoiceUploadType === 'file' ? 'bg-primary text-white shadow' : 'text-gray-600'}`}>
+                    <button type="button" onClick={() => handleUploadTypeChange('file')} className={`w-full flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${invoiceUploadType === 'file' ? 'bg-primary text-white shadow' : 'text-gray-600'}`}>
                         <UploadCloud size={16}/> Carica File
                     </button>
                 </div>
             </div>
+
             {invoiceUploadType === 'url' ? (
-                 <div>
-                    <input type="url" name="invoiceUrl" value={formData.invoiceUrl} onChange={handleChange} className="mt-1 block w-full input" placeholder="https://..." />
+                <div>
+                    <input type="url" name="invoiceUrl" value={formData.invoiceUrl || ''} onChange={handleChange} className="mt-1 block w-full input" placeholder="https://..." />
                 </div>
             ) : (
                 <div>
@@ -299,17 +280,27 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onSa
                                 <>
                                     <FileIcon size={32} className="mx-auto text-green-500"/>
                                     <p className="font-semibold text-dark">{selectedInvoice.name}</p>
-                                    <button type="button" onClick={() => setSelectedInvoice(null)} className="text-xs text-red-600 hover:underline">Cambia file</button>
+                                    <label htmlFor="invoice-upload-edit" className="text-sm cursor-pointer text-primary hover:underline">
+                                        Cambia file
+                                        <input id="invoice-upload-edit" name="invoice-upload" type="file" className="sr-only" onChange={handleFileChange} />
+                                    </label>
+                                </>
+                            ) : formData.invoiceName ? (
+                                <>
+                                    <FileIcon size={32} className="mx-auto text-green-500"/>
+                                    <p className="font-semibold text-dark">{formData.invoiceName}</p>
+                                    <label htmlFor="invoice-upload-edit" className="text-sm cursor-pointer text-primary hover:underline">
+                                        Clicca per sostituire
+                                        <input id="invoice-upload-edit" name="invoice-upload" type="file" className="sr-only" onChange={handleFileChange} />
+                                    </label>
                                 </>
                             ) : (
                                 <>
                                     <UploadCloud size={32} className="mx-auto text-gray-400"/>
-                                    <div className="flex text-sm text-gray-600">
-                                        <label htmlFor="invoice-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-primary hover:text-primary-hover focus-within:outline-none">
-                                            <span>Cerca un file</span>
-                                            <input id="invoice-upload" name="invoice-upload" type="file" className="sr-only" onChange={handleFileChange} />
-                                        </label>
-                                    </div>
+                                    <label htmlFor="invoice-upload-edit" className="relative cursor-pointer bg-white rounded-md font-medium text-primary hover:text-primary-hover focus-within:outline-none">
+                                        <span>Cerca un file</span>
+                                        <input id="invoice-upload-edit" name="invoice-upload" type="file" className="sr-only" onChange={handleFileChange} />
+                                    </label>
                                 </>
                             )}
                         </div>
@@ -318,8 +309,8 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onSa
             )}
             
           <div className="flex justify-end pt-4">
-            <button type="button" onClick={handleClose} className="mr-2 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Annulla</button>
-            <button type="submit" className="px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm">Aggiungi Spesa</button>
+            <button type="button" onClick={onClose} className="mr-2 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Annulla</button>
+            <button type="submit" className="px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm">Salva Modifiche</button>
           </div>
         </form>
       </div>
@@ -327,4 +318,4 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onSa
   );
 };
 
-export default AddExpenseModal;
+export default EditExpenseModal;

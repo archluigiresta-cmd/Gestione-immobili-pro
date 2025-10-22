@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
-import { User, Project, ProjectMemberRole } from '../../types.ts';
+import { User, Project, ProjectMemberRole } from '../../types';
 import { X } from 'lucide-react';
-import * as dataService from '../../services/dataService.ts';
+import * as dataService from '../../services/dataService';
 
 interface ShareProjectModalProps {
   isOpen: boolean;
@@ -75,27 +76,4 @@ const ShareProjectModal: React.FC<ShareProjectModalProps> = ({ isOpen, onClose, 
                 <label className="flex items-center">
                     <input type="radio" name="role" value={ProjectMemberRole.EDITOR} checked={selectedRole === ProjectMemberRole.EDITOR} onChange={() => setSelectedRole(ProjectMemberRole.EDITOR)} className="h-4 w-4 text-primary focus:ring-primary border-gray-300"/>
                     <span className="ml-2 text-sm text-gray-700">
-                        <span className="font-semibold">Editor</span> - Può visualizzare e modificare i dati.
-                    </span>
-                </label>
-                <label className="flex items-center">
-                    <input type="radio" name="role" value={ProjectMemberRole.VIEWER} checked={selectedRole === ProjectMemberRole.VIEWER} onChange={() => setSelectedRole(ProjectMemberRole.VIEWER)} className="h-4 w-4 text-primary focus:ring-primary border-gray-300"/>
-                    <span className="ml-2 text-sm text-gray-700">
-                        <span className="font-semibold">Visualizzatore</span> - Può solo visualizzare i dati.
-                    </span>
-                </label>
-            </div>
-          </div>
-          <div className="flex justify-end pt-4">
-            <button type="button" onClick={handleClose} className="mr-2 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Annulla</button>
-            <button type="submit" disabled={availableUsers.length === 0} className="px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm disabled:bg-gray-400 disabled:cursor-not-allowed">
-                Condividi
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-export default ShareProjectModal;
+                        <span className="
