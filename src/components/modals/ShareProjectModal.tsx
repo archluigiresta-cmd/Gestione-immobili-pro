@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { User, Project, ProjectMemberRole } from '../../types';
 import { X } from 'lucide-react';

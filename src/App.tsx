@@ -1,26 +1,26 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 
-// Import screens
-import DashboardScreen from './screens/DashboardScreen';
-import PropertiesScreen from './screens/PropertiesScreen';
-import PropertyDetailScreen from './screens/PropertyDetailScreen';
-import ContractsScreen from './screens/ContractsScreen';
-import TenantsScreen from './screens/TenantsScreen';
-import PaymentsScreen from './screens/PaymentsScreen';
-import DeadlinesScreen from './screens/DeadlinesScreen';
-import MaintenanceScreen from './screens/MaintenanceScreen';
-import ExpensesScreen from './screens/ExpensesScreen';
-import DocumentsScreen from './screens/DocumentsScreen';
-import ReportsScreen from './screens/ReportsScreen';
-import FinancialAnalysisScreen from './screens/FinancialAnalysisScreen';
-import SettingsScreen from './screens/SettingsScreen';
-import HelpScreen from './screens/HelpScreen';
-import SplashScreen from './screens/SplashScreen';
-import LoginScreen from './screens/LoginScreen';
-import ProjectSelectionScreen from './screens/ProjectSelectionScreen';
-import UserSelectionScreen from './screens/UserSelectionScreen';
+// LAZY LOAD ALL SCREENS
+const DashboardScreen = lazy(() => import('./screens/DashboardScreen'));
+const PropertiesScreen = lazy(() => import('./screens/PropertiesScreen'));
+const PropertyDetailScreen = lazy(() => import('./screens/PropertyDetailScreen'));
+const ContractsScreen = lazy(() => import('./screens/ContractsScreen'));
+const TenantsScreen = lazy(() => import('./screens/TenantsScreen'));
+const PaymentsScreen = lazy(() => import('./screens/PaymentsScreen'));
+const DeadlinesScreen = lazy(() => import('./screens/DeadlinesScreen'));
+const MaintenanceScreen = lazy(() => import('./screens/MaintenanceScreen'));
+const ExpensesScreen = lazy(() => import('./screens/ExpensesScreen'));
+const DocumentsScreen = lazy(() => import('./screens/DocumentsScreen'));
+const ReportsScreen = lazy(() => import('./screens/ReportsScreen'));
+const FinancialAnalysisScreen = lazy(() => import('./screens/FinancialAnalysisScreen'));
+const SettingsScreen = lazy(() => import('./screens/SettingsScreen'));
+const HelpScreen = lazy(() => import('./screens/HelpScreen'));
+const SplashScreen = lazy(() => import('./screens/SplashScreen'));
+const LoginScreen = lazy(() => import('./screens/LoginScreen'));
+const ProjectSelectionScreen = lazy(() => import('./screens/ProjectSelectionScreen'));
+const UserSelectionScreen = lazy(() => import('./screens/UserSelectionScreen'));
 
-// Import services and types
+// Import services and types (no extensions)
 import * as dataService from './services/dataService';
 import * as googleDriveService from './services/googleDriveService';
 import { User, Project, ProjectMemberRole, UserStatus, navigationItems, secondaryNavigationItems, Screen } from './types';
@@ -199,8 +199,10 @@ const App: React.FC = () => {
         }
     };
     
+    const loadingFallback = <SplashScreen />;
+
     if (!isApiReady) {
-        return <SplashScreen />;
+        return <Suspense fallback={loadingFallback}><SplashScreen /></Suspense>;
     }
     
     const activeUsers = dataService.getUsers().filter(u => u.status === UserStatus.ACTIVE);
@@ -208,7 +210,7 @@ const App: React.FC = () => {
 
     if (appState === 'login') {
         return (
-            <Suspense fallback={<SplashScreen />}>
+            <Suspense fallback={loadingFallback}>
                 <LoginScreen 
                     onGoogleLogin={handleGoogleLogin}
                     onCollaboratorLogin={() => setAppState('selectUser')}
@@ -227,7 +229,7 @@ const App: React.FC = () => {
 
     if (appState === 'selectUser') {
         return (
-            <Suspense fallback={<SplashScreen />}>
+            <Suspense fallback={loadingFallback}>
                 <UserSelectionScreen
                     users={localUsers}
                     onSelectUser={handleSelectUser}
@@ -243,15 +245,14 @@ const App: React.FC = () => {
             </Suspense>
         );
     }
-    
 
     if (!user) {
-         return <SplashScreen />; // Should not happen if logic is correct, but as a fallback
+         return <Suspense fallback={loadingFallback}><SplashScreen /></Suspense>;
     }
     
     if (appState === 'selectProject') {
         return (
-            <Suspense fallback={<SplashScreen />}>
+            <Suspense fallback={loadingFallback}>
                 <ProjectSelectionScreen 
                     user={user} 
                     onSelectProject={handleSelectProject} 
@@ -302,7 +303,7 @@ const App: React.FC = () => {
     }
 
     // Fallback in case of an unexpected state
-    return <SplashScreen />;
+    return <Suspense fallback={loadingFallback}><SplashScreen /></Suspense>;
 };
 
 export default App;

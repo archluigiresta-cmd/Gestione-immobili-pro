@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tenant, CustomField, CustomFieldType } from '../../types';
 import { X, PlusCircle, Trash2 } from 'lucide-react';
