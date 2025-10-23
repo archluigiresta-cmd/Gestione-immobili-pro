@@ -51,7 +51,7 @@ const ReportSection: React.FC<{
 };
 
 
-export const PropertyReportCard: React.FC<PropertyReportCardProps> = ({ data }) => {
+const PropertyReportCard: React.FC<PropertyReportCardProps> = ({ data }) => {
     const { property, tenants, contracts, payments, expenses, maintenances, deadlines, documents, paymentSubtotal, expenseSubtotal } = data;
     
     const allExpenses = [
@@ -147,3 +147,5 @@ export const PropertyReportCard: React.FC<PropertyReportCardProps> = ({ data }) 
         </Card>
     );
 };
+
+export default PropertyReportCard;
