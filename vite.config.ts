@@ -6,8 +6,8 @@ import path from 'path'
 export default defineConfig({
   plugins: [react()],
   define: {
-    'process.env.GOOGLE_CLIENT_ID': JSON.stringify(process.env.VITE_GOOGLE_CLIENT_ID),
-    'process.env.API_KEY': JSON.stringify(process.env.VITE_API_KEY),
+    'process.env.GOOGLE_CLIENT_ID': `"${process.env.VITE_GOOGLE_CLIENT_ID}"`,
+    'process.env.API_KEY': `"${process.env.VITE_API_KEY}"`,
   },
   resolve: {
     alias: {

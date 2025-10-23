@@ -302,7 +302,6 @@ const App: React.FC = () => {
         );
     }
 
-    // Fallback in case of an unexpected state
     return <Suspense fallback={loadingFallback}><SplashScreen /></Suspense>;
 };
 
