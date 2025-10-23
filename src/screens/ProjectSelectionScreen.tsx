@@ -86,7 +86,6 @@ const ProjectSelectionScreen: React.FC<ProjectSelectionScreenProps> = ({ user, o
   
   const handleCreate = (projectName: string) => {
     onCreateProject(projectName);
-    // After creating, the main app logic handles selecting it. We just need to refresh our list.
     loadProjects(); 
     setCreateModalOpen(false);
   }
@@ -94,7 +93,7 @@ const ProjectSelectionScreen: React.FC<ProjectSelectionScreenProps> = ({ user, o
   const handleDeleteProject = () => {
     if (deletingProject) {
         dataService.deleteProject(deletingProject.id);
-        loadProjects(); // Refresh the list after deletion
+        loadProjects();
         setDeletingProject(null);
     }
   };

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Card from '@/components/ui/Card';
 import * as dataService from '@/services/dataService';
 import { Property, Tenant, Contract, Payment, Expense, Maintenance, Deadline, Document } from '@/types';
-// FIX: Changed to default import for PropertyReportCard as it is default exported in the resolved module.
+// FIX: Changed to default import for PropertyReportCard as suggested by the error message.
 import PropertyReportCard, { AggregatedPropertyData } from '@/components/reports/PropertyReportCard';
 
 interface ReportsScreenProps {

@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
-import { Document, Property, CustomField, CustomFieldType, DocumentType } from '../../types';
+import { Document, Property, CustomField, CustomFieldType, DocumentType } from '@/types';
 import { X, PlusCircle, Trash2, Link, UploadCloud, File as FileIcon } from 'lucide-react';
-import * as dataService from '../../services/dataService';
+import * as dataService from '@/services/dataService';
 
 interface EditDocumentModalProps {
   isOpen: boolean;
@@ -186,7 +185,7 @@ const EditDocumentModal: React.FC<EditDocumentModalProps> = ({ isOpen, onClose, 
           {uploadType === 'url' ? (
             <div>
               <label className="block text-sm font-medium text-gray-700">URL del File</label>
-              <input type="url" name="fileUrl" value={formData.fileUrl || ''} onChange={handleChange} className="mt-1 block w-full input" placeholder="https://" />
+              <input type="url" name="fileUrl" value={formData.fileUrl || ''} onChange={handleChange} className="mt-1 block w-full input" placeholder="https://..." />
             </div>
           ) : (
             <div>

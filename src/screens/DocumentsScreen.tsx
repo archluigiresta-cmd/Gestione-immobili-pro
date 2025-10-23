@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Card from '@/components/ui/Card';
 import * as dataService from '@/services/dataService';
 import { Document, User, DocumentType, Property } from '@/types';
@@ -129,31 +129,29 @@ const DocumentsScreen: React.FC<DocumentsScreenProps> = ({ projectId, user }) =>
         </div>
       </div>
 
-      <Suspense fallback={null}>
-        <AddDocumentModal
-          isOpen={isAddModalOpen}
-          onClose={() => setAddModalOpen(false)}
-          onSave={handleAddDocument}
+      <AddDocumentModal
+        isOpen={isAddModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onSave={handleAddDocument}
+        projectId={projectId}
+      />
+      {editingDocument && (
+        <EditDocumentModal
+          isOpen={!!editingDocument}
+          onClose={() => setEditingDocument(null)}
+          onSave={handleUpdateDocument}
+          document={editingDocument}
           projectId={projectId}
         />
-        {editingDocument && (
-          <EditDocumentModal
-            isOpen={!!editingDocument}
-            onClose={() => setEditingDocument(null)}
-            onSave={handleUpdateDocument}
-            document={editingDocument}
-            projectId={projectId}
-          />
-        )}
-        {deletingDocument && (
-          <ConfirmDeleteModal
-            isOpen={!!deletingDocument}
-            onClose={() => setDeletingDocument(null)}
-            onConfirm={handleDeleteDocument}
-            message={`Sei sicuro di voler eliminare il documento "${deletingDocument.name}"?`}
-          />
-        )}
-      </Suspense>
+      )}
+      {deletingDocument && (
+        <ConfirmDeleteModal
+          isOpen={!!deletingDocument}
+          onClose={() => setDeletingDocument(null)}
+          onConfirm={handleDeleteDocument}
+          message={`Sei sicuro di voler eliminare il documento "${deletingDocument.name}"?`}
+        />
+      )}
     </>
   );
 };

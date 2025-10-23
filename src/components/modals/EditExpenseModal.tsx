@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
-import { Expense, Property, ExpenseCategory, UtilityType, TaxType } from '../../types';
+import { Expense, Property, ExpenseCategory, UtilityType, TaxType } from '@/types';
 import { X, Link, UploadCloud, File as FileIcon } from 'lucide-react';
-import * as dataService from '../../services/dataService';
+import * as dataService from '@/services/dataService';
 
 interface EditExpenseModalProps {
   isOpen: boolean;
@@ -36,7 +35,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ isOpen, onClose, on
     const { name, value } = e.target;
     
     setFormData(prev => {
-        const newState = { ...prev, [name]: name === 'amount' || name === 'taxReferenceYear' ? Number(value) : value };
+        const newState: Partial<Expense> = { ...prev, [name]: name === 'amount' || name === 'taxReferenceYear' ? Number(value) : value };
         
         if (name === 'category') {
             newState.categoryOther = '';
@@ -57,7 +56,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ isOpen, onClose, on
         if(name === 'utilityType' && value !== UtilityType.OTHER) delete newState.utilityTypeOther;
         if(name === 'taxType' && value !== TaxType.OTHER) delete newState.taxTypeOther;
 
-        return newState;
+        return newState as Expense;
     });
   };
   

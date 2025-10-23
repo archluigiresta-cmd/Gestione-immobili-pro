@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
-import { Document, Property, CustomField, CustomFieldType, DocumentType } from '../../types';
+import { Document, Property, CustomField, CustomFieldType, DocumentType } from '@/types';
 import { X, PlusCircle, Trash2, Link, UploadCloud, File as FileIcon } from 'lucide-react';
-import * as dataService from '../../services/dataService';
+import * as dataService from '@/services/dataService';
 
 interface AddDocumentModalProps {
   isOpen: boolean;

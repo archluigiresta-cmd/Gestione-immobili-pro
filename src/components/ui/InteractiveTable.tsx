@@ -79,8 +79,6 @@ const InteractiveTable = <T extends { id?: string | number }>({ columns, data }:
 
       // Rule 2: Handle numbers and booleans specifically.
       if (aType === 'number' && bType === 'number') {
-        // FIX: Cast values to number for arithmetic operation.
-        // TypeScript doesn't narrow the type of generic properties (`T[keyof T]`) within this conditional block.
         return ((aValue as number) - (bValue as number)) * direction;
       }
       if (aType === 'boolean' && bType === 'boolean') {
@@ -92,7 +90,6 @@ const InteractiveTable = <T extends { id?: string | number }>({ columns, data }:
       const strB = String(bValue);
 
       // Rule 4: If they look like standard dates, compare them as dates.
-      // This prevents misinterpreting numbers or other strings as dates.
       const isDateString = (s: string) => /^\d{4}-\d{2}-\d{2}/.test(s);
       if (isDateString(strA) && isDateString(strB)) {
         const dateA = new Date(strA);

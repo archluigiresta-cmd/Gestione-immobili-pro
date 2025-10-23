@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
-import { Payment, PaymentStatus, Contract, Property } from '../../types';
+import { Payment, PaymentStatus, Contract, Property } from '@/types';
 import { X } from 'lucide-react';
-import * as dataService from '../../services/dataService';
+import * as dataService from '@/services/dataService';
 
 interface EditPaymentModalProps {
   isOpen: boolean;
