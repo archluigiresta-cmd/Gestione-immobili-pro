@@ -1,6 +1,5 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-// FIX: Using relative path to fix module resolution issue.
 import App from './App';
 
 const rootElement = document.getElementById('root');

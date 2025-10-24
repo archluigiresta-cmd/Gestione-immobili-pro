@@ -3,7 +3,6 @@ import {
     Settings, LifeBuoy, DownloadCloud
 } from 'lucide-react';
 
-// FIX: Moved navigation items and Screen type from App.tsx to break a circular dependency.
 export const navigationItems = [
     { screen: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
     { screen: 'properties', name: 'Immobili', icon: Building },
