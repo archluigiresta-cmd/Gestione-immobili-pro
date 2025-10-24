@@ -1,13 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import Card from '@/components/ui/Card';
-import * as dataService from '@/services/dataService';
-import { Payment, PaymentStatus, Property, ProjectMemberRole, User, Contract, Tenant } from '@/types';
+import Card from '../components/ui/Card';
+import * as dataService from '../services/dataService';
+import { Payment, PaymentStatus, Property, ProjectMemberRole, User, Contract, Tenant } from '../types';
 import { CheckCircle, Clock, AlertCircle, PlusCircle, Edit, Trash2, DollarSign } from 'lucide-react';
-import AccordionItem from '@/components/ui/AccordionItem';
-import ExportButton from '@/components/ui/ExportButton';
-import AddPaymentModal from '@/components/modals/AddPaymentModal';
-import EditPaymentModal from '@/components/modals/EditPaymentModal';
-import ConfirmDeleteModal from '@/components/modals/ConfirmDeleteModal';
+import AccordionItem from '../components/ui/AccordionItem';
+import ExportButton from '../components/ui/ExportButton';
+import AddPaymentModal from '../components/modals/AddPaymentModal';
+import EditPaymentModal from '../components/modals/EditPaymentModal';
+import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
 
 interface PaymentsScreenProps {
   projectId: string;

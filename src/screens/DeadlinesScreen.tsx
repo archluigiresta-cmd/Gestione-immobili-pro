@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import Card from '@/components/ui/Card';
-import * as dataService from '@/services/dataService';
-import { Deadline, DeadlineType, User, Property } from '@/types';
+import Card from '../components/ui/Card';
+import * as dataService from '../services/dataService';
+import { Deadline, DeadlineType, User, Property } from '../types';
 import { PlusCircle, Edit, Trash2, CheckCircle, List, CalendarDays } from 'lucide-react';
-import AddDeadlineModal from '@/components/modals/AddDeadlineModal';
-import EditDeadlineModal from '@/components/modals/EditDeadlineModal';
-import ConfirmDeleteModal from '@/components/modals/ConfirmDeleteModal';
-import AccordionItem from '@/components/ui/AccordionItem';
+import AddDeadlineModal from '../components/modals/AddDeadlineModal';
+import EditDeadlineModal from '../components/modals/EditDeadlineModal';
+import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
+import AccordionItem from '../components/ui/AccordionItem';
 
 interface DeadlinesScreenProps {
   projectId: string;

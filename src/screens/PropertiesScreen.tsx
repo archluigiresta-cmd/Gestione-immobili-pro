@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import Card from '@/components/ui/Card';
-import * as dataService from '@/services/dataService';
-import { Property, ProjectMemberRole, User, PropertyType, Screen } from '@/types';
+import Card from '../components/ui/Card';
+import * as dataService from '../services/dataService';
+import { Property, ProjectMemberRole, User, PropertyType, Screen } from '../types';
 import { PlusCircle, Edit, Trash2, Eye, MapPin } from 'lucide-react';
-import AddPropertyModal from '@/components/modals/AddPropertyModal';
-import EditPropertyModal from '@/components/modals/EditPropertyModal';
-import ConfirmDeleteModal from '@/components/modals/ConfirmDeleteModal';
+import AddPropertyModal from '../components/modals/AddPropertyModal';
+import EditPropertyModal from '../components/modals/EditPropertyModal';
+import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
 
 interface PropertiesScreenProps {
   onNavigate: (screen: Screen, propertyId?: string) => void;

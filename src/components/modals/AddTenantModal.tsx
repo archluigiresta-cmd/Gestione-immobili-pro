@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Tenant, CustomField, CustomFieldType } from '@/types';
+import { Tenant, CustomField, CustomFieldType } from '../../types';
 import { X, PlusCircle, Trash2 } from 'lucide-react';
-import * as dataService from '@/services/dataService';
+// FIX: Corrected import path to point to the correct file location.
+import * as dataService from '../../services/dataService';
 
 interface AddTenantModalProps {
   isOpen: boolean;
