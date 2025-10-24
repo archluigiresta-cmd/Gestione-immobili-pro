@@ -1,4 +1,5 @@
-import { MOCK_USERS, MOCK_PROPERTIES, MOCK_TENANTS, MOCK_CONTRACTS, MOCK_DEADLINES, MOCK_MAINTENANCES, MOCK_EXPENSES, MOCK_DOCUMENTS, MOCK_PROJECTS, MOCK_PAYMENTS, INITIAL_MOCK_DATA } from '@/constants';
+
+import { INITIAL_MOCK_DATA } from '@/constants';
 import { User, Property, Tenant, Contract, Deadline, Maintenance, Expense, Document, DeadlineType, Project, HistoryLog, Payment, UserStatus, AppData } from '@/types';
 import { saveDataToDrive } from '@/services/googleDriveService';
 
@@ -75,7 +76,7 @@ export const migrateData = () => {
 };
 
 
-const initData = <T,>(key: string, mockData: T[]): T[] => {
+const initData = <T,>(key: keyof AppData, mockData: T[]): T[] => {
     try {
         const storedData = localStorage.getItem(key);
         if (storedData) {
@@ -91,7 +92,7 @@ const initData = <T,>(key: string, mockData: T[]): T[] => {
     return mockData;
 };
 
-const saveData = <T,>(key: string, data: T[]): void => {
+const saveData = (key: keyof AppData, data: any[]): void => {
     try {
         localStorage.setItem(key, JSON.stringify(data));
         if (driveFileId) {
@@ -122,7 +123,7 @@ const createLogEntry = (userId: string, description: string): HistoryLog => ({
 });
 
 // Users
-export const getUsers = (): User[] => initData('users', MOCK_USERS);
+export const getUsers = (): User[] => initData('users', INITIAL_MOCK_DATA.users);
 export const getUser = (id: string): User | undefined => getUsers().find(u => u.id === id);
 export const addUser = (userData: Omit<User, 'id' | 'status'>): User => {
     const users = getUsers();
@@ -156,7 +157,7 @@ export const deleteUser = (id: string): void => {
 };
 
 // Projects
-export const getProjects = (): Project[] => initData('projects', MOCK_PROJECTS);
+export const getProjects = (): Project[] => initData('projects', INITIAL_MOCK_DATA.projects);
 export const getProjectsForUser = (userId: string): Project[] => {
     const allProjects = getProjects();
     return allProjects.filter(p => p.members.some(m => m.userId === userId));
@@ -172,6 +173,17 @@ export const updateProject = (updatedProject: Project): void => {
     projects = projects.map(p => p.id === updatedProject.id ? updatedProject : p);
     saveData('projects', projects);
 };
+
+// FIX: Added missing getAll... functions for cascade delete
+const getAllProperties = (): Property[] => initData('properties', INITIAL_MOCK_DATA.properties);
+const getAllTenants = (): Tenant[] => initData('tenants', INITIAL_MOCK_DATA.tenants);
+const getAllContracts = (): Contract[] => initData('contracts', INITIAL_MOCK_DATA.contracts);
+const getAllDeadlines = (): Deadline[] => initData('deadlines', INITIAL_MOCK_DATA.deadlines);
+const getAllMaintenances = (): Maintenance[] => initData('maintenances', INITIAL_MOCK_DATA.maintenances);
+const getAllExpenses = (): Expense[] => initData('expenses', INITIAL_MOCK_DATA.expenses);
+const getAllDocuments = (): Document[] => initData('documents', INITIAL_MOCK_DATA.documents);
+const getAllPayments = (): Payment[] => initData('payments', INITIAL_MOCK_DATA.payments);
+
 export const deleteProject = (id: string): void => {
     // Cascade delete: remove all data associated with the project
     saveData('properties', getAllProperties().filter(p => p.projectId !== id));
@@ -191,7 +203,6 @@ export const deleteProject = (id: string): void => {
 
 
 // Project-scoped data functions
-const getAllProperties = (): Property[] => initData('properties', MOCK_PROPERTIES);
 export const getProperties = (projectId: string): Property[] => getAllProperties().filter(p => p.projectId === projectId);
 export const getProperty = (projectId: string, id: string): Property | undefined => getProperties(projectId).find(p => p.id === id);
 export const addProperty = (propertyData: Omit<Property, 'id' | 'customFields' | 'history' | 'creationDate'>, userId: string): Property => {
@@ -240,7 +251,6 @@ export const deleteProperty = (id: string): void => {
     saveData('properties', properties);
 };
 
-const getAllTenants = (): Tenant[] => initData('tenants', MOCK_TENANTS);
 export const getTenants = (projectId: string): Tenant[] => getAllTenants().filter(t => t.projectId === projectId);
 export const addTenant = (tenantData: Omit<Tenant, 'id' | 'history'>, userId: string): void => {
     const tenants = getAllTenants();
@@ -264,10 +274,10 @@ export const deleteTenant = (id: string): void => {
     saveData('tenants', tenants);
 };
 
-const getAllContracts = (): Contract[] => initData('contracts', MOCK_CONTRACTS);
 export const getContracts = (projectId: string): Contract[] => getAllContracts().filter(c => c.projectId === projectId);
 export const addContract = (contractData: Omit<Contract, 'id'|'documentUrl' | 'history'>, userId: string): void => {
     const contracts = getAllContracts();
+    // FIX: Completed newContract object with missing properties
     const newContract: Contract = { ...contractData, id: generateId('contract'), documentUrl: '#', customFields: contractData.customFields || [], history: [createLogEntry(userId, 'Contratto creato.')] };
     saveData('contracts', [...contracts, newContract]);
     const property = getAllProperties().find(p => p.id === contractData.propertyId);
@@ -300,7 +310,6 @@ export const deleteContract = (id: string, userId: string): void => {
     saveData('contracts', contracts.filter(c => c.id !== id));
 };
 
-const getAllDeadlines = (): Deadline[] => initData('deadlines', MOCK_DEADLINES);
 export const getDeadlines = (projectId: string): Deadline[] => getAllDeadlines().filter(d => d.projectId === projectId);
 export const addDeadline = (deadlineData: Omit<Deadline, 'id' | 'isCompleted' | 'history'>, userId: string): Deadline => {
     const deadlines = getAllDeadlines();
@@ -335,7 +344,7 @@ export const toggleDeadlineStatus = (id: string, userId: string): void => {
     }
 };
 
-const getAllMaintenances = (): Maintenance[] => initData('maintenances', MOCK_MAINTENANCES);
+// FIX: Added missing exported functions
 export const getMaintenances = (projectId: string): Maintenance[] => getAllMaintenances().filter(m => m.projectId === projectId);
 export const addMaintenance = (maintenanceData: Omit<Maintenance, 'id' | 'history'>, userId: string): void => {
     const maintenances = getAllMaintenances();
@@ -359,7 +368,6 @@ export const deleteMaintenance = (id: string): void => {
     saveData('maintenances', maintenances);
 };
 
-const getAllExpenses = (): Expense[] => initData('expenses', MOCK_EXPENSES);
 export const getExpenses = (projectId: string): Expense[] => getAllExpenses().filter(e => e.projectId === projectId);
 export const addExpense = (expenseData: Omit<Expense, 'id' | 'history'>, userId: string): void => {
     const expenses = getAllExpenses();
@@ -382,7 +390,6 @@ export const deleteExpense = (id: string): void => {
     saveData('expenses', expenses);
 };
 
-const getAllDocuments = (): Document[] => initData('documents', MOCK_DOCUMENTS);
 export const getDocuments = (projectId: string): Document[] => getAllDocuments().filter(d => d.projectId === projectId);
 const syncDeadlineForDocument = (doc: Document, userId: string, existingDeadline?: Deadline | null) => {
     const deadlineForDoc = existingDeadline !== undefined ? existingDeadline : getAllDeadlines().find(d => d.documentId === doc.id);
@@ -436,7 +443,6 @@ export const deleteDocument = (id: string, userId: string): void => {
 };
 
 // Payments
-const getAllPayments = (): Payment[] => initData('payments', MOCK_PAYMENTS);
 export const getPayments = (projectId: string): Payment[] => getAllPayments().filter(p => p.projectId === projectId);
 
 export const addPayment = (paymentData: Omit<Payment, 'id' | 'history'>, userId: string): void => {

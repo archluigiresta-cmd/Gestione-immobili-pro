@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Tenant, CustomField, CustomFieldType } from '../../types';
+import { Tenant, CustomField, CustomFieldType } from '@/types';
 import { X, PlusCircle, Trash2 } from 'lucide-react';
-// FIX: Corrected import path to use the '@' alias.
 import * as dataService from '@/services/dataService';
 
 interface EditTenantModalProps {
