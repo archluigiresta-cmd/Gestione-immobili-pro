@@ -1,3 +1,6 @@
+
+
+
 import React, { useState, useMemo } from 'react';
 import { ArrowUpDown } from 'lucide-react';
 
@@ -15,6 +18,11 @@ interface InteractiveTableProps<T> {
 
 type SortDirection = 'asc' | 'desc';
 
+/**
+ * A "bulletproof" helper function to robustly render any value.
+ * It safely handles primitives, dates, valid React elements, and arrays of renderable content.
+ * It prevents crashes by returning an empty string for any un-renderable type (like plain objects).
+ */
 const safeRender = (value: any): React.ReactNode => {
     if (value === null || value === undefined) {
         return '';
@@ -23,6 +31,7 @@ const safeRender = (value: any): React.ReactNode => {
         return value;
     }
     if (Array.isArray(value)) {
+        // If it's an array, map over it and safely render each item.
         return value.map((item, index) => <React.Fragment key={index}>{safeRender(item)}</React.Fragment>);
     }
     if (typeof value === 'string' || typeof value === 'number') {
@@ -63,6 +72,7 @@ const InteractiveTable = <T extends { id?: string | number }>({ columns, data }:
       const bValue = b[sortColumn];
       const direction = sortDirection === 'asc' ? 1 : -1;
 
+      // Rule 1: Always sort null/undefined values to the end.
       if (aValue == null && bValue == null) return 0;
       if (aValue == null) return 1;
       if (bValue == null) return -1;
@@ -70,16 +80,22 @@ const InteractiveTable = <T extends { id?: string | number }>({ columns, data }:
       const aType = typeof aValue;
       const bType = typeof bValue;
 
+      // Rule 2: Handle numbers and booleans specifically.
       if (aType === 'number' && bType === 'number') {
+        // FIX: Cast values to number for arithmetic operation.
+        // TypeScript doesn't narrow the type of generic properties (`T[keyof T]`) within this conditional block.
         return ((aValue as number) - (bValue as number)) * direction;
       }
       if (aType === 'boolean' && bType === 'boolean') {
         return (Number(aValue) - Number(bValue)) * direction;
       }
 
+      // Rule 3: For everything else, convert to string.
       const strA = String(aValue);
       const strB = String(bValue);
 
+      // Rule 4: If they look like standard dates, compare them as dates.
+      // This prevents misinterpreting numbers or other strings as dates.
       const isDateString = (s: string) => /^\d{4}-\d{2}-\d{2}/.test(s);
       if (isDateString(strA) && isDateString(strB)) {
         const dateA = new Date(strA);
@@ -89,6 +105,7 @@ const InteractiveTable = <T extends { id?: string | number }>({ columns, data }:
         }
       }
       
+      // Rule 5: Fallback to robust, locale-aware string comparison for all other cases.
       return strA.localeCompare(strB, 'it', { numeric: true, sensitivity: 'base' }) * direction;
     });
   }, [data, sortColumn, sortDirection]);

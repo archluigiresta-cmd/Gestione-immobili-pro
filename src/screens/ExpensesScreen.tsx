@@ -1,14 +1,16 @@
+
+
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import Card from '@/components/ui/Card';
-import * as dataService from '@/services/dataService';
-import { Expense, ExpenseCategory, User, Property } from '@/types';
-import { PlusCircle, Edit, Trash2, ExternalLink, Download, DollarSign, File as FileIcon, Clock, History } from 'lucide-react';
-import AccordionItem from '@/components/ui/AccordionItem';
-import AddExpenseModal from '@/components/modals/AddExpenseModal';
-import EditExpenseModal from '@/components/modals/EditExpenseModal';
-import ConfirmDeleteModal from '@/components/modals/ConfirmDeleteModal';
-import ExpenseHistoryModal from '@/components/modals/ExpenseHistoryModal';
+import Card from '../components/ui/Card';
+import * as dataService from '../services/dataService';
+import { Expense, ExpenseCategory, User, UtilityType, TaxType, Property } from '../types';
+import { PlusCircle, Edit, Trash2, ExternalLink, Download, DollarSign } from 'lucide-react';
+import AddExpenseModal from '../components/modals/AddExpenseModal';
+import EditExpenseModal from '../components/modals/EditExpenseModal';
+import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
+import AccordionItem from '../components/ui/AccordionItem';
 
 
 const COLORS = {
@@ -30,7 +32,6 @@ const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ projectId, user }) => {
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
     const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
-    const [isHistoryModalOpen, setHistoryModalOpen] = useState(false);
 
     useEffect(() => {
         loadExpenses();
@@ -93,67 +94,21 @@ const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ projectId, user }) => {
         }, {} as Record<string, number>);
         return Object.entries(byProperty).map(([name, value]) => ({ name, Spese: value }));
     }, [expenses, propertyMap]);
-
-    const expensesWithAttachments = useMemo(() => {
-      return expenses
-          .filter(e => e.invoiceData || e.invoiceUrl)
-          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    }, [expenses]);
-
-    const recentAttachments = expensesWithAttachments.slice(0, 2);
   
     return (
       <>
       <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-              <h1 className="text-2xl font-bold text-dark">Elenco Spese</h1>
-              <button
-                  onClick={() => setAddModalOpen(true)}
-                  className="flex items-center px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm"
-              >
-                  <PlusCircle size={18} className="mr-2" />
-                  Aggiungi Spesa
-              </button>
-          </div>
-          
           <Card className="p-6">
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-dark">Allegati Recenti</h2>
+            <div className="flex justify-between items-center mb-6">
+                <h1 className="text-2xl font-bold text-dark">Elenco Spese</h1>
                 <button
-                    onClick={() => setHistoryModalOpen(true)}
-                    className="flex items-center text-sm px-3 py-1.5 bg-secondary text-primary font-semibold rounded-lg hover:bg-blue-200 transition-colors"
+                    onClick={() => setAddModalOpen(true)}
+                    className="flex items-center px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm"
                 >
-                    <History size={16} className="mr-2"/> Storico Completo
+                    <PlusCircle size={18} className="mr-2" />
+                    Aggiungi Spesa
                 </button>
             </div>
-            {recentAttachments.length > 0 ? (
-                <div className="space-y-3">
-                    {recentAttachments.map(expense => (
-                        <div key={expense.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <div className="flex items-center gap-4">
-                                <FileIcon size={24} className="text-primary"/>
-                                <div>
-                                    <p className="font-semibold text-dark">{expense.description}</p>
-                                    <p className="text-sm text-gray-500">
-                                        {propertyMap.get(expense.propertyId)} - <span className="flex items-center gap-1 inline-flex"><Clock size={12}/> {new Date(expense.date).toLocaleDateString('it-IT')}</span>
-                                    </p>
-                                </div>
-                            </div>
-                            <div>
-                                {expense.invoiceData && <a href={expense.invoiceData} download={expense.invoiceName} className="p-2 text-gray-600 hover:text-primary rounded-full hover:bg-gray-100" title={`Scarica ${expense.invoiceName}`}><Download size={20} /></a>}
-                                {expense.invoiceUrl && <a href={expense.invoiceUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-gray-600 hover:text-primary rounded-full hover:bg-gray-100" title="Visualizza allegato (link esterno)"><ExternalLink size={20} /></a>}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                <p className="text-center text-gray-500 py-4">Nessuna spesa con allegato trovata.</p>
-            )}
-        </Card>
-
-
-          <Card className="p-6">
-            <h2 className="text-xl font-bold text-dark mb-4">Dettaglio per Immobile</h2>
              <div className="space-y-4">
                 {properties.filter(p => groupedExpenses[p.id]).map(property => {
                     const propertyExpenses = groupedExpenses[property.id];
@@ -253,6 +208,7 @@ const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ projectId, user }) => {
             </Card>
         </div>
       </div>
+
       <AddExpenseModal
         isOpen={isAddModalOpen}
         onClose={() => setAddModalOpen(false)}
@@ -276,12 +232,6 @@ const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ projectId, user }) => {
           message={`Sei sicuro di voler eliminare la spesa "${deletingExpense.description}"?`}
         />
       )}
-        <ExpenseHistoryModal
-        isOpen={isHistoryModalOpen}
-        onClose={() => setHistoryModalOpen(false)}
-        expenses={expensesWithAttachments}
-        properties={properties}
-      />
       </>
     );
 };

@@ -1,7 +1,9 @@
+
+
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, LifeBuoy, Bot, User, Send, LoaderCircle } from 'lucide-react';
-import Card from '@/components/ui/Card';
-import { GoogleGenAI, Chat } from "@google/genai";
+import Card from '../components/ui/Card';
+import { GoogleGenAI } from "@google/genai";
 
 const faqData = [
     {
@@ -55,23 +57,6 @@ const AiAssistant: React.FC = () => {
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    const chatRef = useRef<Chat | null>(null);
-
-    useEffect(() => {
-        try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-            const systemInstruction = "Sei un assistente virtuale esperto per l'applicazione 'Gestore Immobili PRO'. Il tuo scopo è aiutare gli utenti a capire e utilizzare al meglio l'app. L'applicazione serve a gestire proprietà immobiliari. Le sue sezioni principali sono: Dashboard (riepilogo), Immobili (elenco proprietà), Inquilini, Contratti, Pagamenti, Scadenze, Manutenzioni, Spese, Documenti, Report e Analisi Finanziaria. Rispondi in modo chiaro, conciso e amichevole. Utilizza la formattazione markdown (come grassetto o elenchi puntati) per migliorare la leggibilità. Basa le tue risposte sulla conoscenza fornita riguardo le funzionalità dell'app.";
-            
-            chatRef.current = ai.chats.create({
-                model: 'gemini-2.5-flash',
-                config: {
-                    systemInstruction: systemInstruction,
-                }
-            });
-        } catch (error) {
-            console.error("Failed to initialize AI Assistant:", error);
-        }
-    }, []);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -83,17 +68,33 @@ const AiAssistant: React.FC = () => {
 
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!input.trim() || isLoading || !chatRef.current) return;
+        if (!input.trim() || isLoading) return;
 
         const userMessage: Message = { role: 'user', content: input };
-        const currentInput = input;
+        const conversationHistory = [...messages, userMessage];
         
         setMessages(prev => [...prev, userMessage, { role: 'model', content: '' }]);
         setInput('');
         setIsLoading(true);
 
         try {
-            const responseStream = await chatRef.current.sendMessageStream({ message: currentInput });
+            // Initialize Gemini AI only when needed
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+
+            const systemInstruction = "Sei un assistente virtuale esperto per l'applicazione 'Gestore Immobili PRO'. Il tuo scopo è aiutare gli utenti a capire e utilizzare al meglio l'app. L'applicazione serve a gestire proprietà immobiliari. Le sue sezioni principali sono: Dashboard (riepilogo), Immobili (elenco proprietà), Inquilini, Contratti, Pagamenti, Scadenze, Manutenzioni, Spese, Documenti, Report e Analisi Finanziaria. Rispondi in modo chiaro, conciso e amichevole. Utilizza la formattazione markdown (come grassetto o elenchi puntati) per migliorare la leggibilità. Basa le tue risposte sulla conoscenza fornita riguardo le funzionalità dell'app.";
+            
+            const contents = conversationHistory.map(msg => ({
+                role: msg.role,
+                parts: [{ text: msg.content }]
+            }));
+
+            const responseStream = await ai.models.generateContentStream({
+                model: 'gemini-2.5-flash',
+                contents: contents,
+                 config: {
+                    systemInstruction: systemInstruction,
+                 },
+            });
             
             let currentResponse = '';
             for await (const chunk of responseStream) {
@@ -102,22 +103,17 @@ const AiAssistant: React.FC = () => {
                     currentResponse += chunkText;
                     setMessages(prev => {
                         const newMessages = [...prev];
-                        const lastMessage = newMessages[newMessages.length - 1];
-                        if (lastMessage && lastMessage.role === 'model') {
-                            lastMessage.content = currentResponse;
-                        }
+                        newMessages[newMessages.length - 1] = { ...newMessages[newMessages.length - 1], content: currentResponse };
                         return newMessages;
                     });
                 }
             }
+
         } catch (error) {
             console.error("Error calling Gemini API:", error);
             setMessages(prev => {
                 const newMessages = [...prev];
-                const lastMessage = newMessages[newMessages.length - 1];
-                 if (lastMessage && lastMessage.role === 'model') {
-                    lastMessage.content = "Spiacente, si è verificato un errore. Riprova più tardi.";
-                }
+                newMessages[newMessages.length - 1] = { ...newMessages[newMessages.length - 1], content: "Spiacente, si è verificato un errore. Riprova più tardi." };
                 return newMessages;
             });
         } finally {
@@ -141,7 +137,7 @@ const AiAssistant: React.FC = () => {
                          {msg.role === 'user' && <div className="bg-gray-200 p-2 rounded-full text-dark"><User size={18}/></div>}
                     </div>
                 ))}
-                 {isLoading && messages.length > 0 && messages[messages.length - 1]?.content === '' && (
+                 {isLoading && messages[messages.length - 1]?.content === '' && (
                      <div className="flex items-start gap-3">
                          <div className="bg-primary p-2 rounded-full text-white"><Bot size={18}/></div>
                          <div className="max-w-md rounded-lg p-3 bg-gray-100 text-dark flex items-center gap-2">
