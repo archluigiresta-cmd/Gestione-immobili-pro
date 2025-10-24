@@ -15,7 +15,6 @@ interface InteractiveTableProps<T> {
 
 type SortDirection = 'asc' | 'desc';
 
-
 const safeRender = (value: any): React.ReactNode => {
     if (value === null || value === undefined) {
         return '';
