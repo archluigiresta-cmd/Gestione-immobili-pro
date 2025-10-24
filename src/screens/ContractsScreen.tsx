@@ -1,14 +1,12 @@
-
-
 import React, { useState, useEffect, useMemo } from 'react';
-import Card from '../components/ui/Card';
-import * as dataService from '../services/dataService';
-import { Contract, ProjectMemberRole, User, Property, Tenant } from '../types';
+import Card from '@/components/ui/Card';
+import * as dataService from '@/services/dataService';
+import { Contract, ProjectMemberRole, User, Property, Tenant } from '@/types';
 import { Download, PlusCircle, Edit, Trash2 } from 'lucide-react';
-import AddContractModal from '../components/modals/AddContractModal';
-import EditContractModal from '../components/modals/EditContractModal';
-import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
-import AccordionItem from '../components/ui/AccordionItem';
+import AddContractModal from '@/components/modals/AddContractModal';
+import EditContractModal from '@/components/modals/EditContractModal';
+import ConfirmDeleteModal from '@/components/modals/ConfirmDeleteModal';
+import AccordionItem from '@/components/ui/AccordionItem';
 
 interface ContractsScreenProps {
   projectId: string;

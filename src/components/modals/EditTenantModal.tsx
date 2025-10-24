@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Tenant, CustomField, CustomFieldType } from '../../types';
 import { X, PlusCircle, Trash2 } from 'lucide-react';
-// FIX: Corrected import path to point to the correct file location.
-import * as dataService from '../../services/dataService';
+// FIX: Corrected import path to use the '@' alias.
+import * as dataService from '@/services/dataService';
 
 interface EditTenantModalProps {
   isOpen: boolean;
@@ -85,7 +85,6 @@ const EditTenantModal: React.FC<EditTenantModalProps> = ({ isOpen, onClose, onSa
             <label className="block text-sm font-medium text-gray-700">Contratto</label>
             <select name="contractId" value={formData.contractId} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
               <option value="">Nessun contratto</option>
-              {/* FIX: Pass projectId to dataService calls */}
               {dataService.getContracts(projectId).map(c => <option key={c.id} value={c.id}>Contratto per {dataService.getProperties(projectId).find(p=>p.id === c.propertyId)?.name}</option>)}
             </select>
           </div>
