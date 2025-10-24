@@ -45,7 +45,8 @@ const FinancialAnalysisScreen: React.FC<FinancialAnalysisScreenProps> = ({ proje
             ...expenses.map(e => new Date(e.date).getFullYear()),
             ...maintenances.map(m => new Date(m.requestDate).getFullYear())
         ];
-        return [...new Set(allDates)].sort((a,b) => b-a);
+        const uniqueYears = [...new Set(allDates)];
+        return uniqueYears.length > 0 ? uniqueYears.sort((a,b) => b-a) : [new Date().getFullYear()];
     }, [payments, expenses, maintenances]);
 
     const filteredData = useMemo(() => {

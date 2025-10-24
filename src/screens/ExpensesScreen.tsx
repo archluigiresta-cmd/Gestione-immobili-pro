@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import Card from '../components/ui/Card';
-import * as dataService from '../services/dataService';
-import { Expense, ExpenseCategory, User, Property } from '../types';
+import Card from '@/components/ui/Card';
+import * as dataService from '@/services/dataService';
+import { Expense, ExpenseCategory, User, Property } from '@/types';
 import { PlusCircle, Edit, Trash2, ExternalLink, Download, DollarSign, File as FileIcon, Clock, History } from 'lucide-react';
-import AccordionItem from '../components/ui/AccordionItem';
-import AddExpenseModal from '../components/modals/AddExpenseModal';
-import EditExpenseModal from '../components/modals/EditExpenseModal';
-import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
-import ExpenseHistoryModal from '../components/modals/ExpenseHistoryModal';
+import AccordionItem from '@/components/ui/AccordionItem';
+import AddExpenseModal from '@/components/modals/AddExpenseModal';
+import EditExpenseModal from '@/components/modals/EditExpenseModal';
+import ConfirmDeleteModal from '@/components/modals/ConfirmDeleteModal';
+import ExpenseHistoryModal from '@/components/modals/ExpenseHistoryModal';
 
 
 const COLORS = {
