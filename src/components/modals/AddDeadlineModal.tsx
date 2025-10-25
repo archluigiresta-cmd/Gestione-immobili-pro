@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Deadline, DeadlineType, Property } from '../../types';
+import { Deadline, DeadlineType, Property } from '@/types';
 import { X } from 'lucide-react';
-import * as dataService from '../../services/dataService';
+import * as dataService from '@/services/dataService';
 
 interface AddDeadlineModalProps {
   isOpen: boolean;
