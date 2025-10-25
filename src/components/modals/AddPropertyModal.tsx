@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Property, PropertyType } from '@/types';
+import { Property, PropertyType } from '../../types';
 import { X, UploadCloud } from 'lucide-react';
-import * as dataService from '@/services/dataService';
+import * as dataService from '../../services/dataService';
 
 interface AddPropertyModalProps {
   isOpen: boolean;

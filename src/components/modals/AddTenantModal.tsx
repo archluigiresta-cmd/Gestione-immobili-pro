@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Tenant, CustomField, CustomFieldType } from '@/types';
+import { Tenant, CustomField, CustomFieldType } from '../../types';
 import { X, PlusCircle, Trash2 } from 'lucide-react';
-import * as dataService from '@/services/dataService';
+import * as dataService from '../../services/dataService';
 
 interface AddTenantModalProps {
   isOpen: boolean;
@@ -103,7 +103,7 @@ const AddTenantModal: React.FC<AddTenantModalProps> = ({ isOpen, onClose, onSave
                   />
                   <select
                     value={field.type}
-                    onChange={(e) => handleCustomFieldChange(index, 'type', e.target.value as CustomFieldType)}
+                    onChange={(e) => handleCustomFieldChange(index, 'type', e.target.value)}
                     className="col-span-3 input"
                   >
                     <option value={CustomFieldType.TEXT}>Testo</option>

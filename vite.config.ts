@@ -11,7 +11,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      // FIX: '__dirname' is not available in an ES module context. Using 'process.cwd()' is a reliable alternative to get the project root.
+      '@': path.resolve(process.cwd(), 'src'),
     },
   },
   build: {

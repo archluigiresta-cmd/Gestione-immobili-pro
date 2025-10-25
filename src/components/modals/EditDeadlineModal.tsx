@@ -45,8 +45,6 @@ const handleIcsDownload = (deadline: Deadline, propertyName: string) => {
     link.click();
     document.body.removeChild(link);
 };
-
-
 interface EditDeadlineModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -54,16 +52,13 @@ interface EditDeadlineModalProps {
   deadline: Deadline;
   projectId: string;
 }
-
 const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({ isOpen, onClose, onSave, deadline, projectId }) => {
   const [formData, setFormData] = useState<Deadline>(deadline);
   const [properties, setProperties] = useState<Property[]>([]);
   const [error, setError] = useState('');
-
   const propertyName = useMemo(() => {
     return dataService.getProperty(projectId, formData.propertyId)?.name || 'N/A';
   }, [projectId, formData.propertyId]);
-
   useEffect(() => {
     setFormData(deadline);
   }, [deadline]);
@@ -73,7 +68,6 @@ const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({ isOpen, onClose, 
       setProperties(dataService.getProperties(projectId));
     }
   }, [isOpen, projectId]);
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     if (name === 'type') {
@@ -90,7 +84,6 @@ const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({ isOpen, onClose, 
   const handleToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({ ...prev, isCompleted: e.target.checked }));
   };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.propertyId || !formData.title || !formData.dueDate) {
@@ -101,18 +94,14 @@ const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({ isOpen, onClose, 
         setError('Specificare il tipo è obbligatorio quando si seleziona "Altro".');
         return;
     }
-
     const { typeOther, ...restOfData } = formData;
     const dataToSave = {
         ...restOfData,
         ...(formData.type === DeadlineType.OTHER && { typeOther }),
     };
-
     onSave(dataToSave);
   };
-
   if (!isOpen) return null;
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
       <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md m-4 max-h-[90vh] overflow-y-auto">
@@ -171,7 +160,6 @@ const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({ isOpen, onClose, 
                     Completata
                 </label>
             </div>
-
             <div className="pt-4 border-t">
                  <h3 className="text-md font-semibold text-dark flex items-center mb-3"><CalendarPlus size={18} className="mr-2 text-primary"/>Esporta nel tuo calendario</h3>
                  <div className="flex gap-3">
@@ -192,7 +180,6 @@ const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({ isOpen, onClose, 
                      </button>
                  </div>
             </div>
-
           <div className="flex justify-end pt-4 border-t">
             <button type="button" onClick={onClose} className="mr-2 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Annulla</button>
             <button type="submit" className="px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm">Salva Modifiche</button>
@@ -202,5 +189,4 @@ const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({ isOpen, onClose, 
     </div>
   );
 };
-
 export default EditDeadlineModal;
