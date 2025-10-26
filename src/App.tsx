@@ -213,14 +213,11 @@ const App: React.FC = () => {
                     onGoogleLogin={handleGoogleLogin}
                     onCollaboratorLogin={() => setAppState('selectUser')}
                     onRegister={() => setRegisterModalOpen(true)}
+// FIX: Pass missing isApiReady and hasLocalUsers props to LoginScreen
                     isApiReady={isApiReady}
                     hasLocalUsers={localUsers.length > 0}
                 />
-                <RegisterModal 
-                    isOpen={isRegisterModalOpen}
-                    onClose={() => setRegisterModalOpen(false)}
-                    onRegister={handleRegister}
-                />
+                <RegisterModal isOpen={isRegisterModalOpen} onClose={() => setRegisterModalOpen(false)} onRegister={handleRegister} />
             </Suspense>
         );
     }
@@ -234,64 +231,57 @@ const App: React.FC = () => {
                     onBackToLogin={() => setAppState('login')}
                     onRegister={() => setRegisterModalOpen(true)}
                 />
-                {userForPassword && <PasswordModal isOpen={!!userForPassword} onClose={() => {setUserForPassword(null);}} onConfirm={handlePasswordConfirm} />}
-                <RegisterModal 
-                    isOpen={isRegisterModalOpen}
-                    onClose={() => setRegisterModalOpen(false)}
-                    onRegister={handleRegister}
-                />
+                <RegisterModal isOpen={isRegisterModalOpen} onClose={() => setRegisterModalOpen(false)} onRegister={handleRegister} />
             </Suspense>
         );
     }
-
-    if (!user) {
-         return <Suspense fallback={loadingFallback}><SplashScreen /></Suspense>;
-    }
     
-    if (appState === 'selectProject') {
+    if (user && appState === 'selectProject') {
         return (
             <Suspense fallback={loadingFallback}>
                 <ProjectSelectionScreen 
                     user={user} 
                     onSelectProject={handleSelectProject} 
-                    onCreateProject={handleCreateProject}
+                    onCreateProject={handleCreateProject} 
                     onLogout={handleLogout}
                     onUpdateProfile={handleUpdateProfile}
-                    onSwitchUser={() => { setUser(null); setAppState('login'); }}
+                    onSwitchUser={() => setAppState('login')}
                 />
             </Suspense>
         );
     }
-    
-    if (appState === 'main' && selectedProject) {
-        const currentScreenItem = [...navigationItems, ...secondaryNavigationItems].find(item => item.screen === activeScreen);
+
+    if (user && selectedProject && appState === 'main') {
+        const screenName = [...navigationItems, ...secondaryNavigationItems].find(item => item.screen === activeScreen)?.name || 'Dashboard';
+        const pendingUsersCount = dataService.getUsers().filter(u => u.status === UserStatus.PENDING).length;
+
         return (
             <div className="flex h-screen bg-light">
-                <Suspense fallback={null}>
+                <Suspense fallback={''}>
                     <Sidebar 
                         activeScreen={activeScreen} 
-                        setActiveScreen={(s) => handleNavigate(s)} 
+                        setActiveScreen={(s) => handleNavigate(s)}
                         isSidebarOpen={isSidebarOpen} 
-                        setSidebarOpen={setSidebarOpen} 
+                        setSidebarOpen={setSidebarOpen}
                         onInstall={handleInstall}
                         isInstallable={isInstallable}
                     />
                 </Suspense>
                 <div className="flex-1 flex flex-col overflow-hidden">
-                    <Suspense fallback={null}>
+                    <Suspense fallback={''}>
                         <Header 
-                            currentScreen={currentScreenItem?.name || 'Dettaglio'}
+                            currentScreen={screenName}
                             currentProjectName={selectedProject.name}
-                            toggleSidebar={() => setSidebarOpen(!isSidebarOpen)} 
+                            toggleSidebar={() => setSidebarOpen(!isSidebarOpen)}
                             user={user}
                             onLogout={handleLogout}
                             onNavigate={(s) => handleNavigate(s)}
                             onBackToProjects={() => setAppState('selectProject')}
-                            pendingUsersCount={dataService.getUsers().filter(u => u.status === UserStatus.PENDING).length}
+                            pendingUsersCount={pendingUsersCount}
                         />
                     </Suspense>
-                    <main className="flex-1 overflow-x-hidden overflow-y-auto p-6">
-                        <Suspense fallback={<div className="text-center p-8">Caricamento...</div>}>
+                    <main className="flex-1 overflow-x-hidden overflow-y-auto bg-light p-6">
+                        <Suspense fallback={loadingFallback}>
                             {renderScreen()}
                         </Suspense>
                     </main>
@@ -299,8 +289,19 @@ const App: React.FC = () => {
             </div>
         );
     }
-    
-    return <Suspense fallback={loadingFallback}><SplashScreen /></Suspense>;
+
+    return (
+        <Suspense fallback={loadingFallback}>
+            {userForPassword ? (
+                <PasswordModal 
+                    isOpen={!!userForPassword}
+                    onClose={() => setUserForPassword(null)}
+                    onConfirm={handlePasswordConfirm}
+                />
+            ) : <SplashScreen />}
+        </Suspense>
+    );
 };
 
+// FIX: Add default export to resolve module import error
 export default App;
