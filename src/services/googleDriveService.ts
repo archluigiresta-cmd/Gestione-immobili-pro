@@ -168,29 +168,3 @@ export const findOrCreateDataFile = async (): Promise<{ fileId: string; data: Ap
 export const saveDataToDrive = async (fileId: string, data: AppData): Promise<void> => {
     const boundary = '-------314159265358979323846';
     const delimiter = `\r\n--${boundary}\r\n`;
-    const close_delim = `\r\n--${boundary}--`;
-
-    const metadata = {
-        name: DATA_FILE_NAME,
-        mimeType: 'application/json',
-    };
-
-    const multipartRequestBody =
-        delimiter +
-        'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-        JSON.stringify(metadata) +
-        delimiter +
-        'Content-Type: application/json\r\n\r\n' +
-        JSON.stringify(data) +
-        close_delim;
-
-    await window.gapi.client.request({
-        path: `/upload/drive/v3/files/${fileId}`,
-        method: 'PATCH',
-        params: { uploadType: 'multipart' },
-        headers: {
-            'Content-Type': `multipart/related; boundary=${boundary}`,
-        },
-        body: multipartRequestBody,
-    });
-};

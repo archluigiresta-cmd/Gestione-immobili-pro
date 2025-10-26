@@ -202,18 +202,15 @@ const App: React.FC = () => {
     if (!isApiReady) {
         return <Suspense fallback={loadingFallback}><SplashScreen /></Suspense>;
     }
-    
-    const activeUsers = dataService.getUsers().filter(u => u.status === UserStatus.ACTIVE);
-    const localUsers = activeUsers.filter(u => u.password);
 
     if (appState === 'login') {
+        const localUsers = dataService.getUsers().filter(u => u.status === UserStatus.ACTIVE && u.password);
         return (
             <Suspense fallback={loadingFallback}>
                 <LoginScreen 
                     onGoogleLogin={handleGoogleLogin}
                     onCollaboratorLogin={() => setAppState('selectUser')}
                     onRegister={() => setRegisterModalOpen(true)}
-// FIX: Pass missing isApiReady and hasLocalUsers props to LoginScreen
                     isApiReady={isApiReady}
                     hasLocalUsers={localUsers.length > 0}
                 />
@@ -223,6 +220,7 @@ const App: React.FC = () => {
     }
 
     if (appState === 'selectUser') {
+        const localUsers = dataService.getUsers().filter(u => u.status === UserStatus.ACTIVE && u.password);
         return (
             <Suspense fallback={loadingFallback}>
                 <UserSelectionScreen
@@ -232,6 +230,7 @@ const App: React.FC = () => {
                     onRegister={() => setRegisterModalOpen(true)}
                 />
                 <RegisterModal isOpen={isRegisterModalOpen} onClose={() => setRegisterModalOpen(false)} onRegister={handleRegister} />
+                {userForPassword && <PasswordModal isOpen={!!userForPassword} onClose={() => setUserForPassword(null)} onConfirm={handlePasswordConfirm} />}
             </Suspense>
         );
     }
@@ -245,7 +244,7 @@ const App: React.FC = () => {
                     onCreateProject={handleCreateProject} 
                     onLogout={handleLogout}
                     onUpdateProfile={handleUpdateProfile}
-                    onSwitchUser={() => setAppState('login')}
+                    onSwitchUser={() => { setUser(null); setAppState('login'); }}
                 />
             </Suspense>
         );
@@ -281,7 +280,7 @@ const App: React.FC = () => {
                         />
                     </Suspense>
                     <main className="flex-1 overflow-x-hidden overflow-y-auto bg-light p-6">
-                        <Suspense fallback={loadingFallback}>
+                        <Suspense fallback={<div className="text-center p-8">Caricamento...</div>}>
                             {renderScreen()}
                         </Suspense>
                     </main>
@@ -290,18 +289,8 @@ const App: React.FC = () => {
         );
     }
 
-    return (
-        <Suspense fallback={loadingFallback}>
-            {userForPassword ? (
-                <PasswordModal 
-                    isOpen={!!userForPassword}
-                    onClose={() => setUserForPassword(null)}
-                    onConfirm={handlePasswordConfirm}
-                />
-            ) : <SplashScreen />}
-        </Suspense>
-    );
+    // This state handles the password modal specifically, or acts as a final fallback.
+    return <Suspense fallback={loadingFallback}><SplashScreen /></Suspense>;
 };
 
-// FIX: Add default export to resolve module import error
 export default App;
