@@ -55,12 +55,4 @@ const PasswordModal: React.FC<PasswordModalProps> = ({ isOpen, onClose, onConfir
           </div>
           <div className="flex justify-end pt-4">
             <button type="button" onClick={handleClose} className="mr-2 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Annulla</button>
-            <button type="submit" className="px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm">Accedi</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-export default PasswordModal;
+            <button type="submit" className="px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:
