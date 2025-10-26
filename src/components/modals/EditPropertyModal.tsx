@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Property, PropertyType } from '../../types';
+import { Property, PropertyType } from '@/types';
 import { X, UploadCloud } from 'lucide-react';
 
 interface EditPropertyModalProps {

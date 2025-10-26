@@ -3,7 +3,6 @@ import { User, Project, ProjectMemberRole, UserStatus } from '@/types';
 import Card from '@/components/ui/Card';
 import * as dataService from '@/services/dataService';
 import { UserCircle, Edit, Trash2, Shield, PlusCircle, Share2, Users, HardDrive, Upload, Check, X } from 'lucide-react';
-
 import EditProfileModal from '@/components/modals/EditProfileModal';
 import AddUserModal from '@/components/modals/AddUserModal';
 import ConfirmDeleteModal from '@/components/modals/ConfirmDeleteModal';

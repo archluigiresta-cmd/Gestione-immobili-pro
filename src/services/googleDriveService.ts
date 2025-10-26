@@ -1,6 +1,6 @@
 // services/googleDriveService.ts
-import { User, UserStatus, AppData } from '../types';
-import { INITIAL_MOCK_DATA } from '../constants';
+import { User, UserStatus, AppData } from '@/types';
+import { INITIAL_MOCK_DATA } from '@/constants';
 
 const DATA_FILE_NAME = 'gest-immo-pro-data.json';
 const DRIVE_FOLDER_NAME = 'Dati App Gestore Immobili PRO';

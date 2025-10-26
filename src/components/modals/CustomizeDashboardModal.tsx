@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-// FIX: Corrected import path to use alias and break circular dependency.
 import { availableDashboardWidgets } from '@/components/dashboard/widgets';
 
 interface CustomizeDashboardModalProps {
