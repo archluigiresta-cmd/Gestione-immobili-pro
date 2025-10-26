@@ -39,7 +39,7 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 const App: React.FC = () => {
-    const [appState, setAppState] = useState<'login' | 'selectUser' | 'selectProject' | 'main'>('login');
+    const [appState, setAppState] = useState<'loading' | 'login' | 'selectUser' | 'selectProject' | 'main'>('loading');
     const [user, setUser] = useState<User | null>(null);
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [activeScreen, setActiveScreen] = useState<Screen>('dashboard');
@@ -54,7 +54,10 @@ const App: React.FC = () => {
 
     useEffect(() => {
         dataService.migrateData();
-        googleDriveService.init(setIsApiReady);
+        googleDriveService.init((ready) => {
+            setIsApiReady(ready);
+            setAppState('login');
+        });
 
         const handleBeforeInstallPrompt = (e: Event) => {
             e.preventDefault();
@@ -169,13 +172,15 @@ const App: React.FC = () => {
         const userRole = selectedProject?.members.find(m => m.userId === user?.id)?.role || ProjectMemberRole.VIEWER;
         if (!selectedProject || !user) return null;
         
+        const screenProps = { projectId: selectedProject.id, user, userRole };
+
         switch (activeScreen) {
             case 'dashboard': return <DashboardScreen onNavigate={handleNavigate} projectId={selectedProject.id} />;
-            case 'properties': return <PropertiesScreen onNavigate={handleNavigate} projectId={selectedProject.id} user={user} userRole={userRole} />;
-            case 'propertyDetail': return propertyId ? <PropertyDetailScreen propertyId={propertyId} projectId={selectedProject.id} user={user} userRole={userRole} onBack={() => setActiveScreen('properties')} onNavigate={(screen) => handleNavigate(screen as Screen)} /> : null;
-            case 'contracts': return <ContractsScreen projectId={selectedProject.id} user={user} userRole={userRole} />;
+            case 'properties': return <PropertiesScreen onNavigate={handleNavigate} {...screenProps} />;
+            case 'propertyDetail': return propertyId ? <PropertyDetailScreen propertyId={propertyId} {...screenProps} onBack={() => setActiveScreen('properties')} onNavigate={(screen) => handleNavigate(screen as Screen)} /> : null;
+            case 'contracts': return <ContractsScreen {...screenProps} />;
             case 'tenants': return <TenantsScreen projectId={selectedProject.id} user={user} />;
-            case 'payments': return <PaymentsScreen projectId={selectedProject.id} user={user} userRole={userRole} />;
+            case 'payments': return <PaymentsScreen {...screenProps} />;
             case 'deadlines': return <DeadlinesScreen projectId={selectedProject.id} user={user} />;
             case 'maintenance': return <MaintenanceScreen projectId={selectedProject.id} user={user} />;
             case 'expenses': return <ExpensesScreen projectId={selectedProject.id} user={user} />;
@@ -183,14 +188,13 @@ const App: React.FC = () => {
             case 'reports': return <ReportsScreen projectId={selectedProject.id} />;
             case 'financialAnalysis': return <FinancialAnalysisScreen projectId={selectedProject.id} />;
             case 'settings': return <SettingsScreen 
-                user={user} 
                 project={selectedProject}
-                onUpdateProfile={handleUpdateProfile} 
                 onUpdateProject={(p) => { dataService.updateProject(p); setSelectedProject(p); }}
                 onAddUser={(u) => dataService.addUser(u)}
                 onDeleteUser={(id) => dataService.deleteUser(id)}
                 onApproveUser={(id) => dataService.approveUser(id)}
-                userRole={userRole}
+                onUpdateProfile={handleUpdateProfile} 
+                {...screenProps}
             />;
             case 'help': return <HelpScreen />;
             default: return <DashboardScreen onNavigate={handleNavigate} projectId={selectedProject.id} />;
@@ -199,64 +203,49 @@ const App: React.FC = () => {
     
     const loadingFallback = <SplashScreen />;
 
-    if (!isApiReady) {
-        return <Suspense fallback={loadingFallback}><SplashScreen /></Suspense>;
-    }
+    const renderContent = () => {
+        if (appState === 'loading' || !isApiReady) {
+            return <SplashScreen />;
+        }
 
-    if (appState === 'login') {
-        const localUsers = dataService.getUsers().filter(u => u.status === UserStatus.ACTIVE && u.password);
-        return (
-            <Suspense fallback={loadingFallback}>
-                <LoginScreen 
-                    onGoogleLogin={handleGoogleLogin}
-                    onCollaboratorLogin={() => setAppState('selectUser')}
-                    onRegister={() => setRegisterModalOpen(true)}
-                    isApiReady={isApiReady}
-                    hasLocalUsers={localUsers.length > 0}
-                />
-                <RegisterModal isOpen={isRegisterModalOpen} onClose={() => setRegisterModalOpen(false)} onRegister={handleRegister} />
-            </Suspense>
-        );
-    }
+        if (appState === 'login') {
+            const localUsers = dataService.getUsers().filter(u => u.status === UserStatus.ACTIVE && u.password);
+            return <LoginScreen 
+                onGoogleLogin={handleGoogleLogin}
+                onCollaboratorLogin={() => setAppState('selectUser')}
+                onRegister={() => setRegisterModalOpen(true)}
+                isApiReady={isApiReady}
+                hasLocalUsers={localUsers.length > 0}
+            />;
+        }
 
-    if (appState === 'selectUser') {
-        const localUsers = dataService.getUsers().filter(u => u.status === UserStatus.ACTIVE && u.password);
-        return (
-            <Suspense fallback={loadingFallback}>
-                <UserSelectionScreen
-                    users={localUsers}
-                    onSelectUser={handleSelectUser}
-                    onBackToLogin={() => setAppState('login')}
-                    onRegister={() => setRegisterModalOpen(true)}
-                />
-                <RegisterModal isOpen={isRegisterModalOpen} onClose={() => setRegisterModalOpen(false)} onRegister={handleRegister} />
-                {userForPassword && <PasswordModal isOpen={!!userForPassword} onClose={() => setUserForPassword(null)} onConfirm={handlePasswordConfirm} />}
-            </Suspense>
-        );
-    }
-    
-    if (user && appState === 'selectProject') {
-        return (
-            <Suspense fallback={loadingFallback}>
-                <ProjectSelectionScreen 
-                    user={user} 
-                    onSelectProject={handleSelectProject} 
-                    onCreateProject={handleCreateProject} 
-                    onLogout={handleLogout}
-                    onUpdateProfile={handleUpdateProfile}
-                    onSwitchUser={() => { setUser(null); setAppState('login'); }}
-                />
-            </Suspense>
-        );
-    }
+        if (appState === 'selectUser') {
+            const localUsers = dataService.getUsers().filter(u => u.status === UserStatus.ACTIVE && u.password);
+            return <UserSelectionScreen
+                users={localUsers}
+                onSelectUser={handleSelectUser}
+                onBackToLogin={() => setAppState('login')}
+                onRegister={() => setRegisterModalOpen(true)}
+            />;
+        }
+        
+        if (user && appState === 'selectProject') {
+            return <ProjectSelectionScreen 
+                user={user} 
+                onSelectProject={handleSelectProject} 
+                onCreateProject={handleCreateProject} 
+                onLogout={handleLogout}
+                onUpdateProfile={handleUpdateProfile}
+                onSwitchUser={() => { setUser(null); setAppState('login'); }}
+            />;
+        }
 
-    if (user && selectedProject && appState === 'main') {
-        const screenName = [...navigationItems, ...secondaryNavigationItems].find(item => item.screen === activeScreen)?.name || 'Dashboard';
-        const pendingUsersCount = dataService.getUsers().filter(u => u.status === UserStatus.PENDING).length;
+        if (user && selectedProject && appState === 'main') {
+            const screenName = [...navigationItems, ...secondaryNavigationItems].find(item => item.screen === activeScreen)?.name || 'Dashboard';
+            const pendingUsersCount = dataService.getUsers().filter(u => u.status === UserStatus.PENDING).length;
 
-        return (
-            <div className="flex h-screen bg-light">
-                <Suspense fallback={''}>
+            return (
+                <div className="flex h-screen bg-light">
                     <Sidebar 
                         activeScreen={activeScreen} 
                         setActiveScreen={(s) => handleNavigate(s)}
@@ -265,9 +254,7 @@ const App: React.FC = () => {
                         onInstall={handleInstall}
                         isInstallable={isInstallable}
                     />
-                </Suspense>
-                <div className="flex-1 flex flex-col overflow-hidden">
-                    <Suspense fallback={''}>
+                    <div className="flex-1 flex flex-col overflow-hidden">
                         <Header 
                             currentScreen={screenName}
                             currentProjectName={selectedProject.name}
@@ -278,19 +265,36 @@ const App: React.FC = () => {
                             onBackToProjects={() => setAppState('selectProject')}
                             pendingUsersCount={pendingUsersCount}
                         />
-                    </Suspense>
-                    <main className="flex-1 overflow-x-hidden overflow-y-auto bg-light p-6">
-                        <Suspense fallback={<div className="text-center p-8">Caricamento...</div>}>
-                            {renderScreen()}
-                        </Suspense>
-                    </main>
+                        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-light p-6">
+                            <Suspense fallback={<div className="text-center p-8">Caricamento...</div>}>
+                                {renderScreen()}
+                            </Suspense>
+                        </main>
+                    </div>
                 </div>
-            </div>
-        );
-    }
+            );
+        }
 
-    // This state handles the password modal specifically, or acts as a final fallback.
-    return <Suspense fallback={loadingFallback}><SplashScreen /></Suspense>;
+        return <SplashScreen />; // Fallback for any unexpected state
+    };
+
+    return (
+        <Suspense fallback={loadingFallback}>
+            {renderContent()}
+            <RegisterModal 
+                isOpen={isRegisterModalOpen} 
+                onClose={() => setRegisterModalOpen(false)} 
+                onRegister={handleRegister} 
+            />
+            {userForPassword && (
+                <PasswordModal 
+                    isOpen={!!userForPassword} 
+                    onClose={() => setUserForPassword(null)} 
+                    onConfirm={handlePasswordConfirm} 
+                />
+            )}
+        </Suspense>
+    );
 };
 
 export default App;

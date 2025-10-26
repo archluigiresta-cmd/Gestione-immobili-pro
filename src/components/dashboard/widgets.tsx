@@ -3,7 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Clock } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import * as dataService from '@/services/dataService';
-import { Deadline, Maintenance, MaintenanceStatus, ExpenseCategory } from '@/types';
+import { Deadline, Maintenance, MaintenanceStatus, ExpenseCategory, Property } from '@/types';
 
 interface WidgetProps {
   projectId: string;
@@ -77,7 +77,8 @@ const MaintenanceRequestsWidget: React.FC<WidgetProps> = ({ projectId }) => {
     const openRequests = maintenances.filter(m => m.status !== MaintenanceStatus.COMPLETED).slice(0, 5);
     
     const getPropertyName = (propertyId: string): string => {
-        const property = dataService.getProperty(projectId, propertyId);
+        const properties = dataService.getProperties(projectId);
+        const property = properties.find(p => p.id === propertyId);
         return property?.name || 'N/D';
     }
 

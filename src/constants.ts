@@ -1,5 +1,3 @@
-
-
 import { Property, PropertyType, Tenant, Contract, Payment, PaymentStatus, User, Deadline, DeadlineType, Maintenance, MaintenanceStatus, Expense, ExpenseCategory, Document, DocumentType, Project, ProjectMemberRole, CustomFieldType, UtilityType, TaxType, UserStatus, AppData } from '@/types';
 
 export const MOCK_USERS: User[] = [
