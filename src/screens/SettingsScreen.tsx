@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { User, Project, ProjectMemberRole, UserStatus } from '@/types';
 import Card from '@/components/ui/Card';
 import * as dataService from '@/services/dataService';
