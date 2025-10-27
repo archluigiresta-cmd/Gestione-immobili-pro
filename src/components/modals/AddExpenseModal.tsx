@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Expense, Property, ExpenseCategory, UtilityType, TaxType } from '../../types';
+import { Expense, Property, ExpenseCategory, UtilityType, TaxType } from '@/types';
 import { X, Link, UploadCloud, File as FileIcon } from 'lucide-react';
-import * as dataService from '../../services/dataService';
+import * as dataService from '@/services/dataService';
 
 interface AddExpenseModalProps {
   isOpen: boolean;
