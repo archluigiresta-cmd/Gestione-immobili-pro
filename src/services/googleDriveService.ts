@@ -1,3 +1,4 @@
+
 import { User, UserStatus, AppData } from '@/types';
 import { INITIAL_MOCK_DATA } from '@/constants';
 

@@ -90,7 +90,7 @@ const ProjectSelectionScreen: React.FC<ProjectSelectionScreenProps> = ({ user, o
     loadProjects(); 
     setCreateModalOpen(false);
   };
-
+  
   const handleDeleteProject = () => {
     if (deletingProject) {
         dataService.deleteProject(deletingProject.id);
