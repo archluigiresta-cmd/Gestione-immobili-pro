@@ -173,18 +173,3 @@ const ProjectSelectionScreen: React.FC<ProjectSelectionScreenProps> = ({ user, o
         isOpen={isProfileModalOpen}
         onClose={() => setProfileModalOpen(false)}
         user={user}
-        onSave={handleSaveProfile}
-    />
-    {deletingProject && (
-        <ConfirmDeleteModal
-            isOpen={!!deletingProject}
-            onClose={() => setDeletingProject(null)}
-            onConfirm={handleDeleteProject}
-            message={`Sei sicuro di voler eliminare il progetto "${deletingProject.name}"? Tutti i dati associati (immobili, contratti, spese, etc.) verranno rimossi definitivamente. Questa azione è irreversibile.`}
-        />
-    )}
-    </>
-  );
-};
-
-export default ProjectSelectionScreen;
