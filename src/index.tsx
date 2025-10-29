@@ -1,28 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-// FIX: Using a relative path for the App component to resolve module loading issue at the entry point.
 import App from './App';
+import './index.css';
 
-const rootElement = document.getElementById('root');
-if (!rootElement) {
-  throw new Error("Could not find root element to mount to");
-}
-
-const root = ReactDOM.createRoot(rootElement);
-root.render(
+ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
     <App />
-  </React.StrictMode>
+  </React.StrictMode>,
 );
-
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then(registration => {
-        console.log('Service Worker registered with scope: ', registration.scope);
-      })
-      .catch(err => {
-        console.log('Service Worker registration failed: ', err);
-      });
-  });
-}

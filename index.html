@@ -1,65 +1,16 @@
-<!DOCTYPE html>
-<html lang="it">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gestore Immobili PRO</title>
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#1E40AF">
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script src="https://apis.google.com/js/api.js" async defer></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              'primary': '#1E40AF',
-              'primary-hover': '#1D4ED8',
-              'secondary': '#DBEAFE',
-              'accent': '#F59E0B',
-              'light': '#F9FAFB',
-              'dark': '#1F2937',
-            },
-          }
-        }
-      }
-    </script>
-<style>
-  .input {
-    display: block;
-    width: 100%;
-    padding: .5rem .75rem;
-    border: 1px solid #D1D5DB;
-    border-radius: .5rem;
-    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  }
-  .input:focus {
-    outline: 2px solid transparent;
-    outline-offset: 2px;
-    border-color: #1E40AF;
-    box-shadow: 0 0 0 2px #1E40AF;
-  }
-</style>
 <script type="importmap">
 {
   "imports": {
-    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.27.0",
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.26.0",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.546.0",
     "recharts": "https://aistudiocdn.com/recharts@^3.3.0",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.548.0",
     "vite": "https://aistudiocdn.com/vite@^7.1.12",
-    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.0.4",
-    "path": "https://aistudiocdn.com/path@^0.12.7"
+    "vite-plugin-pwa": "https://aistudiocdn.com/vite-plugin-pwa@^1.1.0",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.0"
   }
 }
 </script>
-</head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/index.tsx"></script>
-  </body>
-</html>
+full contents of index.html

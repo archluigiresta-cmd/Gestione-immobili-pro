@@ -1,24 +1,47 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import path from 'path'
+import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      devOptions: {
+        enabled: true
+      },
+      manifest: {
+        name: 'Gest-Immo PRO',
+        short_name: 'Gest-Immo',
+        description: 'Gestione avanzata per il tuo patrimonio immobiliare.',
+        theme_color: '#1E40AF',
+        background_color: '#ffffff',
+        display: 'standalone',
+        scope: '/',
+        start_url: '/',
+        icons: [
+          {
+            src: 'pwa-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any maskable',
+          },
+        ],
+      },
+    }),
+  ],
   define: {
-    'process.env.GOOGLE_CLIENT_ID': `"${process.env.VITE_GOOGLE_CLIENT_ID}"`,
-    'process.env.API_KEY': `"${process.env.VITE_API_KEY}"`,
-  },
-  resolve: {
-    alias: {
-      '@': path.resolve(process.cwd(), 'src'),
-    },
-  },
-  build: {
-    outDir: 'dist',
-    chunkSizeWarningLimit: 1000,
-  },
-  server: {
-    port: 3000
-  },
+    'process.env': process.env
+  }
 })
