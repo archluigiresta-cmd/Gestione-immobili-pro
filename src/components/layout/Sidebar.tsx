@@ -1,6 +1,5 @@
 import React from 'react';
-import { navigationItems, secondaryNavigationItems } from '../../types';
-import type { Screen } from '../../types';
+import { navigationItems, secondaryNavigationItems, type Screen } from '../../types';
 import { X } from 'lucide-react';
 
 interface SidebarProps {
