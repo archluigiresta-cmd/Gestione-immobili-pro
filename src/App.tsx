@@ -42,6 +42,7 @@ function App() {
 
     const [isSidebarOpen, setSidebarOpen] = useState(false);
     const [isApiReady, setIsApiReady] = useState(false);
+    const [apiError, setApiError] = useState<string | null>(null);
     const [isRegisterModalOpen, setRegisterModalOpen] = useState(false);
     
     // PWA Install state
@@ -82,9 +83,14 @@ function App() {
     }, []);
 
     useEffect(() => {
-        googleDriveService.init(async (ready) => {
+        googleDriveService.init((ready, error) => {
             setIsApiReady(ready);
-            setAppState('login');
+            setApiError(error || null);
+            if (ready) {
+                setAppState('login');
+            } else {
+                 setAppState('login'); // Go to login screen even on error to show the message
+            }
         });
     }, []);
 
@@ -201,7 +207,7 @@ function App() {
     if (appState === 'login') {
         return (
             <>
-                <LoginScreen onGoogleLogin={handleGoogleLogin} onCollaboratorLogin={handleCollaboratorLogin} onRegister={() => setRegisterModalOpen(true)} isApiReady={isApiReady} hasLocalUsers={hasLocalUsers} />
+                <LoginScreen onGoogleLogin={handleGoogleLogin} onCollaboratorLogin={handleCollaboratorLogin} onRegister={() => setRegisterModalOpen(true)} isApiReady={isApiReady} hasLocalUsers={hasLocalUsers} apiError={apiError} />
                 <RegisterModal isOpen={isRegisterModalOpen} onClose={() => setRegisterModalOpen(false)} onRegister={handleRegister} />
             </>
         );

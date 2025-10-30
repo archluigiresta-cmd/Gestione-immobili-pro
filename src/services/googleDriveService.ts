@@ -43,7 +43,7 @@ const checkGapiLoaded = (callback: () => void) => {
     }, 100);
 };
 
-export const init = (callback: (isReady: boolean) => void) => {
+export const init = (callback: (isReady: boolean, error?: string) => void) => {
     checkGisLoaded(() => {
         try {
             tokenClient = window.google.accounts.oauth2.initTokenClient({
@@ -63,13 +63,13 @@ export const init = (callback: (isReady: boolean) => void) => {
                         callback(true);
                     }).catch((error: any) => {
                         console.error("Error initializing GAPI client:", error);
-                        callback(false);
+                        callback(false, "Errore di inizializzazione GAPI. Verifica la chiave API e la connessione di rete.");
                     });
                 });
             });
         } catch (error) {
             console.error("Error initializing Google services:", error);
-            callback(false);
+            callback(false, "Errore critico durante l'inizializzazione dei servizi Google.");
         }
     });
 };

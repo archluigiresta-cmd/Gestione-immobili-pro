@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, UserPlus, Users } from 'lucide-react';
+import { ArrowRight, UserPlus, Users, AlertTriangle } from 'lucide-react';
 
 interface LoginScreenProps {
     onGoogleLogin: () => void;
@@ -7,6 +7,7 @@ interface LoginScreenProps {
     onRegister: () => void;
     isApiReady: boolean;
     hasLocalUsers: boolean;
+    apiError: string | null;
 }
 
 const GoogleIcon = () => (
@@ -19,7 +20,7 @@ const GoogleIcon = () => (
 );
 
 
-const LoginScreen: React.FC<LoginScreenProps> = ({ onGoogleLogin, onCollaboratorLogin, onRegister, isApiReady, hasLocalUsers }) => {
+const LoginScreen: React.FC<LoginScreenProps> = ({ onGoogleLogin, onCollaboratorLogin, onRegister, isApiReady, hasLocalUsers, apiError }) => {
     return (
         <div className="flex items-center justify-center min-h-screen bg-light">
             <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-2xl shadow-2xl text-center">
@@ -29,6 +30,18 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onGoogleLogin, onCollaborator
                         Seleziona una modalità di accesso.
                     </p>
                 </div>
+                
+                {apiError && (
+                    <div className="p-4 my-4 bg-red-50 border-l-4 border-red-500 text-red-800 text-left rounded-r-lg">
+                        <div className="flex items-start">
+                            <AlertTriangle className="h-5 w-5 text-red-500 mr-3 mt-0.5" />
+                            <div>
+                                <p className="font-bold">Errore di Configurazione API</p>
+                                <p className="text-sm">{apiError}</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
                 
                 <div className="space-y-4 pt-4">
                     <button
@@ -52,7 +65,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onGoogleLogin, onCollaborator
                         </button>
                     )}
                     
-                    {!isApiReady && (
+                    {!isApiReady && !apiError && (
                         <p className="text-xs text-gray-500 mt-2 animate-pulse">
                             Inizializzazione dei servizi...
                         </p>
