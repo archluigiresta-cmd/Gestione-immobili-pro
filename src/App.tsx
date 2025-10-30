@@ -1,3 +1,4 @@
+// Force update to unblock version control state.
 import React, { useState, useEffect, useCallback } from 'react';
 import { User, Project, Screen, ProjectMemberRole, UserStatus, navigationItems, secondaryNavigationItems } from './types';
 import * as dataService from './services/dataService';
