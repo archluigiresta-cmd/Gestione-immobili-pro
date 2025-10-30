@@ -156,7 +156,18 @@ export const deleteUser = (id: string): void => {
 };
 
 // Projects
-export const getProjects = (): Project[] => initData('projects', MOCK_PROJECTS);
+export const getProjects = (): Project[] => {
+    const projects = initData<Project>('projects', MOCK_PROJECTS);
+    // Data sanitization to prevent crashes from old/malformed data.
+    // Ensures every project object has a 'members' array.
+    return projects.map(p => {
+        if (!p.members) {
+            console.warn(`Project "${p.name}" (id: ${p.id}) is missing 'members' array. Initializing as empty.`);
+            return { ...p, members: [] };
+        }
+        return p;
+    });
+};
 export const getProjectsForUser = (userId: string): Project[] => {
     const allProjects = getProjects();
     return allProjects.filter(p => p.members.some(m => m.userId === userId));
