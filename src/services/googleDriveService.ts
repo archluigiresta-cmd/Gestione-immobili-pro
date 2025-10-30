@@ -54,14 +54,17 @@ export const init = (callback: (isReady: boolean) => void) => {
             console.log("Google Token Client initialized.");
 
             checkGapiLoaded(() => {
-                window.gapi.load('client', async () => {
-                    await window.gapi.client.init({
-// FIX: Per coding guidelines, API key must be from process.env.API_KEY
+                window.gapi.load('client', () => {
+                    window.gapi.client.init({
                         apiKey: process.env.API_KEY,
                         discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+                    }).then(() => {
+                        console.log("GAPI client initialized successfully.");
+                        callback(true);
+                    }).catch((error: any) => {
+                        console.error("Error initializing GAPI client:", error);
+                        callback(false);
                     });
-                    console.log("GAPI client initialized.");
-                    callback(true);
                 });
             });
         } catch (error) {
