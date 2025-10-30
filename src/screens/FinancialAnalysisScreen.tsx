@@ -2,7 +2,8 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
-import { Payment, Expense, Maintenance, Property, ExpenseCategory } from '../types';
+import { ExpenseCategory } from '../types';
+import type { Payment, Expense, Maintenance, Property } from '../types';
 import { DollarSign, TrendingUp, TrendingDown, ChevronsRight } from 'lucide-react';
 
 interface FinancialAnalysisScreenProps {

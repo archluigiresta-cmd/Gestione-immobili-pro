@@ -79,8 +79,6 @@ const InteractiveTable = <T extends { id?: string | number }>({ columns, data }:
 
       // Rule 2: Handle numbers and booleans specifically.
       if (aType === 'number' && bType === 'number') {
-        // FIX: Cast values to number for arithmetic operation.
-        // TypeScript doesn't narrow the type of generic properties (`T[keyof T]`) within this conditional block.
         return ((aValue as number) - (bValue as number)) * direction;
       }
       if (aType === 'boolean' && bType === 'boolean') {

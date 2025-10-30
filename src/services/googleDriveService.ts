@@ -1,5 +1,7 @@
-import { User, UserStatus, AppData } from '../types';
-import { INITIAL_MOCK_DATA } from '../constants';
+// FIX: Add '.ts' extension to imports to aid module resolution.
+import { User, UserStatus, AppData } from '../types.ts';
+// FIX: Add '.ts' extension to imports to aid module resolution.
+import { INITIAL_MOCK_DATA } from '../constants.ts';
 
 const DATA_FILE_NAME = 'gest-immo-pro-data.json';
 const DRIVE_FOLDER_NAME = 'Dati App Gestore Immobili PRO';
