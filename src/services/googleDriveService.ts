@@ -47,7 +47,7 @@ export const init = (callback: (isReady: boolean) => void) => {
     checkGisLoaded(() => {
         try {
             tokenClient = window.google.accounts.oauth2.initTokenClient({
-                client_id: process.env.GOOGLE_CLIENT_ID,
+                client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
                 scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
                 callback: '',
             });
@@ -56,7 +56,7 @@ export const init = (callback: (isReady: boolean) => void) => {
             checkGapiLoaded(() => {
                 window.gapi.load('client', async () => {
                     await window.gapi.client.init({
-                        apiKey: process.env.API_KEY,
+                        apiKey: import.meta.env.VITE_API_KEY,
                         discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
                     });
                     console.log("GAPI client initialized.");
