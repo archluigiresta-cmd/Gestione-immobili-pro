@@ -56,7 +56,7 @@ export const init = (callback: (isReady: boolean, error?: string) => void) => {
             checkGapiLoaded(() => {
                 window.gapi.load('client', () => {
                     window.gapi.client.init({
-                        apiKey: process.env.API_KEY,
+                        apiKey: import.meta.env.VITE_GOOGLE_API_KEY,
                         discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
                     }).then(() => {
                         console.log("GAPI client initialized successfully.");
