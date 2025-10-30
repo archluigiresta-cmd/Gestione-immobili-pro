@@ -472,4 +472,4 @@ export const deletePayment = (id: string): void => {
     let payments = getAllPayments();
     payments = payments.filter(p => p.id !== id);
     saveData('payments', payments);
-};
+}
