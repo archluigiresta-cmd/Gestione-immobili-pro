@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
-import { Property, Payment, Expense, Maintenance, ExpenseCategory, Tenant, Contract, Deadline, Document } from '../types';
+import { Property, Payment, Expense, Maintenance, Tenant, Contract, Deadline, Document } from '../types';
 import PropertyReportCard, { AggregatedPropertyData } from '../components/reports/PropertyReportCard';
 import ExportButton from '../components/ui/ExportButton';
 import { AreaChart, Play } from 'lucide-react';
