@@ -220,18 +220,18 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
             <Card className="p-6">
                 <div className="flex justify-between items-center mb-4">
-                     <h2 className="text-xl font-bold text-dark flex items-center"><HardDrive size={20} className="mr-2 text-primary"/> Gestione Dati Applicazione</h2>
+                     <h2 className="text-xl font-bold text-dark flex items-center"><HardDrive size={20} className="mr-2 text-primary"/> Salvataggio e Backup Locale</h2>
                 </div>
                 <div className="p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800">
-                    <p className="font-bold">Backup e Ripristino</p>
-                    <p className="text-sm">Esporta tutti i dati della tua applicazione in un unico file per sicurezza. Puoi importare questo file in seguito per ripristinare i dati.</p>
+                    <p className="font-bold">I tuoi dati sono salvati solo su questo computer!</p>
+                    <p className="text-sm">Questa applicazione funziona offline. È fondamentale creare backup regolari dei tuoi dati e salvarli in un posto sicuro. Puoi usare la funzione di importazione per ripristinare un backup su questo o un altro computer.</p>
                 </div>
                 <div className="flex items-center gap-4 mt-4">
                      <button onClick={handleExportData} className="flex items-center px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
-                        <Upload size={16} className="mr-2"/> Esporta Dati (Backup)
+                        <Upload size={16} className="mr-2"/> Salva Backup su Computer
                     </button>
                     <button onClick={handleImportClick} className="flex items-center px-4 py-2 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700 transition-colors shadow-sm">
-                        <HardDrive size={16} className="mr-2"/> Importa Dati (Ripristino)
+                        <HardDrive size={16} className="mr-2"/> Carica Backup da Computer
                     </button>
                     <input type="file" ref={fileInputRef} onChange={handleImportData} className="hidden" accept=".json"/>
                 </div>

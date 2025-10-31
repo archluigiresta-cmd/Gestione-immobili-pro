@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { User, Project, Screen, ProjectMemberRole, UserStatus, navigationItems, secondaryNavigationItems } from './types';
 import * as dataService from './services/dataService';
-import * as googleDriveService from './services/googleDriveService';
 
 // Import Screens
 import LoginScreen from './screens/LoginScreen';
@@ -41,8 +40,6 @@ function App() {
     const [propertyDetailId, setPropertyDetailId] = useState<string | null>(null);
 
     const [isSidebarOpen, setSidebarOpen] = useState(false);
-    const [isApiReady, setIsApiReady] = useState(false);
-    const [apiError, setApiError] = useState<string | null>(null);
     const [isRegisterModalOpen, setRegisterModalOpen] = useState(false);
     
     // PWA Install state
@@ -68,43 +65,12 @@ function App() {
         });
     };
 
-    const loadDataFromDrive = useCallback(async () => {
-        try {
-            const { fileId, data } = await googleDriveService.findOrCreateDataFile();
-            dataService.setDriveFileId(fileId);
-            dataService.loadDataFromObject(data);
-            dataService.migrateData();
-        } catch (error) {
-            console.error("Failed to load data from Drive, using local mock data:", error);
-            // This will initialize from mock if local storage is empty
-            dataService.getUsers(); 
-            dataService.migrateData();
-        }
-    }, []);
-
     useEffect(() => {
-        googleDriveService.init((ready, error) => {
-            setIsApiReady(ready);
-            setApiError(error || null);
-            if (ready) {
-                setAppState('login');
-            } else {
-                 setAppState('login'); // Go to login screen even on error to show the message
-            }
-        });
+        // App starts, loads data from local storage, and then proceeds to login.
+        dataService.getUsers(); // This initializes data if localStorage is empty
+        dataService.migrateData();
+        setAppState('login');
     }, []);
-
-    const handleGoogleLogin = async () => {
-        try {
-            const user = await googleDriveService.signIn();
-            await loadDataFromDrive();
-            setCurrentUser(user);
-            setAppState('projectSelection');
-        } catch (error) {
-            console.error("Google Sign-In failed:", error);
-            alert("Login con Google fallito. Riprova.");
-        }
-    };
     
     const hasLocalUsers = dataService.getUsers().some(u => u.password);
 
@@ -138,9 +104,6 @@ function App() {
     };
 
     const handleLogout = () => {
-        if (currentUser?.id && currentUser.id.length > 21) { 
-            googleDriveService.signOut();
-        }
         setCurrentUser(null);
         setCurrentProject(null);
         setAppState('login');
@@ -207,7 +170,7 @@ function App() {
     if (appState === 'login') {
         return (
             <>
-                <LoginScreen onGoogleLogin={handleGoogleLogin} onCollaboratorLogin={handleCollaboratorLogin} onRegister={() => setRegisterModalOpen(true)} isApiReady={isApiReady} hasLocalUsers={hasLocalUsers} apiError={apiError} />
+                <LoginScreen onCollaboratorLogin={handleCollaboratorLogin} onRegister={() => setRegisterModalOpen(true)} hasLocalUsers={hasLocalUsers} />
                 <RegisterModal isOpen={isRegisterModalOpen} onClose={() => setRegisterModalOpen(false)} onRegister={handleRegister} />
             </>
         );

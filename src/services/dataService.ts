@@ -1,47 +1,9 @@
 import { MOCK_USERS, MOCK_PROPERTIES, MOCK_TENANTS, MOCK_CONTRACTS, MOCK_DEADLINES, MOCK_MAINTENANCES, MOCK_EXPENSES, MOCK_DOCUMENTS, MOCK_PROJECTS, MOCK_PAYMENTS, INITIAL_MOCK_DATA } from '../constants';
 import { User, Property, Tenant, Contract, Deadline, Maintenance, Expense, Document, DeadlineType, Project, HistoryLog, Payment, UserStatus, AppData } from '../types';
-import { saveDataToDrive } from './googleDriveService';
 
 const CURRENT_DATA_VERSION = 2;
 
 const DATA_KEYS: (keyof AppData)[] = ['users', 'projects', 'properties', 'tenants', 'contracts', 'deadlines', 'maintenances', 'expenses', 'documents', 'payments', 'dataVersion'];
-
-let driveFileId: string | null = null;
-let debounceTimer: number | null = null;
-
-export const setDriveFileId = (id: string | null) => {
-    driveFileId = id;
-};
-
-const _getAllDataAsObject = (): AppData => {
-    const appData: Partial<AppData> = {};
-    DATA_KEYS.forEach(key => {
-        const data = localStorage.getItem(key as string);
-        if (data) {
-            try {
-                (appData as any)[key] = JSON.parse(data);
-            } catch (e) {
-                console.error(`Failed to parse data for key ${String(key)}`, e);
-            }
-        }
-    });
-    return appData as AppData;
-};
-
-const debouncedSaveToDrive = () => {
-    if (debounceTimer) {
-        clearTimeout(debounceTimer);
-    }
-    debounceTimer = window.setTimeout(() => {
-        if (driveFileId) {
-            console.log('Debounced save executing...');
-            const allData = _getAllDataAsObject();
-            saveDataToDrive(driveFileId, allData)
-              .then(() => console.log('Successfully saved to Google Drive.'))
-              .catch(err => console.error('Failed to save to Google Drive:', err));
-        }
-    }, 2000); // 2-second delay
-};
 
 export const migrateData = () => {
     const storedVersionStr = localStorage.getItem('dataVersion');
@@ -94,9 +56,6 @@ const initData = <T,>(key: string, mockData: T[]): T[] => {
 const saveData = <T,>(key: string, data: T[]): void => {
     try {
         localStorage.setItem(key, JSON.stringify(data));
-        if (driveFileId) {
-            debouncedSaveToDrive();
-        }
     } catch (error) {
         console.error(`Error saving ${key} to localStorage`, error);
     }
@@ -108,7 +67,7 @@ export const loadDataFromObject = (data: AppData) => {
             localStorage.setItem(key as string, JSON.stringify(data[key]));
         }
     });
-    console.log("Data loaded into localStorage from Drive.");
+    console.log("Data loaded into localStorage from backup.");
 };
 
 
