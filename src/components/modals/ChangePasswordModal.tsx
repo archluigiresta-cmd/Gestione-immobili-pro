@@ -27,7 +27,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
     e.preventDefault();
     setError('');
 
-    if (currentPassword !== user.password) {
+    if (user.password && currentPassword !== user.password) {
       setError('La password attuale non è corretta.');
       return;
     }
@@ -60,16 +60,18 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
         </div>
         {error && <p className="bg-red-100 text-red-700 p-2 rounded mb-4 text-sm">{error}</p>}
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Password Attuale</label>
-            <input 
-              type="password"
-              value={currentPassword}
-              onChange={e => setCurrentPassword(e.target.value)}
-              className="mt-1 block w-full input"
-              autoFocus
-            />
-          </div>
+          {user.password && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Password Attuale</label>
+              <input 
+                type="password"
+                value={currentPassword}
+                onChange={e => setCurrentPassword(e.target.value)}
+                className="mt-1 block w-full input"
+                autoFocus
+              />
+            </div>
+          )}
            <div>
             <label className="block text-sm font-medium text-gray-700">Nuova Password</label>
             <input 
@@ -77,6 +79,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
               value={newPassword}
               onChange={e => setNewPassword(e.target.value)}
               className="mt-1 block w-full input"
+              autoFocus={!user.password}
             />
           </div>
            <div>

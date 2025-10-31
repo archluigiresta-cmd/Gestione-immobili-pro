@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Project, Screen, ProjectMemberRole, UserStatus, navigationItems, secondaryNavigationItems } from './types';
 import * as dataService from './services/dataService';
 
@@ -43,6 +43,9 @@ function App() {
     const [isRegisterModalOpen, setRegisterModalOpen] = useState(false);
     const [isApprovalModalOpen, setApprovalModalOpen] = useState(false);
     
+    // State to force re-read of data from localStorage
+    const [dataTimestamp, setDataTimestamp] = useState(Date.now());
+    
     // PWA Install state
     const [installPrompt, setInstallPrompt] = useState<any>(null);
     const [isInstallable, setIsInstallable] = useState(false);
@@ -86,7 +89,7 @@ function App() {
             const timer = setTimeout(() => setApprovalModalOpen(true), 1000);
             return () => clearTimeout(timer);
         }
-    }, [currentUser, pendingUsers.length, appState]);
+    }, [currentUser, appState, dataTimestamp]); // depends on dataTimestamp to re-evaluate when users change
 
 
     const handleInstallClick = () => {
@@ -95,10 +98,10 @@ function App() {
         installPrompt.userChoice.then((choiceResult: { outcome: string }) => {
             if (choiceResult.outcome === 'accepted') {
                 console.log('User accepted the install prompt');
-                setIsInstallable(false);
             } else {
                 console.log('User dismissed the install prompt');
             }
+            setIsInstallable(false);
         });
     };
 
@@ -117,6 +120,7 @@ function App() {
         dataService.addUser(userData);
         setRegisterModalOpen(false);
         alert('Richiesta di registrazione inviata. Un amministratore approverà il tuo account.');
+        setDataTimestamp(Date.now());
     };
     
     const handleLogout = () => {
@@ -160,6 +164,7 @@ function App() {
             setPropertyDetailId(null);
             setActiveScreen(screen);
         }
+        setSidebarOpen(false);
     };
     
     // --- Data Management Callbacks (for Settings) ---
@@ -169,6 +174,7 @@ function App() {
         if (currentUser && currentUser.id === updatedUser.id) {
             setCurrentUser(updatedUser);
         }
+        setDataTimestamp(Date.now());
     };
 
     const handleUpdateProject = (updatedProject: Project) => {
@@ -176,22 +182,22 @@ function App() {
         if (currentProject && currentProject.id === updatedProject.id) {
             setCurrentProject(updatedProject);
         }
+        setDataTimestamp(Date.now());
     };
 
     const handleAddUser = (userData: Omit<User, 'id' | 'status'>) => {
         dataService.addUser(userData);
-        // Force re-render to update user lists
-        setCurrentUser(u => u ? {...u} : null); 
+        setDataTimestamp(Date.now());
     };
 
     const handleDeleteUser = (userId: string) => {
         dataService.deleteUser(userId);
-        setCurrentUser(u => u ? {...u} : null);
+        setDataTimestamp(Date.now());
     };
 
     const handleApproveUser = (userId: string) => {
         dataService.approveUser(userId);
-        setCurrentUser(u => u ? {...u} : null);
+        setDataTimestamp(Date.now());
     };
 
     // --- Render Logic ---
