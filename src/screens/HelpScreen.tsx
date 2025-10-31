@@ -1,3 +1,4 @@
+// Versione finale corretta 7
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, LifeBuoy, Bot, User, Send, LoaderCircle } from 'lucide-react';
 import Card from '../components/ui/Card';

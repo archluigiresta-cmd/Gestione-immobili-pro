@@ -1,3 +1,4 @@
+// Versione finale corretta 4
 import React from 'react';
 import { User } from '../../types';
 import { X, Check, UserCheck } from 'lucide-react';

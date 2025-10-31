@@ -1,3 +1,4 @@
+// Versione finale corretta 5
 import React, { useState } from 'react';
 import { User } from '../../types';
 import { X, KeyRound } from 'lucide-react';
