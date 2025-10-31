@@ -2,12 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { User, Project, ProjectMemberRole, UserStatus } from '../types';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
-import { UserCircle, Edit, Trash2, Shield, PlusCircle, Share2, Users, HardDrive, Upload, Check, X } from 'lucide-react';
+import { UserCircle, Edit, Trash2, Shield, PlusCircle, Share2, Users, HardDrive, Upload, Check, X, KeyRound } from 'lucide-react';
 
 import EditProfileModal from '../components/modals/EditProfileModal';
 import AddUserModal from '../components/modals/AddUserModal';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
 import ShareProjectModal from '../components/modals/ShareProjectModal';
+import ChangePasswordModal from '../components/modals/ChangePasswordModal';
 
 interface SettingsScreenProps {
   user: User;
@@ -33,6 +34,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
     const [isEditProfileModalOpen, setEditProfileModalOpen] = useState(false);
     const [isAddUserModalOpen, setAddUserModalOpen] = useState(false);
     const [isShareModalOpen, setShareModalOpen] = useState(false);
+    const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
     const [deletingUser, setDeletingUser] = useState<User | null>(null);
     const [editingProjectName, setEditingProjectName] = useState(false);
     const [newProjectName, setNewProjectName] = useState(project.name);
@@ -186,7 +188,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-xl font-bold text-dark">Il Mio Profilo</h2>
                         <button onClick={() => setEditProfileModalOpen(true)} className="flex items-center text-sm px-3 py-1.5 bg-secondary text-primary font-semibold rounded-lg hover:bg-blue-200 transition-colors">
-                            <Edit size={16} className="mr-2"/> Modifica
+                            <Edit size={16} className="mr-2"/> Modifica Dati
                         </button>
                     </div>
                     <div className="flex items-center gap-4">
@@ -196,6 +198,14 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
                             <p className="text-gray-600">{user.email}</p>
                         </div>
                     </div>
+                    {user.password && (
+                        <div className="mt-4 border-t pt-4">
+                            <button onClick={() => setIsChangePasswordModalOpen(true)} className="flex items-center text-sm font-semibold text-primary hover:underline">
+                                <KeyRound size={14} className="mr-2" />
+                                Cambia Password
+                            </button>
+                        </div>
+                    )}
                 </Card>
 
                 <Card className="p-6">
@@ -338,6 +348,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
             <EditProfileModal isOpen={isEditProfileModalOpen} onClose={() => setEditProfileModalOpen(false)} user={user} onSave={handleSaveProfile} />
             <AddUserModal isOpen={isAddUserModalOpen} onClose={() => setAddUserModalOpen(false)} onSave={handleAddUserAndRefresh} />
             <ShareProjectModal isOpen={isShareModalOpen} onClose={() => setShareModalOpen(false)} onShare={handleShareProject} project={project} />
+            <ChangePasswordModal isOpen={isChangePasswordModalOpen} onClose={() => setIsChangePasswordModalOpen(false)} user={user} onSave={(newPassword) => { onUpdateProfile({...user, password: newPassword }); setIsChangePasswordModalOpen(false); }} />
             {deletingUser && (
                 <ConfirmDeleteModal 
                     isOpen={!!deletingUser} 

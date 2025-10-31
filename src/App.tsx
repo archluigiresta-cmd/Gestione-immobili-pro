@@ -1,4 +1,3 @@
-// Force update to unblock version control state.
 import React, { useState, useEffect, useCallback } from 'react';
 import { User, Project, Screen, ProjectMemberRole, UserStatus, navigationItems, secondaryNavigationItems } from './types';
 import * as dataService from './services/dataService';
@@ -29,6 +28,7 @@ import FinancialAnalysisScreen from './screens/FinancialAnalysisScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import HelpScreen from './screens/HelpScreen';
 import RegisterModal from './components/modals/RegisterModal';
+import ApproveUsersModal from './components/modals/ApproveUsersModal';
 
 type AppState = 'loading' | 'login' | 'userSelection' | 'projectSelection' | 'app';
 
@@ -41,56 +41,98 @@ function App() {
 
     const [isSidebarOpen, setSidebarOpen] = useState(false);
     const [isRegisterModalOpen, setRegisterModalOpen] = useState(false);
+    const [isApprovalModalOpen, setApprovalModalOpen] = useState(false);
     
     // PWA Install state
     const [installPrompt, setInstallPrompt] = useState<any>(null);
     const [isInstallable, setIsInstallable] = useState(false);
+    
+    // Get user data - this will be reactive to changes via re-renders
+    const allUsers = dataService.getUsers();
+    const pendingUsers = allUsers.filter(u => u.status === UserStatus.PENDING);
+    const hasLocalUsers = allUsers.some(u => u.password);
 
+    // App Initialization
     useEffect(() => {
-        const handler = (e: Event) => {
+        const beforeInstallPromptHandler = (e: Event) => {
             e.preventDefault();
-            setInstallPrompt(e);
             setIsInstallable(true);
+            setInstallPrompt(e);
         };
-        window.addEventListener('beforeinstallprompt', handler);
-        return () => window.removeEventListener('beforeinstallprompt', handler);
+        window.addEventListener('beforeinstallprompt', beforeInstallPromptHandler);
+
+        dataService.migrateData();
+        
+        // Setup admin password if not set
+        const users = dataService.getUsers();
+        const admin = users.find(u => u.id === 'user-1');
+        if (admin && !admin.password) {
+            dataService.updateUser({ ...admin, password: 'admin123' });
+        }
+        
+        const timer = setTimeout(() => {
+            setAppState('login');
+        }, 1500); // Splash screen duration
+
+        return () => {
+            window.removeEventListener('beforeinstallprompt', beforeInstallPromptHandler);
+            clearTimeout(timer);
+        };
     }, []);
 
-    const handleInstall = () => {
+    // Approval modal on admin login
+    useEffect(() => {
+        if (currentUser && currentUser.id === 'user-1' && pendingUsers.length > 0 && appState === 'app') {
+            const timer = setTimeout(() => setApprovalModalOpen(true), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [currentUser, pendingUsers.length, appState]);
+
+
+    const handleInstallClick = () => {
         if (!installPrompt) return;
         installPrompt.prompt();
-        installPrompt.userChoice.then(() => {
-            setInstallPrompt(null);
-            setIsInstallable(false);
+        installPrompt.userChoice.then((choiceResult: { outcome: string }) => {
+            if (choiceResult.outcome === 'accepted') {
+                console.log('User accepted the install prompt');
+                setIsInstallable(false);
+            } else {
+                console.log('User dismissed the install prompt');
+            }
         });
     };
 
-    useEffect(() => {
-        // App starts, loads data from local storage, and then proceeds to login.
-        dataService.getUsers(); // This initializes data if localStorage is empty
-        dataService.migrateData();
-        setAppState('login');
-    }, []);
+    // --- Authentication and State Transitions ---
     
-    const hasLocalUsers = dataService.getUsers().some(u => u.password);
-
     const handleCollaboratorLogin = () => setAppState('userSelection');
     
-    const handleRegister = (userData: Omit<User, 'id' | 'status'>) => {
-        dataService.addUser(userData);
-        alert("Richiesta di registrazione inviata. Un amministratore dovrà approvarla per consentirti l'accesso.");
-        setRegisterModalOpen(false);
-    };
-
-    const handleUserSelection = (user: User) => {
+    const handleUserSelect = (user: User) => {
         setCurrentUser(user);
         setAppState('projectSelection');
     };
+    
+    const handleBackToLogin = () => setAppState('login');
+    
+    const handleRegister = (userData: Omit<User, 'id' | 'status'>) => {
+        dataService.addUser(userData);
+        setRegisterModalOpen(false);
+        alert('Richiesta di registrazione inviata. Un amministratore approverà il tuo account.');
+    };
+    
+    const handleLogout = () => {
+        setCurrentUser(null);
+        setCurrentProject(null);
+        setAppState('login');
+        setActiveScreen('dashboard');
+        setPropertyDetailId(null);
+    };
+
+    // --- Project Management ---
 
     const handleSelectProject = (project: Project) => {
         setCurrentProject(project);
-        setActiveScreen('dashboard');
         setAppState('app');
+        setActiveScreen('dashboard');
     };
     
     const handleCreateProject = (projectName: string) => {
@@ -103,39 +145,66 @@ function App() {
         handleSelectProject(newProject);
     };
 
-    const handleLogout = () => {
-        setCurrentUser(null);
+    const handleBackToProjects = () => {
         setCurrentProject(null);
-        setAppState('login');
+        setAppState('projectSelection');
     };
-    
-    const handleUpdateProfile = (updatedUser: User) => {
-        dataService.updateUser(updatedUser);
-        setCurrentUser(updatedUser); // Update state
-    }
-    
+
+    // --- Navigation ---
+
     const handleNavigate = (screen: Screen, id?: string) => {
         if (screen === 'propertyDetail' && id) {
             setPropertyDetailId(id);
             setActiveScreen('propertyDetail');
-        } else if (screen !== 'propertyDetail') {
+        } else {
             setPropertyDetailId(null);
             setActiveScreen(screen);
         }
-        setSidebarOpen(false);
-    }
+    };
     
-    const allUsers = dataService.getUsers();
-    const pendingUsers = allUsers.filter(u => u.status === UserStatus.PENDING);
-    const userRole = currentProject?.members.find(m => m.userId === currentUser?.id)?.role || ProjectMemberRole.VIEWER;
+    // --- Data Management Callbacks (for Settings) ---
+
+    const handleUpdateProfile = (updatedUser: User) => {
+        dataService.updateUser(updatedUser);
+        if (currentUser && currentUser.id === updatedUser.id) {
+            setCurrentUser(updatedUser);
+        }
+    };
+
+    const handleUpdateProject = (updatedProject: Project) => {
+        dataService.updateProject(updatedProject);
+        if (currentProject && currentProject.id === updatedProject.id) {
+            setCurrentProject(updatedProject);
+        }
+    };
+
+    const handleAddUser = (userData: Omit<User, 'id' | 'status'>) => {
+        dataService.addUser(userData);
+        // Force re-render to update user lists
+        setCurrentUser(u => u ? {...u} : null); 
+    };
+
+    const handleDeleteUser = (userId: string) => {
+        dataService.deleteUser(userId);
+        setCurrentUser(u => u ? {...u} : null);
+    };
+
+    const handleApproveUser = (userId: string) => {
+        dataService.approveUser(userId);
+        setCurrentUser(u => u ? {...u} : null);
+    };
+
+    // --- Render Logic ---
 
     const renderScreen = () => {
-        if (!currentUser || !currentProject) return null;
+        if (!currentProject || !currentUser) return null;
+
+        const userRole = currentProject.members.find(m => m.userId === currentUser.id)?.role || ProjectMemberRole.VIEWER;
 
         switch (activeScreen) {
             case 'dashboard': return <DashboardScreen onNavigate={handleNavigate} projectId={currentProject.id} />;
             case 'properties': return <PropertiesScreen onNavigate={handleNavigate} projectId={currentProject.id} user={currentUser} userRole={userRole} />;
-            case 'propertyDetail': return propertyDetailId ? <PropertyDetailScreen propertyId={propertyDetailId} projectId={currentProject.id} user={currentUser} userRole={userRole} onBack={() => setActiveScreen('properties')} onNavigate={(s) => setActiveScreen(s as Screen)}/> : null;
+            case 'propertyDetail': return <PropertyDetailScreen propertyId={propertyDetailId!} projectId={currentProject.id} user={currentUser} userRole={userRole} onBack={() => handleNavigate('properties')} onNavigate={handleNavigate} />;
             case 'tenants': return <TenantsScreen projectId={currentProject.id} user={currentUser} />;
             case 'contracts': return <ContractsScreen projectId={currentProject.id} user={currentUser} userRole={userRole} />;
             case 'payments': return <PaymentsScreen projectId={currentProject.id} user={currentUser} userRole={userRole} />;
@@ -145,19 +214,7 @@ function App() {
             case 'documents': return <DocumentsScreen projectId={currentProject.id} user={currentUser} />;
             case 'reports': return <ReportsScreen projectId={currentProject.id} />;
             case 'financialAnalysis': return <FinancialAnalysisScreen projectId={currentProject.id} />;
-            case 'settings': return <SettingsScreen 
-                user={currentUser} 
-                project={currentProject} 
-                onUpdateProfile={handleUpdateProfile} 
-                onUpdateProject={(p) => {
-                    dataService.updateProject(p);
-                    setCurrentProject(p);
-                }}
-                onAddUser={(u) => dataService.addUser(u)}
-                onDeleteUser={(id) => dataService.deleteUser(id)}
-                onApproveUser={(id) => dataService.approveUser(id)}
-                userRole={userRole}
-            />;
+            case 'settings': return <SettingsScreen user={currentUser} project={currentProject} onUpdateProfile={handleUpdateProfile} onUpdateProject={handleUpdateProject} onAddUser={handleAddUser} onDeleteUser={handleDeleteUser} onApproveUser={handleApproveUser} userRole={userRole} />;
             case 'help': return <HelpScreen />;
             default: return <DashboardScreen onNavigate={handleNavigate} projectId={currentProject.id} />;
         }
@@ -175,61 +232,57 @@ function App() {
             </>
         );
     }
-
+    
     if (appState === 'userSelection') {
-        return <UserSelectionScreen onSelectUser={handleUserSelection} onBack={() => setAppState('login')} />;
+        return <UserSelectionScreen onSelectUser={handleUserSelect} onBack={handleBackToLogin} />;
     }
-
+    
     if (appState === 'projectSelection' && currentUser) {
-        return <ProjectSelectionScreen 
-            user={currentUser} 
-            onSelectProject={handleSelectProject} 
-            onCreateProject={handleCreateProject} 
-            onLogout={handleLogout}
-            onUpdateProfile={handleUpdateProfile}
-            onSwitchUser={() => {
-                setCurrentUser(null);
-                setAppState('login');
-            }}
-        />;
+        return <ProjectSelectionScreen user={currentUser} onSelectProject={handleSelectProject} onCreateProject={handleCreateProject} onLogout={handleLogout} onUpdateProfile={handleUpdateProfile} onSwitchUser={handleCollaboratorLogin}/>;
     }
     
     if (appState === 'app' && currentUser && currentProject) {
-        const screenName = activeScreen === 'propertyDetail' ? `Dettaglio Immobile` : (navigationItems.find(i => i.screen === activeScreen) || secondaryNavigationItems.find(i => i.screen === activeScreen))?.name || 'Dashboard';
+        const activeScreenData = [...navigationItems, ...secondaryNavigationItems].find(item => item.screen === activeScreen);
+        const screenName = activeScreen === 'propertyDetail' ? 'Dettaglio Immobile' : activeScreenData?.name || '';
         
         return (
             <div className="flex h-screen bg-light">
                 <Sidebar 
                     activeScreen={activeScreen} 
-                    setActiveScreen={(s) => handleNavigate(s)}
+                    setActiveScreen={handleNavigate}
                     isSidebarOpen={isSidebarOpen}
                     setSidebarOpen={setSidebarOpen}
-                    onInstall={handleInstall}
+                    onInstall={handleInstallClick}
                     isInstallable={isInstallable}
                 />
                 <div className="flex-1 flex flex-col overflow-hidden">
                     <Header 
-                        currentScreen={screenName}
+                        currentScreen={screenName} 
                         currentProjectName={currentProject.name}
                         toggleSidebar={() => setSidebarOpen(!isSidebarOpen)} 
-                        user={currentUser}
+                        user={currentUser} 
                         onLogout={handleLogout}
-                        onNavigate={(s) => handleNavigate(s)}
-                        onBackToProjects={() => {
-                            setCurrentProject(null);
-                            setAppState('projectSelection');
-                        }}
+                        onNavigate={handleNavigate}
+                        onBackToProjects={handleBackToProjects}
                         pendingUsersCount={pendingUsers.length}
                     />
                     <main className="flex-1 overflow-x-hidden overflow-y-auto p-6">
                         {renderScreen()}
                     </main>
                 </div>
+                 <ApproveUsersModal 
+                    isOpen={isApprovalModalOpen} 
+                    onClose={() => setApprovalModalOpen(false)}
+                    pendingUsers={pendingUsers}
+                    onApprove={handleApproveUser}
+                    onReject={handleDeleteUser}
+                />
             </div>
         );
     }
-    
-    return <SplashScreen />; // Fallback
+
+    // Fallback if state is inconsistent
+    return <SplashScreen />; 
 }
 
 export default App;
