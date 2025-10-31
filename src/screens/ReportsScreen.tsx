@@ -1,4 +1,4 @@
-// Versione Corretta
+// Pulizia Definitiva 8
 import React, { useState, useMemo } from 'react';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';

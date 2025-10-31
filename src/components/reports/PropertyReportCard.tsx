@@ -1,4 +1,4 @@
-// Versione Corretta
+// Pulizia Definitiva 6
 import React, { useState } from 'react';
 import { Property, Tenant, Contract, Payment, Expense, Maintenance, Deadline, Document } from '../../types';
 import Card from '../ui/Card';

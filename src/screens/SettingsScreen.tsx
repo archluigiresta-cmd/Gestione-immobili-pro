@@ -1,4 +1,4 @@
-// Versione Corretta
+// Pulizia Definitiva 9
 import React, { useState, useRef, useEffect } from 'react';
 import { User, Project, ProjectMemberRole, UserStatus } from '../types';
 import Card from '../components/ui/Card';

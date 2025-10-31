@@ -1,4 +1,4 @@
-// Versione Corretta
+// Pulizia Definitiva 3
 import React, { useState, useEffect } from 'react';
 import { User, Project, Screen, ProjectMemberRole, UserStatus, navigationItems, secondaryNavigationItems } from './types';
 import * as dataService from './services/dataService';
