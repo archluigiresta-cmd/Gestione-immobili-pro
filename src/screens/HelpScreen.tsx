@@ -61,6 +61,16 @@ const AiAssistant: React.FC = () => {
     }
 
     useEffect(() => {
+        // Initial welcome message from the bot
+        setMessages([
+            {
+                role: 'model',
+                content: "Ciao! Sono il tuo assistente virtuale. Chiedimi qualsiasi cosa riguardo il funzionamento di 'Gestore Immobili PRO'."
+            }
+        ]);
+    }, []);
+
+    useEffect(() => {
         scrollToBottom();
     }, [messages, isLoading]);
 

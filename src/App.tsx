@@ -1,4 +1,3 @@
-// Versione aggiornata per risolvere problemi di invio multiplo. File 1 di 4.
 import React, { useState, useEffect } from 'react';
 import { User, Project, Screen, ProjectMemberRole, UserStatus, navigationItems, secondaryNavigationItems } from './types';
 import * as dataService from './services/dataService';
