@@ -1,4 +1,4 @@
-
+// Versione Corretta
 import React, { useState, useEffect, useMemo } from 'react';
 import Card from '../components/ui/Card';
 import * as dataService from '../services/dataService';
